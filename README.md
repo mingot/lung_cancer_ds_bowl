@@ -2,13 +2,13 @@
 
 
 ## Quickstart
- 1. Create [virtual enviroment](http://docs.python-guide.org/en/latest/dev/virtualenvs/) (see `virtualenvwrapper`)
- 2. Install python requirements
+ 1. Create [virtual enviroment](http://docs.python-guide.org/en/latest/dev/virtualenvs/) (see `virtualenvwrapper`) and install python requirements
 ```
-$ pip -r install requirements.txt
+$ mkvirtualenv lung
+$(lung) pip -r install requirements.txt
 ```
- 3. Download LUNA data set using the torrent files in the data/luna directory
- 4. Download DSBowl data set signing up in [the competition](https://www.kaggle.com/c/data-science-bowl-2017) 
+ 2. Download LUNA data set using the torrent files in the data/luna directory
+ 3. Download DSBowl data set signing up in [the competition](https://www.kaggle.com/c/data-science-bowl-2017) 
 
 ## General guidelines
  - By default, every file should start with the main author initials.
