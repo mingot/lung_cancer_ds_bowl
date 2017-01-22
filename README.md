@@ -2,16 +2,17 @@
 
 
 ## Quickstart
-
+Create [virtual enviroment](http://docs.python-guide.org/en/latest/dev/virtualenvs/) (see `virtualenvwrapper`)
+Install python requirements
+```
+$ pip -r install requirements.txt
+```
+Download LUNA data set using the torrent files in the data/luna directory
+Download DSBowl data set signing up in [the competition](https://www.kaggle.com/c/data-science-bowl-2017) 
 
 ## General guidelines
  - By default, every file should start with the main author initials.
  - Avoid storing files >50Mb in Git. In particular, images from data folder should be outside the git repository.
-
-
-Data
-Luna: download images from Luna Challenge
-
 
 ## File structure
 
