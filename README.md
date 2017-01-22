@@ -1,24 +1,22 @@
-By default, every file should start with the main author initials
+# Lung Cancer Data Science Bowl 2017
 
 
-Data
-Luna: download images from Luna Challenge
+## Quickstart
+ 1. Create [virtual enviroment](http://docs.python-guide.org/en/latest/dev/virtualenvs/) (see `virtualenvwrapper`) and install python requirements
+```
+$ mkvirtualenv lung
+$(lung) pip -r install requirements.txt
+```
+ 2. Download LUNA data set using the torrent files in the data/luna directory
+ 3. Download DSBowl data set signing up in [the competition](https://www.kaggle.com/c/data-science-bowl-2017) 
 
-Troubleshoot
->>> import SimpleITK as sitk
-"Fatal Python error: PyThreadState_Get: no current thread"
+## General guidelines
+ - By default, every file should start with the main author initials.
+ - Avoid storing files >50Mb in Git. In particular, images from data folder should be outside the git repository.
 
-$ otool -L ~/virtualenvs/lung/lib/python2.7/site-packages/SimpleITK/_SimpleITK.so 
-/Users/mingot/virtualenvs/lung/lib/python2.7/site-packages/SimpleITK/_SimpleITK.so:
-	/System/Library/Frameworks/Python.framework/Versions/2.7/Python (compatibility version 2.7.0, current version 2.7.1)
-	/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation (compatibility version 150.0.0, current version 635.19.0)
-	/usr/lib/libSystem.B.dylib (compatibility version 1.0.0, current version 159.1.0)
-	/usr/lib/libstdc++.6.dylib (compatibility version 7.0.0, current version 52.0.0)
-$ sudo install_name_tool -change /System/Library/Frameworks/Python.framework/Versions/2.7/Python ~/virtualenvs/lung/.Python ~/virtualenvs/lung/lib/python2.7/site-packages/SimpleITK/_SimpleITK.so
+## File structure
 
-
-
-
+```
 ├── Makefile           <- Makefile with commands like `make data` or `make train`
 ├── README.md          <- The top-level README for developers using this project.
 ├── data
@@ -61,3 +59,22 @@ $ sudo install_name_tool -change /System/Library/Frameworks/Python.framework/Ver
 │       └── visualize.py
 │
 └── tox.ini            <- tox file with settings for running tox; see tox.testrun.org
+```
+
+## Troubleshoot
+
+### "Fatal Python error: PyThreadState_Get: no current thread"
+```
+>>> import SimpleITK as sitk
+"Fatal Python error: PyThreadState_Get: no current thread"
+```
+The solution is to relink the `_SimpleITK.so`:
+```
+$ otool -L ~/virtualenvs/lung/lib/python2.7/site-packages/SimpleITK/_SimpleITK.so 
+/Users/mingot/virtualenvs/lung/lib/python2.7/site-packages/SimpleITK/_SimpleITK.so:
+	/System/Library/Frameworks/Python.framework/Versions/2.7/Python (compatibility version 2.7.0, current version 2.7.1)
+	/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation (compatibility version 150.0.0, current version 635.19.0)
+	/usr/lib/libSystem.B.dylib (compatibility version 1.0.0, current version 159.1.0)
+	/usr/lib/libstdc++.6.dylib (compatibility version 7.0.0, current version 52.0.0)
+$ sudo install_name_tool -change /System/Library/Frameworks/Python.framework/Versions/2.7/Python ~/virtualenvs/lung/.Python ~/virtualenvs/lung/lib/python2.7/site-packages/SimpleITK/_SimpleITK.so
+```
