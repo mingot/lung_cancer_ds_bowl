@@ -1,0 +1,9 @@
+*.7z
+*.raw
+*.mhd
+*.dcm
+*.npy
+*.zip
+
+# Manual saves of Jupyter notebooks
+.ipynb_checkpoints/
