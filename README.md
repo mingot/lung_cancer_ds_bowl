@@ -7,7 +7,7 @@
 $ mkvirtualenv lung
 $(lung) pip -r install requirements.txt
 ```
- 2. Download LUNA data set using the torrent files in the data/luna directory
+ 2. Do the [Kaggle Tutorial](https://www.kaggle.com/c/data-science-bowl-2017/details/tutorial) on the Luna data set. Download LUNA data set using the torrent files in the data/luna directory
  3. Download DSBowl data set signing up in [the competition](https://www.kaggle.com/c/data-science-bowl-2017) 
 
 ## General guidelines
