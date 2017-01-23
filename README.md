@@ -2,22 +2,29 @@
 
 
 ## Quickstart
- 1. Create [virtual enviroment](http://docs.python-guide.org/en/latest/dev/virtualenvs/) (see `virtualenvwrapper`) and install python requirements
+ Create [virtual enviroment](http://docs.python-guide.org/en/latest/dev/virtualenvs/) (see `virtualenvwrapper`) and install python requirements
 ```
 $ mkvirtualenv lung
 $(lung) pip -r install requirements.txt
 ```
- 2. Do the [Kaggle Tutorial](https://www.kaggle.com/c/data-science-bowl-2017/details/tutorial) on the Luna data set. Download LUNA data set using the torrent files in the data/luna directory
- 3. Download DSBowl data set signing up in [the competition](https://www.kaggle.com/c/data-science-bowl-2017) 
+
+## References quick start
+Basic references to understand the problem and the data:
+
+ 1. [Video] (https://www.youtube.com/watch?v=-XUKq3B4sdw) how to detect a lung cancer from a physician perspective (15 min).
+ 2. Notebooks (Kaggle Kernels) Understand the data set and dealing with DICOM files. 
+   1. [Preprocessing tutorial](https://www.kaggle.com/gzuidhof/data-science-bowl-2017/full-preprocessing-tutorial): understanding DICOM files, pixel values, standarization, ...
+   2.  [Exploratory data analysis](https://www.kaggle.com/anokas/data-science-bowl-2017/exploratory-data-analysis): basic exploration of the given data set
+ 3. [Kaggle tutorial] (https://www.kaggle.com/c/data-science-bowl-2017/details/tutorial) with code for training a CNN using the U-net network for medical image segmentation. Based on the external LUNA data set (annotated).
 
 ## General guidelines
- - By default, every file should start with the main author initials.
+ - The analysis files should start with the author initials.
  - Avoid storing files >50Mb in Git. In particular, images from data folder should be outside the git repository.
 
 ## File structure
 
+
 ```
-├── Makefile           <- Makefile with commands like `make data` or `make train`
 ├── README.md          <- The top-level README for developers using this project.
 ├── data
 │   ├── external       <- Data from third party sources.
