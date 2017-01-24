@@ -106,7 +106,7 @@ def train_and_predict(use_existing):
     # Should we load existing weights? 
     # Set argument for call to train_and_predict to true at end of script
     if use_existing:
-        model.load_weights('./unet.hdf5')
+        model.load_weights('../../models/unet_official.hdf5')
         
     # 
     # The final results for this tutorial were produced using a multi-GPU
@@ -119,14 +119,14 @@ def train_and_predict(use_existing):
     print('-'*30)
     print('Fitting model...')
     print('-'*30)
-    model.fit(imgs_train, imgs_mask_train, batch_size=2, nb_epoch=20, verbose=1, shuffle=True,
-              callbacks=[model_checkpoint])
+    # model.fit(imgs_train, imgs_mask_train, batch_size=2, nb_epoch=20, verbose=1, shuffle=True,
+    #           callbacks=[model_checkpoint])
 
     # loading best weights from training session
     print('-'*30)
     print('Loading saved weights...')
     print('-'*30)
-    model.load_weights('./unet.hdf5')
+    model.load_weights('../../models/unet_official.hdf5')
 
     print('-'*30)
     print('Predicting masks on test data...')
@@ -143,4 +143,4 @@ def train_and_predict(use_existing):
     print("Mean Dice Coeff : ",mean)
 
 if __name__ == '__main__':
-    train_and_predict(False)
+    train_and_predict(use_existing=True)
