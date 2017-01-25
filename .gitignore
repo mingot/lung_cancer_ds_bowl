@@ -5,6 +5,7 @@
 *.npy
 *.zip
 .DS_Store
+*.pyc
 
 # Manual saves of Jupyter notebooks
 .ipynb_checkpoints/

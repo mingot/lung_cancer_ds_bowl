@@ -9,12 +9,9 @@ from skimage import measure, morphology
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
 
-INPUT_FOLDER = '../../data/sample_images/'
-patients = os.listdir(INPUT_FOLDER)
-patients.sort()
 
-# Load the scans in given folder path
 def load_scan(path):
+    """Given a patient path, returns an array of scans from the DICOM files."""
     slices = [dicom.read_file(path + '/' + s) for s in os.listdir(path)]
     slices.sort(key = lambda x: int(x.InstanceNumber))
     try:
@@ -27,8 +24,15 @@ def load_scan(path):
         
     return slices
     
+def scan2imgs(scans):
+    """Convert scans to array of pixel images."""
+    imgs = np.stack([s.pixel_array for s in scans])
+    imgs = imgs.astype(np.int16)
+    imgs = np.array(imgs, dtype=np.int16)
+    return imgs
 
 def get_pixels_hu(scans):
+    """Given an array of slices from the DICOM, returns and array of images, correcting pixel values."""
     image = np.stack([s.pixel_array for s in scans])
     # Convert to int16 (from sometimes int16), 
     # should be possible as values should always be low enough (<32k)
@@ -66,14 +70,5 @@ def resample(image, scan, new_spacing=[1,1,1]):
     
     return image, new_spacing
     
-first_patient = load_scan(INPUT_FOLDER + patients[0])
-first_patient_pixels = get_pixels_hu(first_patient)
-plt.hist(first_patient_pixels.flatten(), bins=80, color='c')
-plt.xlabel("Hounsfield Units (HU)")
-plt.ylabel("Frequency")
-plt.show()
 
-# Show some slice in the middle
-plt.imshow(first_patient_pixels[80], cmap=plt.cm.gray)
-plt.show()
 
