@@ -4,6 +4,7 @@ import dicom
 import os
 import scipy.ndimage
 import matplotlib.pyplot as plt
+import math
 
 from skimage import measure, morphology
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
@@ -23,6 +24,7 @@ def load_scan(path):
         s.SliceThickness = slice_thickness
         
     return slices
+
     
 def scan2imgs(scans):
     """Convert scans to array of pixel images."""
@@ -30,6 +32,7 @@ def scan2imgs(scans):
     imgs = imgs.astype(np.int16)
     imgs = np.array(imgs, dtype=np.int16)
     return imgs
+
 
 def get_pixels_hu(scans):
     """Given an array of slices from the DICOM, returns and array of images, correcting pixel values."""
@@ -72,3 +75,15 @@ def resample(image, scan, new_spacing=[1,1,1]):
     
 
 
+
+
+def plot_multiple_imgs(imgs):
+    nimg = len(imgs)
+    num_rows = int(math.sqrt(nimg)) + 1
+    f, plots = plt.subplots(num_rows, num_rows, sharex='all', sharey='all', figsize=(num_rows, num_rows))
+    for i in range(nimg):
+        plots[i // num_rows, i % num_rows].axis('off')
+        plots[i // num_rows, i % num_rows].imshow(imgs[i])
+        #plots[i // 11, i % 11].imshow(patient_slices[i], cmap=plt.cm.bone)
+
+    

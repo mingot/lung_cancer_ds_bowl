@@ -8,13 +8,17 @@ from sklearn.cross_validation import StratifiedKFold as KFold
 from sklearn.metrics import classification_report
 from sklearn.ensemble import RandomForestClassifier as RF
 import xgboost as xgb
+from skimage import measure
+
 
 def getRegionFromMap(slice_npy):
-    thr = np.where(slice_npy > np.mean(slice_npy),0.,1.0)
-    label_image = label(thr)
+    """Extract regions from segmentation map."""
+    thr = np.where(slice_npy > np.mean(slice_npy),0.,1.0)  # threshold detected regions
+    label_image = measure.label(thr)  # label them
     labels = label_image.astype(int)
-    regions = regionprops(labels)
+    regions = measure.regionprops(labels)
     return regions
+
 
 def getRegionMetricRow(fname = "nodules.npy"):
     # fname, numpy array of dimension [#slices, 1, 512, 512] containing the images
