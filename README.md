@@ -14,7 +14,7 @@ Basic references to understand the problem and the data:
  Create [virtual enviroment](http://docs.python-guide.org/en/latest/dev/virtualenvs/) (see `virtualenvwrapper`) and install python requirements
 ```
 $ mkvirtualenv lung
-$(lung) pip -r install requirements.txt
+$(lung) pip install -r requirements.txt
 ```
 
 ## General guidelines
