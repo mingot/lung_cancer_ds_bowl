@@ -1,13 +1,5 @@
 # Lung Cancer Data Science Bowl 2017
 
-
-## Quickstart
- Create [virtual enviroment](http://docs.python-guide.org/en/latest/dev/virtualenvs/) (see `virtualenvwrapper`) and install python requirements
-```
-$ mkvirtualenv lung
-$(lung) pip -r install requirements.txt
-```
-
 ## References quick start
 Basic references to understand the problem and the data:
 
@@ -16,6 +8,14 @@ Basic references to understand the problem and the data:
    1. [Preprocessing tutorial](https://www.kaggle.com/gzuidhof/data-science-bowl-2017/full-preprocessing-tutorial): understanding DICOM files, pixel values, standarization, ...
    2.  [Exploratory data analysis](https://www.kaggle.com/anokas/data-science-bowl-2017/exploratory-data-analysis): basic exploration of the given data set
  3. [Kaggle tutorial] (https://www.kaggle.com/c/data-science-bowl-2017/details/tutorial) with code for training a CNN using the U-net network for medical image segmentation. Based on the external LUNA data set (annotated).
+
+## Quickstart
+ [TBD]
+ Create [virtual enviroment](http://docs.python-guide.org/en/latest/dev/virtualenvs/) (see `virtualenvwrapper`) and install python requirements
+```
+$ mkvirtualenv lung
+$(lung) pip install -r requirements.txt
+```
 
 ## General guidelines
  - The analysis files should start with the author initials.
