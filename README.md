@@ -70,6 +70,10 @@ $(lung) pip install -r requirements.txt
 
 ## Troubleshoot
 
+### "Could not find a version that satisfies the requirement SimpleITK==0.8.0"
+
+The solution is to manually download the egg from the [official website](https://itk.org/SimpleITKDoxygen/html/PyDownloadPage.html) and install it with `easy_install`.
+
 ### "Fatal Python error: PyThreadState_Get: no current thread"
 ```
 >>> import SimpleITK as sitk
