@@ -8,10 +8,12 @@ import pandas as pd
 ############
 #
 # Getting list of image files
-luna_path = "../../data/luna/"
-luna_subset_path = luna_path+"subset1/"
-output_path = "../../data/luna_output/"
-file_list=glob(luna_subset_path+"*.mhd")
+wp = os.environ['LUNG_PATH']
+luna_path = wp + "data/luna/"
+output_path = wp + "data/jm_luna_tmp/"
+file_list = []
+for i in range(3):
+    file_list += glob(wp + 'data/luna/subset%d/*.mhd' % i)
 
 
 #Some helper functions
@@ -54,8 +56,8 @@ def make_mask(center,diam,z,width,height,spacing,origin):
 
 def matrix2int16(matrix):
     ''' 
-matrix must be a numpy array NXN
-Returns uint16 version
+    matrix must be a numpy array NXN
+    Returns uint16 version
     '''
     m_min= np.min(matrix)
     m_max= np.max(matrix)
@@ -72,16 +74,15 @@ def get_filename(case):
     for f in file_list:
         if case in f:
             return(f)
+
 #
 # The locations of the nodes
-df_node = pd.read_csv(luna_path+"annotations.csv")
+df_node = pd.read_csv(ANNOTATIONS_PATH)
 df_node["file"] = df_node["seriesuid"].apply(get_filename)
 df_node = df_node.dropna()
 
-#####
-#
+
 # Looping over the image files
-#
 fcount = 0
 for img_file in file_list:
     print "Getting mask for image file %s" % img_file.replace(luna_subset_path,"")
@@ -93,9 +94,7 @@ for img_file in file_list:
         node_z = mini_df["coordZ"].values[biggest_node]
         diam = mini_df["diameter_mm"].values[biggest_node]
 
-        #
         # extracting image
-        #
         itk_img = sitk.ReadImage(img_file)
         img_array = sitk.GetArrayFromImage(itk_img) #indexes are z,y,x
         num_z,height,width = img_array.shape        #heightXwidth constitute the transverse plane
@@ -105,17 +104,15 @@ for img_file in file_list:
         origin = np.array(itk_img.GetOrigin())  #x,y,z  Origin in world coordinates (mm)
         spacing = np.array(itk_img.GetSpacing())# spacing of voxels in world coor. (mm)
         v_center =np.rint((center-origin)/spacing)  # nodule center in voxel space
-        #
+        
         # for each slice in the image, convert the image data to the uint16 range
         # and generate a binary mask for the nodule location
-        #
         i = 0
         for i_z in range(int(v_center[2])-1,int(v_center[2])+2):
             mask = make_mask(center,diam,i_z*spacing[2]+origin[2],width,height,spacing,origin)
             masks[i] = mask
             imgs[i] = matrix2int16(img_array[i_z])
             i+=1
-        #
 
         np.save(output_path+"images_%d.npy" % (fcount) ,imgs)
         np.save(output_path+"masks_%d.npy" % (fcount) ,masks)

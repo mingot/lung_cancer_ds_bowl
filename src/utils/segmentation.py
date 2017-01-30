@@ -56,6 +56,8 @@ def luna_segmentation(img):
 
 
 def luna_apply_mask(img, mask):
+    """Given a segmentation mask, apply to the img (isolate lungs)."""
+    
     new_size = [512,512]   # we're scaling back up to the original size of the image
     img = mask*img          # apply lung mask
     

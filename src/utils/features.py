@@ -2,7 +2,10 @@
 
 def extract_regions_from_map(img_map):
     """Extract regions from segmentation map."""
-    thr = np.where(img_map > np.mean(img_map), 0., 1.0)  # threshold detected regions
+    #thr = np.where(img_map > np.mean(img_map), 0., 1.0)  # threshold detected regions
+    thr = np.where(img_map > 0.6*np.max(img_map), 1.0, 0.)  # threshold detected regions
+    #plt.imshow(img_map)
+    #plt.imshow(thr)
     label_image = measure.label(thr)  # label them
     labels = label_image.astype(int)
     regions = measure.regionprops(labels)
@@ -24,6 +27,7 @@ def extract_features_from_map(slices_img_map):
     # crude hueristic to filter some bad segmentaitons
     # do not allow any nodes to be larger than 10% of the pixels to eliminate background regions
     maxAllowedArea = 0.10 * 512 * 512 
+    minAllowedArea = 8
     
     areas = []
     eqDiameters = []
@@ -31,7 +35,7 @@ def extract_features_from_map(slices_img_map):
     for i in range(slices_img_map.shape[0]):
         regions = extract_regions_from_map(slices_img_map[i,0,:,:])
         for region in regions:
-            if region.area > maxAllowedArea:
+            if region.area > maxAllowedArea or region.area<:
                 continue
             totalArea += region.area
             areas.append(region.area)
@@ -49,9 +53,10 @@ def extract_features_from_map(slices_img_map):
     avgEquivlentDiameter = avgEquivlentDiameter / numNodes
     stdEquivlentDiameter = np.std(eqDiameters)
     
-    maxArea = max(areas)
+    maxArea = np.max(areas)
     numNodesperSlice = numNodes*1. / nslices
     
     return np.array([avgArea,maxArea,avgEcc,avgEquivlentDiameter,\
                      stdEquivlentDiameter, weightedX, weightedY, numNodes, numNodesperSlice])
+
 
