@@ -18,6 +18,9 @@ $ mkvirtualenv lung
 $(lung) pip install -r requirements.txt
 ```
 
+## Available datasets
+See docs/ 
+
 ## General guidelines
  - The analysis files should start with the author initials.
  - Avoid storing files >50Mb in Git. In particular, images from data folder should be outside the git repository.
