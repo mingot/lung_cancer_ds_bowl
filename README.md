@@ -93,4 +93,3 @@ $ otool -L ~/virtualenvs/lung/lib/python2.7/site-packages/SimpleITK/_SimpleITK.s
 	/usr/lib/libstdc++.6.dylib (compatibility version 7.0.0, current version 52.0.0)
 $ sudo install_name_tool -change /System/Library/Frameworks/Python.framework/Versions/2.7/Python ~/virtualenvs/lung/.Python ~/virtualenvs/lung/lib/python2.7/site-packages/SimpleITK/_SimpleITK.so
 ```
-
