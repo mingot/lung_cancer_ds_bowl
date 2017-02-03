@@ -18,6 +18,13 @@ $ mkvirtualenv lung
 $(lung) pip install -r requirements.txt
 ```
 
+## Jupyter
+ - Estan ja instalats els paquets de `requirements.txt` amb el kernel de python2.
+ - Per accedir per ssh: `ssh -i dsb2017.pem NOMUSUARI@54.144.7.71`
+ - Cada usuari pot fer git pull/commit/push desde un ssh o amb `!git commit` .. desde la consola de jupyter. No demana contrasenya, el usuari queda identificat amb el email
+ - Cada usuari té el seu directori `~/lung_cancer_ds_bowl` privat per ell excepte la carpeta `~/lung_cancer_ds_bowl/data` que es compartida per tots.
+ - Tots els usuaris tenen permís de sudo així que si cal instalar paquets poden fer servir `!sudo pip install` paquet desde jupyter i així seràn accesibles per tots.
+
 ## Available datasets
 See docs/ 
 
