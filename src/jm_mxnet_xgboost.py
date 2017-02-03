@@ -10,6 +10,8 @@ from sklearn import cross_validation
 import xgboost as xgb
 
 
+wp = os.environ['LUNG_PATH']
+
 def get_extractor():
     model = mx.model.FeedForward.load('model/resnet-50', 0, ctx=mx.cpu(), numpy_batch_size=1)
     fea_symbol = model.symbol.get_internals()["flatten0_output"]
@@ -93,9 +95,9 @@ def train_xgboost():
 def make_submit():
     clf = train_xgboost()
 
-    df = pd.read_csv('data/stage1_sample_submission.csv')
+    df = pd.read_csv(wp + 'data/stage1_sample_submission.csv')
 
-    x = np.array([np.mean(np.load('stage1/%s.npy' % str(id)), axis=0) for id in df['id'].tolist()])
+    x = np.array([np.mean(np.load(wp + 'data/stage1/stage1/%s.npy' % str(id)), axis=0) for id in df['id'].tolist()])
 
     pred = clf.predict(x)
 

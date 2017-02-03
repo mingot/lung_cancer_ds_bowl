@@ -9,3 +9,6 @@
 
 # Manual saves of Jupyter notebooks
 .ipynb_checkpoints/
+
+# folder for personal use
+personal/

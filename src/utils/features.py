@@ -1,3 +1,5 @@
+import numpy as np
+from skimage import measure
 
 
 def extract_regions_from_map(img_map):
@@ -10,6 +12,7 @@ def extract_regions_from_map(img_map):
     labels = label_image.astype(int)
     regions = measure.regionprops(labels)
     return regions
+
 
 def extract_features_from_map(slices_img_map):
     nslices = slices_img_map.shape[0]
@@ -27,7 +30,7 @@ def extract_features_from_map(slices_img_map):
     # crude hueristic to filter some bad segmentaitons
     # do not allow any nodes to be larger than 10% of the pixels to eliminate background regions
     maxAllowedArea = 0.10 * 512 * 512 
-    minAllowedArea = 8
+    minAllowedArea = 9
     
     areas = []
     eqDiameters = []
@@ -35,7 +38,7 @@ def extract_features_from_map(slices_img_map):
     for i in range(slices_img_map.shape[0]):
         regions = extract_regions_from_map(slices_img_map[i,0,:,:])
         for region in regions:
-            if region.area > maxAllowedArea or region.area<:
+            if region.area > maxAllowedArea: #  or region.area < minAllowedArea:
                 continue
             totalArea += region.area
             areas.append(region.area)

@@ -1,4 +1,4 @@
-from src.utils.images import load_scan, get_pixels_hu, scan2imgs
+from src.utils.reading import load_scan, get_pixels_hu, scan2imgs
 from src.utils.segmentation import luna_segmentation, luna_apply_mask
 from src.luna.LUNA03_train_unet import get_unet
 from src.utils.features import extract_features_from_map
@@ -11,7 +11,17 @@ import SimpleITK as sitk
 
 wp = os.environ['LUNG_PATH']
 OUTPUT_FOLDER = wp + 'data/jm_luna_tmp/'
+working_path = wp + 'data/jm_luna_tmp/'
 MODEL_WEIGHTS = wp + 'models/unet_official.hdf5'
+
+idx = 20
+inp1 = np.load(working_path + 'images_%d.npy' % idx)
+inp2 = np.load(working_path + 'lungmask_%d.npy' % idx)
+inp3 = np.load(working_path + 'masks_%d.npy' % idx)
+plt.imshow(inp1[0,:,:])
+plt.imshow(inp2[0,:,:])
+plt.imshow(inp3[0,:,:])
+
 
 
 imgs_train = np.load(working_path + "trainImages.npy").astype(np.float32)

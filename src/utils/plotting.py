@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
 
-def plot_multiple_imgs(imgs):
+def multiplot(imgs):
     """Plot multiple imags in a grid."""
     nimg = len(imgs)
     num_rows = int(math.sqrt(nimg)) + 1
