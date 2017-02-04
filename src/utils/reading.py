@@ -13,6 +13,7 @@ from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
 def load_scan(patient_path):
     """Given a patient path, returns an array of scans from the DICOM files."""
+    
     slices = [dicom.read_file(patient_path + '/' + s) for s in os.listdir(patient_path)]
     slices.sort(key = lambda x: int(x.InstanceNumber))
     try:
@@ -46,8 +47,8 @@ def get_pixels_hu(slices):
     image[image == -2000] = 0
     
     # Convert to Hounsfield units (HU)
-    intercept = scans[0].RescaleIntercept
-    slope = scans[0].RescaleSlope
+    intercept = slices[0].RescaleIntercept
+    slope = slices[0].RescaleSlope
     
     if slope != 1:
         image = slope * image.astype(np.float64)
