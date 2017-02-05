@@ -1,5 +1,5 @@
-from src.utils import reading
-from src.utils import plotting
+from utils import reading
+from utils import plotting
 from glob import glob
 import matplotlib.pyplot as plt
 

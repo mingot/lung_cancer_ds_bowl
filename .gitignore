@@ -3,6 +3,7 @@
 *.mhd
 *.dcm
 *.npy
+*.npz
 *.zip
 .DS_Store
 *.pyc

@@ -1,7 +1,7 @@
-from src.utils.reading import load_scan, get_pixels_hu, scan2imgs
-from src.utils.segmentation import luna_segmentation, luna_apply_mask
-from src.luna.LUNA03_train_unet import get_unet
-from src.utils.features import extract_features_from_map
+from utils.reading import load_scan, get_pixels_hu, scan2imgs
+from utils.segmentation import luna_segmentation, luna_apply_mask
+from luna.LUNA03_train_unet import get_unet
+from utils.features import extract_features_from_map
 from skimage.transform import resize
 from skimage import measure
 import matplotlib.pyplot as plt

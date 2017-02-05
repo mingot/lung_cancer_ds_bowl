@@ -1,23 +1,13 @@
-from src.luna.LUNA03_train_unet import get_unet
-from src.utils import reading
-from src.utils import segmentation
-from src.utils import plotting
-from src.utils import features
+from luna.LUNA03_train_unet import get_unet
+from utils import reading
+from utils import segmentation
+from utils import plotting
+from utils import features
 import matplotlib.pyplot as plt
 from time import time
 from glob import glob
 import numpy as np
 
-
-from src.utils.segmentation import luna_segmentation, luna_apply_mask
-
-from src.utils.evaluation import logloss
-from skimage.transform import resize
-from skimage import measure
-
-
-
-import SimpleITK as sitk
 
 wp = os.environ['LUNG_PATH']
 TMP_FOLDER = wp + 'data/jm_tmp/'
@@ -54,6 +44,7 @@ for i, patient in enumerate(patients):
     
     # Load patient
     t_start = time()
+    patient_slices = reading.scan2imgs(reading.load_scan(INPUT_FOLDER_BIG + patient))
     nslices = len(patient_slices)
     
     # select slices for which to compute the heatmap (middle 30%)
@@ -157,6 +148,15 @@ from sklearn.metrics import classification_report
 from sklearn.ensemble import RandomForestClassifier as RF
 import xgboost as xgb
 from skimage import measure
+import scipy as sp
+
+def logloss(act, pred):
+    epsilon = 1e-15
+    pred = sp.maximum(epsilon, pred)
+    pred = sp.minimum(1-epsilon, pred)
+    ll = sum(act*sp.log(pred) + sp.subtract(1,act)*sp.log(sp.subtract(1,pred)))
+    ll = ll * -1.0/len(act)
+    return ll
 
 X = feature_array  # np.load("dataX.npy")
 Y = truth_metric  # np.load("dataY.npy")
@@ -171,7 +171,32 @@ print classification_report(Y, y_pred, target_names=["No Cancer", "Cancer"])
 print("logloss",logloss(Y, y_pred))
 
 
+np.mean(Y)  # 23%
 
+# Random Forest
+#              precision    recall  f1-score   support
+#   No Cancer       0.81      0.98      0.89       463
+#      Cancer       0.17      0.02      0.03       107
+# avg / total       0.69      0.80      0.73       570
+# ('logloss', 0.52600332670816652)
+# XGBoost
+#              precision    recall  f1-score   support
+#   No Cancer       0.83      0.86      0.84       463
+#      Cancer       0.27      0.21      0.24       107
+# avg / total       0.72      0.74      0.73       570
+# ('logloss', 0.5700685138621493)
+# Predicting all positive
+#              precision    recall  f1-score   support
+#   No Cancer       0.00      0.00      0.00       463
+#      Cancer       0.19      1.00      0.32       107
+# avg / total       0.04      0.19      0.06       570
+# ('logloss', 28.055831025357818)
+# Predicting all negative
+#              precision    recall  f1-score   support
+#   No Cancer       0.81      1.00      0.90       463
+#      Cancer       0.00      0.00      0.00       107
+# avg / total       0.66      0.81      0.73       570
+# ('logloss', 6.4835948671148085)
 
 
 
