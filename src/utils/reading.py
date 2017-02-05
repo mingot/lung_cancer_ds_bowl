@@ -5,6 +5,7 @@ import os
 import scipy.ndimage
 import matplotlib.pyplot as plt
 import SimpleITK as sitk
+import operator
 
 from skimage import measure, morphology
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
