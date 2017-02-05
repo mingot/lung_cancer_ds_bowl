@@ -65,7 +65,7 @@ for arg in sys.argv[1:]:
 if PIPELINE not in accepted_datasets:
     print 'Error, preprocessing ofdataset %s not implemented' % PIPELINE 
         
-if PIPELINE == 'dsb':
+if PIPELINE in ['dsb', 'lidc'] :
     patient_files = os.listdir(INPUT_FOLDER)
 elif PIPELINE == 'luna':
     patient_files = glob(wp + 'data/luna/subset1/*.mhd')  # patients from subset1
@@ -82,25 +82,29 @@ for patient_file in patient_files:
     
     # Read
     # patid = patients[10]
-    if PIPELINE == 'dsb':
-        patient = reading.load_scan(os.path.join(INPUT_FOLDER, patient_file))
-        spacing = map(float, ([patient[0].SliceThickness] + patient[0].PixelSpacing))
-        pat_id = patient_file
-    
-    elif PIPELINE == 'luna':
-        patient = sitk.ReadImage(patient_file) 
-        patient_pixels = sitk.GetArrayFromImage(patient) #indexes are z,y,x
-        spacing = [patient.GetSpacing()[2], patient.GetSpacing()[0], patient.GetSpacing()[1]]
-        pat_id = patient_file.split('.')[-2]
-    
-    elif PIPELINE == 'lidc':
-        try:
-            patient = reading.read_patient_lidc(os.path.join(INPUT_FOLDER, pat_id))
-            # TODO: spacing??
-        except:
-            # Some patients have no data, ignore them
-            print('Ignoring patient %s' %pat_id)
-            continue
+    try:
+        if PIPELINE == 'dsb':
+            patient = reading.load_scan(os.path.join(INPUT_FOLDER, patient_file))
+
+            spacing = reading.dicom_get_spacing(patient)
+            pat_id = patient_file
+
+        elif PIPELINE == 'luna':
+            patient = sitk.ReadImage(patient_file) 
+            patient_pixels = sitk.GetArrayFromImage(patient) #indexes are z,y,x
+            spacing = [patient.GetSpacing()[2], patient.GetSpacing()[0], patient.GetSpacing()[1]]
+            pat_id = patient_file.split('.')[-2]
+
+        elif PIPELINE == 'lidc':
+            patient = reading.read_patient_lidc(os.path.join(INPUT_FOLDER, patient_file))
+            spacing = reading.dicom_get_spacing(patient)
+            pat_id = patient_file
+                
+    except Exception as e:
+        print 'There was some problem reading patient %s. Ignoring and live goes on.' % (patient_file)
+        print e
+        # Some patients have no data, ignore them
+        continue
     
     if PIPELINE != 'luna':
         # From pixels to HU

@@ -52,6 +52,26 @@ def read_patient_lidc(path):
     patient_data = patient_ct_explorations[0]
     return patient_data
 
+def dicom_get_thickness(slices):
+    """
+    Gets the slice thickness. It might be in either slice thickness or location
+    """
+    try:
+        return np.abs(slices[0].ImagePositionPatient[2] - slices[1].ImagePositionPatient[2])
+    except:
+        pass
+    try:
+        return np.abs(slices[0].SliceLocation - slices[1].SliceLocation)
+    except:
+        return slices[0].SliceThickness
+    
+def dicom_get_spacing(slices):
+    """
+    Gets the spacing in the DCM
+    """
+    return map(float, ([slices[0].SliceThickness] + slices[0].PixelSpacing))
+
+
 def load_scan(patient_path):
     """Given a patient path, returns an array of scans from the DICOM files. Check that the files are dicoms, and the modality is CT"""
     slices = filter(lambda s: s.endswith('.dcm'), os.listdir(patient_path))
