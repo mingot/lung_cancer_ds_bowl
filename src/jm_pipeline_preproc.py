@@ -1,9 +1,9 @@
 import os
 import numpy as np
 from time import time
-from src.utils import reading
-from src.utils import preprocessing
-from src.utils import plotting
+from utils import reading
+from utils import preprocessing
+from utils import plotting
 import matplotlib.pyplot as plt
 
 # Reading patients
