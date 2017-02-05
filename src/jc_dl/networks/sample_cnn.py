@@ -20,11 +20,12 @@ class Sample2DCNNNetworkArchitecture(object):
     def load_model(self, inp_shape):
         model = Sequential()
         # number of convolutional filters to use
+        nb_filters = 2
         # size of pooling area for max pooling
         pool_size = (2, 2)
         # convolution kernel size
         kernel_size = (3, 3)
-        nb_filters = 2
+        
         model.add(Convolution2D(nb_filters, kernel_size[0], kernel_size[1],
                                 border_mode='valid',
                                 input_shape=inp_shape))
