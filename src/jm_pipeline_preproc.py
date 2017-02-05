@@ -12,7 +12,7 @@ python jm_pipeline_preproc.py --input=/Users/mingot/Projectes/kaggle/ds_bowl_lun
 python jm_pipeline_preproc.py --input=/Users/mingot/Projectes/kaggle/ds_bowl_lung/data/sample_images --output=/Users/mingot/Projectes/kaggle/ds_bowl_lung/data/preproc_dsb --pipeline=dsb
 """
 
-accepted_datasets = ['dsb', 'lidc','luna']
+accepted_datasets = ['dsb', 'lidc', 'luna']
 
 import os
 import numpy as np
@@ -24,8 +24,6 @@ import matplotlib.pyplot as plt
 import sys
 from glob import glob
 import SimpleITK as sitk
-
-accepted_datasets = ['dsb', 'lidc']
 
 # Define folder locations
 wp = os.environ['LUNG_PATH']
