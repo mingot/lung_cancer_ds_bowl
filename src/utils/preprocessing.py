@@ -36,7 +36,7 @@ def get_pixels_hu(slices):
     return np.array(image, dtype=np.int16)
     
     
-def resample(image, scan, new_spacing=[1,1,1], method='nearest'):
+def resample(image, scan, new_spacing=[1, 1, 1], method='nearest'):
     # Determine current pixel spacing
 
     # TODO: Account for non-uniform resampling
@@ -132,8 +132,4 @@ def dilate(image, iterations_dilate):
     # TODO: Use a bigger structuring element instead of iterating with a simple one
     dilated_image = scipy.ndimage.morphology.binary_dilation(image, iterations=iterations_dilate)
 
-    # f, axarr = plt.subplots(2, sharex=True, sharey=True)
-    # axarr[0].imshow(image[3])
-    # axarr[1].imshow(dilated_image[3])
-
-    return image
+    return dilated_image
