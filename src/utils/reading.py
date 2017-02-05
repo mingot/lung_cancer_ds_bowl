@@ -13,8 +13,8 @@ from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
 def load_scan(patient_path):
     """Given a patient path, returns an array of scans from the DICOM files."""
-    
-    slices = [dicom.read_file(patient_path + '/' + s) for s in os.listdir(patient_path)]
+    dcms = filter(lambda s: s.endswith('.dcm'), os.listdir(patient_path))
+    slices = [dicom.read_file(patient_path + '/' + s) for s in dcms]
     slices.sort(key = lambda x: int(x.InstanceNumber))
     try:
         slice_thickness = np.abs(slices[0].ImagePositionPatient[2] - slices[1].ImagePositionPatient[2])
