@@ -36,8 +36,10 @@ def get_pixels_hu(slices):
     return np.array(image, dtype=np.int16)
     
     
-def resample(image, scan, new_spacing=[1,1,1]):
+def resample(image, scan, new_spacing=[1,1,1], method='nearest'):
     # Determine current pixel spacing
+
+    # TODO: Account for non-uniform resampling
     spacing = map(float, ([scan[0].SliceThickness] + scan[0].PixelSpacing))
     spacing = np.array(list(spacing))
 
@@ -46,9 +48,12 @@ def resample(image, scan, new_spacing=[1,1,1]):
     new_shape = np.round(new_real_shape)
     real_resize_factor = new_shape / image.shape
     new_spacing = spacing / real_resize_factor
-    
-    image = scipy.ndimage.interpolation.zoom(image, real_resize_factor)
-    
+
+    if method == 'nearest':
+        image = scipy.ndimage.interpolation.zoom(image, real_resize_factor)
+    else:
+        raise NotImplementedError("Interpolation method not implemented.");
+
     return image, new_spacing
     
 
@@ -79,7 +84,6 @@ def segment_lung_mask(image, fill_lung_structures=True):
     
     #Fill the air around the person
     binary_image[background_label == labels] = 2
-    
     
     # Method of filling the lung structures (that is superior to something like 
     # morphological closing)
