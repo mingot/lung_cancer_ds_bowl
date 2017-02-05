@@ -5,9 +5,14 @@ File for preprocessing the datasets. It gets as input the DCOMS path, and conver
 Datasets accepted:
     -DSB
     -LIDC
+    -LUNA
+    
+Example usage:
+python jm_pipeline_preproc.py --input=/Users/mingot/Projectes/kaggle/ds_bowl_lung/data/luna/subset0 --output=/Users/mingot/Projectes/kaggle/ds_bowl_lung/data/preproc_luna --pipeline=luna
+python jm_pipeline_preproc.py --input=/Users/mingot/Projectes/kaggle/ds_bowl_lung/data/sample_images --output=/Users/mingot/Projectes/kaggle/ds_bowl_lung/data/preproc_dsb --pipeline=dsb
 """
 
-accepted_datasets = ['dsb', 'lidc']
+accepted_datasets = ['dsb', 'lidc','luna']
 
 import os
 import numpy as np
@@ -17,6 +22,8 @@ from utils import preprocessing
 from utils import plotting
 import matplotlib.pyplot as plt
 import sys
+from glob import glob
+import SimpleITK as sitk
 
 # Define folder locations
 wp = os.environ['LUNG_PATH']
@@ -24,6 +31,20 @@ TMP_FOLDER = os.path.join(wp, 'data/jm_tmp/')
 INPUT_FOLDER = os.path.join(wp, 'data/stage1/')  # 'data/stage1/stage1/'
 OUTPUT_FOLDER = os.path.join(wp, 'data/stage1_proc/')
 PIPELINE = 'dsb'  # for filename
+
+
+## CHECKS for differences luna <> dsb
+# import SimpleITK as sitk
+# luna_patients = glob(wp + 'data/luna/subset1/*.mhd')  # patients from subset1
+# img_file = luna_patients[0]
+# itk_img = sitk.ReadImage(img_file)
+# img_array = sitk.GetArrayFromImage(itk_img) #indexes are z,y,x
+# itk_img.GetSpacing()
+# patients = reading.load_scan(os.path.join(INPUT_FOLDER, patients[0]))
+# patients
+# spacing = map(float, ([patients[0].SliceThickness] + patients[0].PixelSpacing))
+# spacing
+
 
 #Overwriting parameters by console
 for arg in sys.argv[1:]:
@@ -42,50 +63,59 @@ for arg in sys.argv[1:]:
 if PIPELINE not in accepted_datasets:
     print 'Error, preprocessing ofdataset %s not implemented' % PIPELINE 
         
-patients = os.listdir(INPUT_FOLDER)
+if PIPELINE == 'dsb':
+    patient_files = os.listdir(INPUT_FOLDER)
+elif PIPELINE == 'luna':
+    patient_files = glob(wp + 'data/luna/subset1/*.mhd')  # patients from subset1
 
 # Execution parameters
-show_intermediate_images = True
+show_intermediate_images = False
 
-# Small code to get rid of .DS_Store
-patients = []
-for f in os.listdir(INPUT_FOLDER):
-    if not f.startswith('.'):
-        patients.append(f)
-
-patients.sort()
+patient_files.sort()
 
 # Main loop over the ensemble of teh database
 times = []
-for pat_id in patients:
+for patient_file in patient_files:
     
     n = time()
     
     # Read
     # patid = patients[10]
     if PIPELINE == 'dsb':
-        patient = reading.load_scan(os.path.join(INPUT_FOLDER, pat_id))
+        patient = reading.load_scan(os.path.join(INPUT_FOLDER, patient_file))
+        spacing = map(float, ([patient[0].SliceThickness] + patient[0].PixelSpacing))
+        pat_id = patient_file
+    
+    elif PIPELINE == 'luna':
+        patient = sitk.ReadImage(patient_file) 
+        patient_pixels = sitk.GetArrayFromImage(patient) #indexes are z,y,x
+        spacing = [patient.GetSpacing()[2], patient.GetSpacing()[0], patient.GetSpacing()[1]]
+        pat_id = patient_file.split('.')[-2]
+    
     elif PIPELINE == 'lidc':
         try:
             patient = reading.read_patient_lidc(os.path.join(INPUT_FOLDER, pat_id))
+            # TODO: spacing??
         except:
             #Some patients have no data, ignore them
             print 'ignoring patient %s' %pat_id
             continue
-    # From pixels to HU
-    patient_pixels = preprocessing.get_pixels_hu(patient)
-    if show_intermediate_images:
-        print("Shape of raw data\t", patient_pixels.shape)
-        plt.figure()
-        plt.imshow(patient_pixels[3])
-        plt.title('Raw pixel data')
-        plt.figure()
-        plt.hist(patient_pixels.flatten(), bins=80, color='c')
-        plt.title('Histogram')
+    
+    if PIPELINE != 'luna':
+        # From pixels to HU
+        patient_pixels = preprocessing.get_pixels_hu(patient)
+        if show_intermediate_images:
+            print("Shape of raw data\t", patient_pixels.shape)
+            plt.figure()
+            plt.imshow(patient_pixels[3])
+            plt.title('Raw pixel data')
+            plt.figure()
+            plt.hist(patient_pixels.flatten(), bins=80, color='c')
+            plt.title('Histogram')
 
     # Resampling
     # TODO: Accelerate the resampling
-    pix_resampled, spacing = preprocessing.resample(patient_pixels, patient, [1, 1, 1])
+    pix_resampled, spacing = preprocessing.resample(patient_pixels, spacing=spacing, new_spacing=[1, 1, 1])
     if show_intermediate_images:
         print("Shape after resampling\t", pix_resampled.shape)
         plt.figure()

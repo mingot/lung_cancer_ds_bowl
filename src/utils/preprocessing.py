@@ -36,11 +36,13 @@ def get_pixels_hu(slices):
     return np.array(image, dtype=np.int16)
     
     
-def resample(image, scan, new_spacing=[1,1,1], method='nearest'):
-    # Determine current pixel spacing
+def resample(image, spacing, new_spacing=[1,1,1], method='nearest'):
+    """
+    Resample image given spacing (in mm) to new_spacing.
+    """
 
     # TODO: Account for non-uniform resampling
-    spacing = map(float, ([scan[0].SliceThickness] + scan[0].PixelSpacing))
+    # spacing = map(float, ([scan[0].SliceThickness] + scan[0].PixelSpacing))
     spacing = np.array(list(spacing))
 
     resize_factor = spacing / new_spacing
