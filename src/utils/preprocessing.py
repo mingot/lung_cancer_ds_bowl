@@ -36,12 +36,10 @@ def get_pixels_hu(slices):
     return np.array(image, dtype=np.int16)
     
     
-def resample(image, spacing, new_spacing=[1,1,1], method='nearest'):
+def resample(image, spacing, new_spacing=[1, 1, 1], method='nearest'):
     """
-    Resample image given spacing (in mm) to new_spacing.
+    Resample image given spacing (in mm) to new_spacing (in mm).
     """
-    # TODO: Account for non-uniform resampling
-    # spacing = map(float, ([scan[0].SliceThickness] + scan[0].PixelSpacing))
     spacing = np.array(list(spacing))
 
     resize_factor = spacing / new_spacing
@@ -50,10 +48,16 @@ def resample(image, spacing, new_spacing=[1,1,1], method='nearest'):
     real_resize_factor = new_shape / image.shape
     new_spacing = spacing / real_resize_factor
 
-    if method == 'nearest':
-        image = scipy.ndimage.interpolation.zoom(image, real_resize_factor)
+    if method == 'cubic':
+        image = scipy.ndimage.interpolation.zoom(image, real_resize_factor, order=3)
+    elif method == 'quadratic':
+        image = scipy.ndimage.interpolation.zoom(image, real_resize_factor, order=2)
+    elif method == 'linear':
+        image = scipy.ndimage.interpolation.zoom(image, real_resize_factor, order=1)
+    elif method == 'nearest':
+        image = scipy.ndimage.interpolation.zoom(image, real_resize_factor, order=0)
     else:
-        raise NotImplementedError("Interpolation method not implemented.");
+        raise NotImplementedError("Interpolation method not implemented.")
 
     return image, new_spacing
     
