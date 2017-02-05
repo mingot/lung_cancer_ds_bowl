@@ -36,8 +36,10 @@ def get_pixels_hu(slices):
     return np.array(image, dtype=np.int16)
     
     
-def resample(image, scan, new_spacing=[1,1,1]):
+def resample(image, scan, new_spacing=[1,1,1], method='nearest'):
     # Determine current pixel spacing
+
+    # TODO: Account for non-uniform resampling
     spacing = map(float, ([scan[0].SliceThickness] + scan[0].PixelSpacing))
     spacing = np.array(list(spacing))
 
@@ -46,9 +48,12 @@ def resample(image, scan, new_spacing=[1,1,1]):
     new_shape = np.round(new_real_shape)
     real_resize_factor = new_shape / image.shape
     new_spacing = spacing / real_resize_factor
-    
-    image = scipy.ndimage.interpolation.zoom(image, real_resize_factor)
-    
+
+    if method == 'nearest':
+        image = scipy.ndimage.interpolation.zoom(image, real_resize_factor)
+    else:
+        raise NotImplementedError("Interpolation method not implemented.");
+
     return image, new_spacing
     
 
@@ -75,11 +80,10 @@ def segment_lung_mask(image, fill_lung_structures=True):
     #   Improvement: Pick multiple background labels from around the patient
     #   More resistant to "trays" on which the patient lays cutting the air 
     #   around the person in half
-    background_label = labels[0,0,0]
+    background_label = labels[0, 0, 0]
     
-    #Fill the air around the person
+    # Fill the air around the person
     binary_image[background_label == labels] = 2
-    
     
     # Method of filling the lung structures (that is superior to something like 
     # morphological closing)
@@ -94,25 +98,42 @@ def segment_lung_mask(image, fill_lung_structures=True):
                 binary_image[i][labeling != l_max] = 1
 
     
-    binary_image -= 1 #Make the image actual binary
+    binary_image -= 1 # Make the image actual binary
     binary_image = 1-binary_image # Invert it, lungs are now 1
     
-    # Remove other air pockets insided body
+    # Remove other air pockets inside  body
     labels = measure.label(binary_image, background=0)
     l_max = largest_label_volume(labels, bg=0)
     if l_max is not None: # There are air pockets
         binary_image[labels != l_max] = 0
- 
+
+    # Binary dilation
+    binary_image = dilate(binary_image, 3)
     return binary_image
 
-    
+
 def normalize(image):
     image = (image - MIN_BOUND) / (MAX_BOUND - MIN_BOUND)
     image[image>1] = 1.
     image[image<0] = 0.
     return image
-    
+
 
 def zero_center(image):
-    image = image - PIXEL_MEAN
+    image -= PIXEL_MEAN
+    return image
+
+
+def dilate(image, iterations_dilate):
+
+    if iterations_dilate < 1:
+        iterations_dilate = 1
+
+    # TODO: Use a bigger structuring element instead of iterating with a simple one
+    dilated_image = scipy.ndimage.morphology.binary_dilation(image, iterations=iterations_dilate)
+
+    # f, axarr = plt.subplots(2, sharex=True, sharey=True)
+    # axarr[0].imshow(image[3])
+    # axarr[1].imshow(dilated_image[3])
+
     return image
