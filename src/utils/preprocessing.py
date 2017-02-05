@@ -40,7 +40,6 @@ def resample(image, spacing, new_spacing=[1,1,1], method='nearest'):
     """
     Resample image given spacing (in mm) to new_spacing.
     """
-
     # TODO: Account for non-uniform resampling
     # spacing = map(float, ([scan[0].SliceThickness] + scan[0].PixelSpacing))
     spacing = np.array(list(spacing))
@@ -134,8 +133,4 @@ def dilate(image, iterations_dilate):
     # TODO: Use a bigger structuring element instead of iterating with a simple one
     dilated_image = scipy.ndimage.morphology.binary_dilation(image, iterations=iterations_dilate)
 
-    # f, axarr = plt.subplots(2, sharex=True, sharey=True)
-    # axarr[0].imshow(image[3])
-    # axarr[1].imshow(dilated_image[3])
-
-    return image
+    return dilated_image

@@ -25,6 +25,8 @@ import sys
 from glob import glob
 import SimpleITK as sitk
 
+accepted_datasets = ['dsb', 'lidc']
+
 # Define folder locations
 wp = os.environ['LUNG_PATH']
 TMP_FOLDER = os.path.join(wp, 'data/jm_tmp/')
@@ -69,9 +71,8 @@ elif PIPELINE == 'luna':
     patient_files = glob(wp + 'data/luna/subset1/*.mhd')  # patients from subset1
 
 # Execution parameters
-show_intermediate_images = False
+show_intermediate_images = True
 
-patient_files.sort()
 
 # Main loop over the ensemble of teh database
 times = []
@@ -97,8 +98,8 @@ for patient_file in patient_files:
             patient = reading.read_patient_lidc(os.path.join(INPUT_FOLDER, pat_id))
             # TODO: spacing??
         except:
-            #Some patients have no data, ignore them
-            print 'ignoring patient %s' %pat_id
+            # Some patients have no data, ignore them
+            print('Ignoring patient %s' %pat_id)
             continue
     
     if PIPELINE != 'luna':
@@ -126,18 +127,17 @@ for patient_file in patient_files:
     
     # Segment lungs
     lung_mask = preprocessing.segment_lung_mask(pix_resampled, fill_lung_structures=True)
-    # TODO: expand the mask (as suggested in the kernel)
     if show_intermediate_images:
-        lung_mask.shape
+        print("Size of the mask\t", lung_mask.shape)
         plt.figure()
         plt.imshow(lung_mask[90])
         # plotting.plot_3d(segmented_lungs_fill, 0)
         # plotting.plot_3d(segmented_lungs_fill - segmented_lungs, 0)
     
-    #Compute volume for sanity test
+    # Compute volume for sanity test
     lung_volume_l = np.sum(lung_mask)/(100.**3)
     if lung_volume_l < 2 or lung_volume_l > 10:
-        print 'Warning lung volume: %s out of physiological values. Double Check segmentation.' % patid 
+        print("Warning lung volume: %s out of physiological values. Double Check segmentation.", patid)
     
     # zero center and normalization
     pix = preprocessing.normalize(pix_resampled)
@@ -150,9 +150,9 @@ for patient_file in patient_files:
     # np.save("prova.npy", output)
     
     x = time()-n
-    print 'Time: %s' % str(x)
+    print("Time: %s", str(x))
     times.append(x)
 
-print 'Average time per image: %s' % str(np.mean(times))
+print("Average time per image: %s", str(np.mean(times)))
 
 
