@@ -30,7 +30,7 @@ See docs/
 
 ## Preprocessing
 The preprocessed images are stored at `/mnt/hd2/preprocessed/`. To open the compressed files from python use the following instruction:
-`np.load(file)['arr_0']`. There is one file per patient. Eah file is a numpy array of 4 dimensions: [type,slice,height,width]. The dimension type contains the preprocessed image at index 0, the lung segmentation at index 1, and when available (luna dataset) the nodules segmentation at index 3. All the images have dimensions 512x512.
+`np.load(file)['arr_0']`. There is one file per patient. Eah file is a numpy array of 4 dimensions: `[type,slice,height,width]`. The dimension `type` contains the preprocessed image at index 0, the lung segmentation at index 1, and when available (luna dataset) the nodules segmentation at index 2. All the images have dimensions `height` and `weight` dimensions of 512x512.
 
 ## General guidelines
  - The analysis files should start with the author initials.
