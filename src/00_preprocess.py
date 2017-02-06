@@ -47,7 +47,7 @@ PIPELINE = 'dsb'  # for filename
 show_intermediate_images = False  # Execution parameters
 
 
-#Overwriting parameters by console
+# Overwriting parameters by console
 for arg in sys.argv[1:]:
     if arg.startswith('--input='):
         INPUT_FOLDER = ''.join(arg.split('=')[1:])
@@ -160,5 +160,4 @@ for patient_file in patient_files:
     times.append(x)
 
 print("Average time per image: %s", str(np.mean(times)))
-
 
