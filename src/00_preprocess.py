@@ -8,10 +8,23 @@ Datasets accepted:
     -LUNA
     
 Example usage:
-python jm_pipeline_preproc.py --input=/Users/mingot/Projectes/kaggle/ds_bowl_lung/data/luna/subset0 --output=/Users/mingot/Projectes/kaggle/ds_bowl_lung/data/preproc_luna --pipeline=luna
-python jm_pipeline_preproc.py --input=/Users/mingot/Projectes/kaggle/ds_bowl_lung/data/sample_images --output=/Users/mingot/Projectes/kaggle/ds_bowl_lung/data/preproc_dsb --pipeline=dsb
+python 00_preprocess.py --input=/Users/mingot/Projectes/kaggle/ds_bowl_lung/data/luna/subset0 --output=/Users/mingot/Projectes/kaggle/ds_bowl_lung/data/preproc_luna --pipeline=luna
+python 00_preprocess.py --input=/Users/mingot/Projectes/kaggle/ds_bowl_lung/data/sample_images --output=/Users/mingot/Projectes/kaggle/ds_bowl_lung/data/preproc_dsb --pipeline=dsb
+
+python 00_preprocess.py --input=/home/shared/data/luna --output=/home/shared/data/preprocess --pipeline=luna
+python 00_preprocess.py --input=/home/shared/data/stage1 --output=/home/shared/data/preprocess/ --pipeline=dsb
 """
 
+def extend_512(img, val=-0.25):
+    result = np.zeros((img.shape[0],512, 512))
+    result.fill(val)
+    
+    x = (512 - img.shape[1])/2
+    y = (512 - img.shape[2])/2
+    result[:, x:x+img.shape[1], y:y+img.shape[2] ] = img
+    return result
+    
+    
 accepted_datasets = ['dsb', 'lidc', 'luna']
 
 import os
@@ -31,19 +44,7 @@ TMP_FOLDER = os.path.join(wp, 'data/jm_tmp/')
 INPUT_FOLDER = os.path.join(wp, 'data/stage1/')  # 'data/stage1/stage1/'
 OUTPUT_FOLDER = os.path.join(wp, 'data/stage1_proc/')
 PIPELINE = 'dsb'  # for filename
-
-
-## CHECKS for differences luna <> dsb
-# import SimpleITK as sitk
-# luna_patients = glob(wp + 'data/luna/subset1/*.mhd')  # patients from subset1
-# img_file = luna_patients[0]
-# itk_img = sitk.ReadImage(img_file)
-# img_array = sitk.GetArrayFromImage(itk_img) #indexes are z,y,x
-# itk_img.GetSpacing()
-# patients = reading.load_scan(os.path.join(INPUT_FOLDER, patients[0]))
-# patients
-# spacing = map(float, ([patients[0].SliceThickness] + patients[0].PixelSpacing))
-# spacing
+show_intermediate_images = False  # Execution parameters
 
 
 #Overwriting parameters by console
@@ -56,6 +57,8 @@ for arg in sys.argv[1:]:
         TMP_FOLDER =''.join(arg.split('=')[1:])
     elif arg.startswith('--pipeline='):
         PIPELINE = ''.join(arg.split('=')[1:])
+    elif arg.startswith('--debug'):
+        show_intermediate_images = True
     else:
         print 'Unknown argument %s. Ignoring.' %arg
         
@@ -67,9 +70,6 @@ if PIPELINE in ['dsb', 'lidc'] :
     patient_files = os.listdir(INPUT_FOLDER)
 elif PIPELINE == 'luna':
     patient_files = glob(wp + 'data/luna/subset1/*.mhd')  # patients from subset1
-
-# Execution parameters
-show_intermediate_images = True
 
 
 # Main loop over the ensemble of teh database
@@ -144,6 +144,10 @@ for patient_file in patient_files:
     # zero center and normalization
     pix = preprocessing.normalize(pix_resampled)
     pix = preprocessing.zero_center(pix)
+    
+    # extend to 512
+    pix = extend_512(pix, val=-0.25)
+    lung_mask = extend_512(lung_mask, val=0)
     
     # store output (processed lung and lung mask)
     output = np.stack((pix, lung_mask))
