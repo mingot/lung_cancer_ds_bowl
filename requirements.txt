@@ -16,7 +16,7 @@ PyYAML==3.12
 scikit-image==0.12.3
 scikit-learn==0.18.1
 scipy==0.18.1
-SimpleITK==0.8.0
+SimpleITK==0.10.0
 six==1.10.0
 subprocess32==3.2.7
 Theano==0.8.2
