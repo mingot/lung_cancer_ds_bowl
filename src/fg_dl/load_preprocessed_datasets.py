@@ -1,5 +1,6 @@
 import numpy as np
 import os
+import os.path
 
 # see src/00_preprocess.py and in particular
 # np.savez_compressed(os.path.join(OUTPUT_FOLDER, "%s_%s.npz") % (PIPELINE, pat_id), output)
@@ -10,8 +11,8 @@ DATASET_DSB = 'dsb'
 
 
 # see README.md Preprocessing
-# returns a numpy array of 5 dimensions: [patient_number,type,slice,height,width]
-# where patient_number is between 0 and number_of_patients
+# returns an array of dimensions number_of_patients whose elements are
+# numpy array of 4 dimensions: [type,slice,height,width]
 def load(dataset, index, number_of_patients):
 	def get_path_dataset(mydataset):
 		if mydataset == DATASET_DSB:
@@ -24,9 +25,11 @@ def load(dataset, index, number_of_patients):
 	file_list = file_list[index: index + number_of_patients]
 	ret = []
 	for filename in file_list:
-		b = np.load(filename)['arr_0']
+		b = np.load(os.path.join(mypath,filename))['arr_0']
 		ret.append(b)
-	return np.asarray(ret)
+	return ret
 
 if __name__ == '__main__':
-	l = load(DATASET_DSB,1,5)
+	l = load(DATASET_DSB,0,1)
+	element = l[0]
+	print element.shape
