@@ -11,7 +11,7 @@ Example usage:
 python 00_preprocess.py --input=/Users/mingot/Projectes/kaggle/ds_bowl_lung/data/luna/subset0 --output=/Users/mingot/Projectes/kaggle/ds_bowl_lung/data/preproc_luna --pipeline=luna
 python 00_preprocess.py --input=/Users/mingot/Projectes/kaggle/ds_bowl_lung/data/sample_images --output=/Users/mingot/Projectes/kaggle/ds_bowl_lung/data/preproc_dsb --pipeline=dsb
 
-python 00_preprocess.py --input=/home/shared/data/luna --output=/home/shared/data/preprocess --pipeline=luna
+python 00_preprocess.py --input=/home/shared/data/luna/images --output=/home/shared/data/preprocess --pipeline=luna
 python 00_preprocess.py --input=/home/shared/data/stage1 --output=/mnt/hd2/preprocessed/ --pipeline=dsb
 """
 
@@ -69,7 +69,7 @@ if PIPELINE not in accepted_datasets:
 if PIPELINE in ['dsb', 'lidc'] :
     patient_files = os.listdir(INPUT_FOLDER)
 elif PIPELINE == 'luna':
-    patient_files = glob(wp + 'data/luna/subset1/*.mhd')  # patients from subset1
+    patient_files = glob(INPUT_FOLDER + '/*.mhd')  # patients from subset1
 
 
 # Main loop over the ensemble of teh database
