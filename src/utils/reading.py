@@ -10,6 +10,16 @@ import operator
 from skimage import measure, morphology
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
+
+def ball(R):
+    """
+    returns a list of coordinates (x, y, z) that are in the ball of radius r centered in 0.
+    """
+    r = int(R)
+    x, y, z = np.grid(xrange(-r, r + 1), xrange(-r, r + 1), xrange(-r, r + 1))
+    mask = x**2+y**2 <= R**2
+    return np.stack((x[mask], y[mask], z[mask])).T
+
 def list_final_subfolders(path, maxDepth = 10):
     """
     recursively list all subfolders that do not have.

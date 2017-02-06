@@ -37,13 +37,18 @@ import matplotlib.pyplot as plt
 import sys
 from glob import glob
 import SimpleITK as sitk
+import pandas
 
 # Define folder locations
+PIPELINE = 'dsb'  # for filename
 wp = os.environ['LUNG_PATH']
 TMP_FOLDER = os.path.join(wp, 'data/jm_tmp/')
 INPUT_FOLDER = os.path.join(wp, 'data/stage1/')  # 'data/stage1/stage1/'
 OUTPUT_FOLDER = os.path.join(wp, 'data/stage1_proc/')
-PIPELINE = 'dsb'  # for filename
+NODULES_PATH = os.path.join(wp, 'data/nodules/%s.csv' % PIPELINE)
+grid_resolution =1 #mm, spatial resolution of the new grid
+
+
 show_intermediate_images = False  # Execution parameters
 
 
@@ -59,6 +64,8 @@ for arg in sys.argv[1:]:
         PIPELINE = ''.join(arg.split('=')[1:])
     elif arg.startswith('--debug'):
         show_intermediate_images = True
+    elif arg.startswith('--nodules='):
+        NODULES_PATH = ''.join(arg.split('=')[1:])
     else:
         print 'Unknown argument %s. Ignoring.' %arg
         
@@ -66,10 +73,19 @@ for arg in sys.argv[1:]:
 if PIPELINE not in accepted_datasets:
     print 'Error, preprocessing ofdataset %s not implemented' % PIPELINE 
         
+#TODO: put LUNA in nice folders
 if PIPELINE in ['dsb', 'lidc'] :
     patient_files = os.listdir(INPUT_FOLDER)
 elif PIPELINE == 'luna':
     patient_files = glob(wp + 'data/luna/subset1/*.mhd')  # patients from subset1
+    
+    
+try:
+    if PIPELINE == 'lidc':
+        nodules = pandas.read_csv(NODULES_PATH)
+        nodules.index = nodules['cases']
+except:
+    print 'There are no nodules descriptor in this dataset.'
 
 
 # Main loop over the ensemble of teh database
@@ -118,7 +134,7 @@ for patient_file in patient_files:
 
     # Resampling
     # TODO: Accelerate the resampling
-    pix_resampled, spacing = preprocessing.resample(patient_pixels, spacing=spacing, new_spacing=[1, 1, 1])
+    pix_resampled, spacing = preprocessing.resample(patient_pixels, spacing=spacing, new_spacing=[grid_resolution, grid_resolution, grid_resolution])
     if show_intermediate_images:
         print("Shape after resampling\t", pix_resampled.shape)
         plt.figure()
@@ -126,6 +142,7 @@ for patient_file in patient_files:
         plt.title('Resampled data')
         # plt.figure()
         # plotting.plot_3d(pix_resampled, 400)
+        
     
     # Segment lungs
     lung_mask = preprocessing.segment_lung_mask(pix_resampled, fill_lung_structures=True)
@@ -148,6 +165,24 @@ for patient_file in patient_files:
     # extend to 512
     pix = extend_512(pix, val=-0.25)
     lung_mask = extend_512(lung_mask, val=0)
+    
+    #Load nodules, after resampling to do it faster.
+    try: 
+        if PIPELINE == 'lidc':
+            nodule_list = reading.read_nodules_lidc(nodules, int(pat_id[-4:]), patient[0].SeriesNumber)
+        else:
+            print 'Unsupported nodules loading!'
+            raise Exception('no nodules')
+            
+        #transform the old voxel coordinates to the new system
+        #TODO: improve, I think there might be some loses due to precision
+        for voxel_coordinates, d in nodule_list:
+            voxel_coordinates *= spacing
+            d /= grid_resolution
+            ball_voxels = reading.ball(d/2)
+            for p in ball_voxels
+    except:
+        pass
     
     # store output (processed lung and lung mask)
     output = np.stack((pix, lung_mask))
