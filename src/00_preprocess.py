@@ -12,7 +12,7 @@ python 00_preprocess.py --input=/Users/mingot/Projectes/kaggle/ds_bowl_lung/data
 python 00_preprocess.py --input=/Users/mingot/Projectes/kaggle/ds_bowl_lung/data/sample_images --output=/Users/mingot/Projectes/kaggle/ds_bowl_lung/data/preproc_dsb --pipeline=dsb
 
 python 00_preprocess.py --input=/home/shared/data/luna --output=/home/shared/data/preprocess --pipeline=luna
-python 00_preprocess.py --input=/home/shared/data/stage1 --output=/home/shared/data/preprocess/ --pipeline=dsb
+python 00_preprocess.py --input=/home/shared/data/stage1 --output=/mnt/hd2/preprocessed/ --pipeline=dsb
 """
 
 def extend_512(img, val=-0.25):
@@ -139,7 +139,7 @@ for patient_file in patient_files:
     # Compute volume for sanity test
     lung_volume_l = np.sum(lung_mask)/(100.**3)
     if lung_volume_l < 2 or lung_volume_l > 10:
-        print("Warning lung volume: %s out of physiological values. Double Check segmentation.", patid)
+        print("Warning lung volume: %s out of physiological values. Double Check segmentation.", pat_id)
     
     # zero center and normalization
     pix = preprocessing.normalize(pix_resampled)

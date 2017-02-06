@@ -21,3 +21,4 @@ six==1.10.0
 subprocess32==3.2.7
 Theano==0.8.2
 toolz==0.8.2
+pandas==0.19.2
