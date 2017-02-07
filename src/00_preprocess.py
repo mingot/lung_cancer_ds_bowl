@@ -72,7 +72,8 @@ elif PIPELINE == 'luna':
     patient_files = glob(INPUT_FOLDER + '/*.mhd')  # patients from subset1
 
 
-# Main loop over the ensemble of teh database
+common_spacing = [1, 1, 1]
+# Main loop over the ensemble of the database
 times = []
 for patient_file in patient_files:
     
@@ -118,7 +119,7 @@ for patient_file in patient_files:
 
     # Resampling
     # TODO: Accelerate the resampling
-    pix_resampled, spacing = preprocessing.resample(patient_pixels, spacing=spacing, new_spacing=[1, 1, 1])
+    pix_resampled, spacing = preprocessing.resample(patient_pixels, spacing=spacing, new_spacing=common_spacing)
     if show_intermediate_images:
         print("Shape after resampling\t", pix_resampled.shape)
         plt.figure()
@@ -137,11 +138,11 @@ for patient_file in patient_files:
         # plotting.plot_3d(segmented_lungs_fill - segmented_lungs, 0)
     
     # Compute volume for sanity test
-    # TODO: Take into account the volume of a voxel
-    lung_volume_l = np.sum(lung_mask)/(100.**3)
+    voxel_volume_l = common_spacing[0]*common_spacing[1]*common_spacing[2]/(1000000.0)
+    lung_volume_l = np.sum(lung_mask)*voxel_volume_l
     if lung_volume_l < 2 or lung_volume_l > 10:
         print("Warning lung volume: %s out of physiological values. Double Check segmentation.", pat_id)
-    
+
     # zero center and normalization
     pix = preprocessing.normalize(pix_resampled)
     pix = preprocessing.zero_center(pix)
