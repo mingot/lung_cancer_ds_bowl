@@ -11,13 +11,16 @@ from skimage import measure, morphology
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
 
-def ball(R):
+def ball(R, frac_disp):
     """
+    @param R: radius of the ball
+    @param frac_disp: fractional displacement. Due to the pixels transformations, maybe the real center lies between coordinates.
+
     returns a list of coordinates (x, y, z) that are in the ball of radius r centered in 0.
     """
     r = int(R)
-    x, y, z = np.grid(xrange(-r, r + 1), xrange(-r, r + 1), xrange(-r, r + 1))
-    mask = x**2+y**2 <= R**2
+    x, y, z = np.meshgrid(xrange(-r, r + 2), xrange(-r, r + 2), xrange(-r, r + 2))
+    mask = (x +frac_disp[0])**2+ (y + frac_disp[1])**2 + (z + frac_disp[2]) **2<= R**2
     return np.stack((x[mask], y[mask], z[mask])).T
 
 def list_final_subfolders(path, maxDepth = 10):
@@ -33,7 +36,19 @@ def list_final_subfolders(path, maxDepth = 10):
         return reduce(operator.__add__, ( list_final_subfolders(f, maxDepth - 1) for f in files), [])
     else:
         return [ path ]
-    
+
+def read_nodules_lidc(nodules, patIdNum, SeriesNum):
+    """
+    Reads the nodule list from the csv and returns a list of ((px_coordinates), diameter (mm))
+    """
+    res = []
+    nodules_pat = nodules[ nodules.index == patIdNum]
+    for i in xrange(len(nodules_pat)):
+        if nodules_pat['scan'].iloc[i] == SeriesNum:
+            px_coordinates = np.array([nodules_pat['slice no.'].iloc[i], nodules_pat['x loc.'].iloc[i], nodules_pat['y loc.'].iloc[i]], dtype = np.float32)
+            d = nodules_pat['eq. diam.'].iloc[i]
+            res.append((px_coordinates, d))
+    return res
     
 
 def read_patient_lidc(path):
