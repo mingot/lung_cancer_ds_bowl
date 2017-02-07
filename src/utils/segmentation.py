@@ -1,16 +1,17 @@
 import numpy as np
 import scipy
 import plotting
+import matplotlib.pyplot as plt
 from skimage import morphology
 from skimage import measure
 from sklearn.cluster import KMeans
 from skimage.transform import resize
 
 
-def segment_lungs(image, fill_lung_structures=True, method='Thresholding'):
+def segment_lungs(image, fill_lung=True, method='Thresholding'):
 
     if method == 'Thresholding':
-        binary_image = __segment_by_thresholding_(image, fill_lung_structures=fill_lung_structures)
+        binary_image = __segment_by_thresholding__(image, fill_lung_structures=fill_lung)
     elif method == 'KMeans':
         raise NotImplementedError("Segmentation based on KMeans not implemented.")
     elif method == 'Otsu':
@@ -18,17 +19,13 @@ def segment_lungs(image, fill_lung_structures=True, method='Thresholding'):
     else:
         raise NotImplementedError("Segmentation method not implemented.")
 
-    # binary_image2 = luna_segmentation(image)
-    # plotting.multiplot(image)
-    # plotting.multiplot(binary_image)
-    # plotting.multiplot(binary_image2)
-
     return binary_image
 
 
-def __segment_by_thresholding_(image, fill_lung_structures=True):
+def __segment_by_thresholding__(image, fill_lung_structures=True):
     # not actually binary, but 1 and 2.
     # 0 is treated as background, which we do not want
+
     binary_image = np.array(image > -320, dtype=np.int8) + 1
     labels = measure.label(binary_image)
 
@@ -46,7 +43,7 @@ def __segment_by_thresholding_(image, fill_lung_structures=True):
     if fill_lung_structures:
         # For every slice we determine the largest solid structure
         for i, axial_slice in enumerate(binary_image):
-            axial_slice -= 1
+            axial_slice = axial_slice - 1
             labeling = measure.label(axial_slice)
             l_max = __largest_label_volume__(labeling, bg=0)
 
@@ -64,6 +61,7 @@ def __segment_by_thresholding_(image, fill_lung_structures=True):
 
     # Binary dilation
     binary_image = __dilate__(binary_image, 3)
+
     return binary_image
 
 

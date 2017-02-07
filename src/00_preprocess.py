@@ -190,7 +190,6 @@ for patient_file in patient_files:
             plt.title('Histogram')
 
     # Resampling
-    # TODO: Accelerate the resampling
     pix_resampled, spacing = preprocessing.resample(patient_pixels, spacing=spacing, new_spacing=common_spacing)
     if show_intermediate_images:
         print("Shape after resampling\t", pix_resampled.shape)
@@ -205,10 +204,10 @@ for patient_file in patient_files:
     if show_intermediate_images:
         print("Size of the mask\t", lung_mask.shape)
         plt.figure()
-        plt.imshow(lung_mask[90])
+        plt.imshow(lung_mask[50])
         # plotting.plot_3d(segmented_lungs_fill, 0)
         # plotting.plot_3d(segmented_lungs_fill - segmented_lungs, 0)
-    
+
     # Compute volume for sanity test
     voxel_volume_l = common_spacing[0]*common_spacing[1]*common_spacing[2]/(1000000.0)
     lung_volume_l = np.sum(lung_mask)*voxel_volume_l
