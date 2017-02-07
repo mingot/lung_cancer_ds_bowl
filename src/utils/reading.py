@@ -114,9 +114,17 @@ def load_scan(patient_path):
     for s in slices:
         s.SliceThickness = slice_thickness
 
-    if slices[0].SeriesDescription != 'Axial':
-        print ' Warning at patient %s, the series description is not "Axial" but "%s' %(patient_path, slices[0].SeriesDescription)
-        
+    #Yet another sanity check
+    try:
+        if slices[0].PositionReferenceIndicator != 'SN':
+            """
+            Gabriel: For more information about this field, see http://dicom.nema.org/medical/Dicom/2015a/output/chtml/part03/sect_C.7.6.2.html#sect_C.7.6.2.1.1
+
+            I really really love working with DICOMS <3<3<3
+            """
+            print ' Warning at patient %s, the position reference  is not "SN" but "%s' %(patient_path, slices[0].PositionReferenceIndicator)
+    except:
+        pass        
     return slices
 
     
