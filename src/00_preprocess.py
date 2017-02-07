@@ -102,18 +102,18 @@ for patient_file in patient_files:
         if PIPELINE == 'dsb':
             patient = reading.load_scan(os.path.join(INPUT_FOLDER, patient_file))
 
-            spacing = reading.dicom_get_spacing(patient)
+            originalSpacing = reading.dicom_get_spacing(patient)
             pat_id = patient_file
 
         elif PIPELINE == 'luna':
             patient = sitk.ReadImage(patient_file) 
             patient_pixels = sitk.GetArrayFromImage(patient) #indexes are z,y,x
-            spacing = [patient.GetSpacing()[2], patient.GetSpacing()[0], patient.GetSpacing()[1]]
+            originalSpacing = [patient.GetSpacing()[2], patient.GetSpacing()[0], patient.GetSpacing()[1]]
             pat_id = patient_file.split('.')[-2]
 
         elif PIPELINE == 'lidc':
             patient = reading.read_patient_lidc(os.path.join(INPUT_FOLDER, patient_file))
-            spacing = reading.dicom_get_spacing(patient)
+            originalSpacing = reading.dicom_get_spacing(patient)
             pat_id = patient_file
                 
     except Exception as e:
@@ -136,7 +136,7 @@ for patient_file in patient_files:
 
     # Resampling
     # TODO: Accelerate the resampling
-    pix_resampled, new_spacing = preprocessing.resample(patient_pixels, spacing=spacing, new_spacing=[grid_resolution, grid_resolution, grid_resolution])
+    pix_resampled, new_spacing = preprocessing.resample(patient_pixels, spacing=originalSpacing, new_spacing=[grid_resolution, grid_resolution, grid_resolution])
     if show_intermediate_images:
         print("Shape after resampling\t", pix_resampled.shape)
         plt.figure()
@@ -172,23 +172,21 @@ for patient_file in patient_files:
     try: 
         nodule_mask_ok = False
         if PIPELINE == 'lidc':
-            nodule_list = reading.read_nodules_lidc(nodules, int(pat_id[-4:]), patient[0].SeriesNumber)
+            nodule_list = reading.read_nodules_lidc(nodules, int(pat_id[-4:]), patient[0].SeriesNumber, originalSpacing)
         else:
             print 'Unsupported nodules loading!'
             raise Exception('no nodules')
 
         nodule_mask = np.zeros(pix.shape ,dtype = np.dtype(bool))
-        print pix.shape
         #transform the old voxel coordinates to the new system
         #TODO: improve, I think there might be some loses due to precision
-        for voxel_coordinates, d in nodule_list:
-            voxel_coordinates *= new_spacing/spacing
-            d /= grid_resolution
+        for nodule_world_coordinates, d in nodule_list:
+            voxel_coordinates = nodule_world_coordinates/new_spacing
             voxel_coordinates_integer = np.floor(voxel_coordinates).astype(int)
-            print 'nodule at position', voxel_coordinates_integer
+            print 'nodule at position', voxel_coordinates_integer, d
             voxel_coordinates_residual = voxel_coordinates - voxel_coordinates_integer
 
-            ball_voxels = reading.ball(d/2, voxel_coordinates_residual)
+            ball_voxels = reading.ball(d/2, voxel_coordinates_residual, new_spacing)
             for p in ball_voxels:
                 indices = p + voxel_coordinates_integer
                 nodule_mask[indices[0], indices[1], indices[2]] = True
