@@ -137,6 +137,7 @@ for patient_file in patient_files:
         # plotting.plot_3d(segmented_lungs_fill - segmented_lungs, 0)
     
     # Compute volume for sanity test
+    # TODO: Take into account the volume of a voxel
     lung_volume_l = np.sum(lung_mask)/(100.**3)
     if lung_volume_l < 2 or lung_volume_l > 10:
         print("Warning lung volume: %s out of physiological values. Double Check segmentation.", pat_id)

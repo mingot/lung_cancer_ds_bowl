@@ -6,7 +6,6 @@ from skimage import measure, morphology
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
 
-
 def multiplot(imgs):
     """Plot multiple imags in a grid."""
     nimg = len(imgs)
@@ -15,8 +14,7 @@ def multiplot(imgs):
     for i in range(nimg):
         plots[i // num_rows, i % num_rows].axis('off')
         plots[i // num_rows, i % num_rows].imshow(imgs[i])
-        #plots[i // 11, i % 11].imshow(patient_slices[i], cmap=plt.cm.bone)
-
+        # plots[i // 11, i % 11].imshow(patient_slices[i], cmap=plt.cm.bone)
 
 
 def plot_bb(img, region):
