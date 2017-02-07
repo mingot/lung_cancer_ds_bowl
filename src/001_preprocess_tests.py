@@ -25,3 +25,6 @@
 # patients
 # spacing = map(float, ([patients[0].SliceThickness] + patients[0].PixelSpacing))
 # spacing
+
+
+## TEST 1: check mean pixel distribution of luna vs dsb
