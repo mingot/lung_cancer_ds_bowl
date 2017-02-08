@@ -11,17 +11,30 @@ from skimage import measure, morphology
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
 
-def ball(R, frac_disp, spatialScaling = [1, 1, 1]):
+def ball(R, center, spatialScaling = [1, 1, 1]):
     """
-    @param R: radius of the ball
-    @param frac_disp: fractional displacement. Due to the pixels transformations, maybe the real center lies between coordinates.
+    Creates a ball of radius R, centered in the coordinates center
+    @param R: radius of the ball, in mm 
+    @param center: center of the ball (slice, x, y) in pixel coordinates
+
+    @spatialSpacing
 
     returns a list of coordinates (x, y, z) that are in the ball of radius r centered in 0.
     """
-    r = int(R)
-    x, y, z = np.meshgrid(xrange(-r, r + 2), xrange(-r, r + 2), xrange(-r, r + 2))
-    mask = ((x +frac_disp[0])*spatialScaling[0])**2+ ((y + frac_disp[1])*spatialScaling[1])**2 + ((z + frac_disp[2])*spatialScaling[2]) **2<= R**2
-    return np.stack((x[mask], y[mask], z[mask])).T
+
+    #Generate the mesh of candidates
+    r = np.ceil(R / spatialScaling).astype(int) #anisotropic spaciang
+    x, y, z = np.meshgrid(xrange(-r[0], r[0] + 1), xrange(-r[1], r[1] + 1), xrange(-r[2], r[2] + 1))
+    mask = (x*spatialScaling[0])**2+ (y *spatialScaling[1])**2 + (z*spatialScaling[2])**2 <= R**2
+    return np.stack((x[mask] + center[0], y[mask] + center[1], z[mask] + center[2])).T
+
+def draw_in_mask(mask, pointCoordinates):
+    """
+    Draws the coordinates in the mask
+    """
+    for p in pointCoordinates:
+        mask[p[0], p[1], p[2]] = 1
+    return mask
 
 def list_final_subfolders(path, maxDepth = 10):
     """
@@ -37,17 +50,18 @@ def list_final_subfolders(path, maxDepth = 10):
     else:
         return [ path ]
 
-def read_nodules_lidc(nodules, patIdNum, SeriesNum, originalSpacing):
+def read_nodules_lidc(nodules, patIdNum, SeriesNum, spacing):
     """
     Reads the nodule list from the csv and returns a list of ((px_coordinates), diameter (mm))
     """
+
+    nodules_pat = nodules[ (nodules['case'] == patIdNum)]
     res = []
-    nodules_pat = nodules[ nodules.index == patIdNum]
     for i in xrange(len(nodules_pat)):
         if nodules_pat['scan'].iloc[i] == SeriesNum:
-            px_coordinates = np.array([nodules_pat['slice no.'].iloc[i], nodules_pat['x loc.'].iloc[i], nodules_pat['y loc.'].iloc[i]], dtype = np.float32)
+            px_coordinates = np.array([nodules_pat['slice no.'].iloc[i], nodules_pat['x loc.'].iloc[i], nodules_pat['y loc.'].iloc[i]], dtype = np.int16)
             d = nodules_pat['eq. diam.'].iloc[i]
-            res.append((px_coordinates * originalSpacing, d))
+            res.append((px_coordinates, d))
     return res
     
 

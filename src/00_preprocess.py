@@ -32,7 +32,10 @@ import pandas
 
 # Define folder locations
 PIPELINE = 'dsb'  # for filename
-wp = os.environ['LUNG_PATH']
+try:
+    wp = os.environ['LUNG_PATH']
+except:
+    wp = ''
 TMP_FOLDER = os.path.join(wp, 'data/jm_tmp/')
 INPUT_FOLDER = os.path.join(wp, 'data/stage1/')  # 'data/stage1/stage1/'
 OUTPUT_FOLDER = os.path.join(wp, 'data/stage1_proc/')
@@ -81,7 +84,6 @@ elif PIPELINE == 'luna':
     df_nodules = pd.read_csv(NODULES_PATH)
 
 
-
 common_spacing = [1, 1, 1]
 # Main loop over the ensemble of the database
 times = []
@@ -114,7 +116,22 @@ for patient_file in patient_files:
             patient = reading.read_patient_lidc(os.path.join(INPUT_FOLDER, patient_file))
             originalSpacing = reading.dicom_get_spacing(patient)
             pat_id = patient_file
-                
+            pat_id_nr = int(pat_id[-4:])
+            nodules = reading.read_nodules_lidc(df_nodules, pat_id_nr, patient[0].SeriesNumber, originalSpacing)
+            
+            #Dimensions
+            zSize = len(patient)
+            xSize  = patient[0].Rows
+            ySize = patient[0].Columns #or the other way around
+
+           #Generate the nodule mask
+            nodule_mask = np.zeros((zSize, xSize, ySize) , dtype = np.uint8)
+        
+            for pixel_coordinates, diameter in nodules:
+                print  pixel_coordinates, diameter, originalSpacing
+                nodule_point_list = reading.ball( diameter/ 2,  pixel_coordinates, originalSpacing)
+                nodule_mask = reading.draw_in_mask(nodule_mask, nodule_point_list)
+
     except Exception as e:
         print 'There was some problem reading patient %s. Ignoring and live goes on.' % (patient_file)
         print e
@@ -163,14 +180,14 @@ for patient_file in patient_files:
         print("Warning lung volume: %s out of physiological values. Double Check segmentation.", pat_id)
 
     # zero center and normalization
-    # pix = preprocessing.normalize(pix_resampled)
-    # pix = preprocessing.zero_center(pix)
+    #pix = preprocessing.normalize(pix_resampled)
+    #pix = preprocessing.zero_center(pix)
     pix = pix_resampled
     
     # extend to 512
     pix = preprocessing.extend_image(pix, val=-1000)  # if zero_centered: -0.25
     lung_mask = preprocessing.extend_image(lung_mask, val=0)
-    
+
     #Load nodules, after resampling to do it faster.
     # try:
     #     nodule_mask_ok = False
