@@ -7,6 +7,7 @@
 *.zip
 .DS_Store
 *.pyc
+.idea/
 
 # Manual saves of Jupyter notebooks
 .ipynb_checkpoints/

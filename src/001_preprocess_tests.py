@@ -28,3 +28,67 @@
 
 
 ## TEST 1: check mean pixel distribution of luna vs dsb
+
+import os
+os.getcwd()
+
+from src.utils import reading
+from src.utils import preprocessing
+from src.utils import plotting
+from glob import glob
+import SimpleITK as sitk
+
+
+wp = os.environ['LUNG_PATH']
+
+# READING DSB
+INPUT_FOLDER = os.path.join(wp, 'data/stage1/')  # 'data/stage1/stage1/'
+patient_files = os.listdir(INPUT_FOLDER)
+patient = reading.load_scan(os.path.join(INPUT_FOLDER, patient_files[0]))
+patient_pixels = preprocessing.get_pixels_hu(patient)
+plotting.cube_show_slider(patient_pixels)
+
+# READING LUNA
+# load nodes
+import pandas as pd
+df_node = pd.read_csv(wp + 'data/luna/annotations.csv')
+INPUT_FOLDER = os.path.join(wp, 'data/luna/subset0')
+idx = 40
+
+patient_file = glob(INPUT_FOLDER + '/*.mhd')[idx]  # patients from subset1
+patient = sitk.ReadImage(patient_file)
+patient_pixels = sitk.GetArrayFromImage(patient) #indexes are z,y,x
+#plotting.cube_show_slider(patient_pixels)
+seriesuid = patient_file.split('/')[-1].replace('.mhd','')
+nodules = df_node[df_node["seriesuid"]==seriesuid]
+nodules
+
+node_x = float(nodules['coordX'])
+node_y = float(nodules['coordY'])
+node_z = float(nodules['coordZ'])
+
+xx = reading.create_mask(patient, nodules, seriesuid)
+plotting.cube_show_slider(xx)
+
+slice_id = 72
+plot_mask(patient_pixels[slice_id], xx[slice_id])
+# 88, 32
+
+center = np.array([node_x, node_y, node_z])  # nodule center
+origin = np.array(patient.GetOrigin())  # x,y,z  Origin in world coordinates (mm)
+spacing = np.array(patient.GetSpacing())  # spacing of voxels in world coor. (mm)
+v_center = np.rint((center-origin)/spacing)  # nodule center in voxel space
+v_center
+
+
+###########
+import random
+proc_file = glob(wp + 'data/preproc_luna/*.npz')  # patients from subset1
+p = np.load(random.choice(proc_file))['arr_0']
+p.shape
+
+plotting.cube_show_slider(p[0])
+plotting.cube_show_slider(p[1])
+plotting.cube_show_slider(p[2])
+
+proc_file

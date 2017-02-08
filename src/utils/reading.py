@@ -146,4 +146,78 @@ def load_slices_from_mhd(img_file):
     return img_array
     
 
+def make_mask(center,diam,z,width,height,spacing,origin):
+    '''
+    Center : centers of circles px -- list of coordinates x,y,z
+    diam : diameters of circles px -- diameter
+    widthXheight : pixel dim of image
+    spacing = mm/px conversion rate np array x,y,z
+    origin = x,y,z mm np.array
+    z = z position of slice in world coordinates mm
+    '''
+    mask = np.zeros([height,width]) # 0's everywhere except nodule swapping x,y to match img
+    #convert to nodule space from world coordinates
+
+    # Defining the voxel range in which the nodule falls
+    v_center = (center-origin)/spacing
+    v_diam = int(diam/spacing[0]+5)
+    v_xmin = np.max([0,int(v_center[0]-v_diam)-5])
+    v_xmax = np.min([width-1,int(v_center[0]+v_diam)+5])
+    v_ymin = np.max([0,int(v_center[1]-v_diam)-5])
+    v_ymax = np.min([height-1,int(v_center[1]+v_diam)+5])
+
+    v_xrange = range(v_xmin,v_xmax+1)
+    v_yrange = range(v_ymin,v_ymax+1)
+
+    # Convert back to world coordinates for distance calculation
+    x_data = [x*spacing[0]+origin[0] for x in range(width)]
+    y_data = [x*spacing[1]+origin[1] for x in range(height)]
+
+    # Fill in 1 within sphere around nodule
+    for v_x in v_xrange:
+        for v_y in v_yrange:
+            p_x = spacing[0]*v_x + origin[0]
+            p_y = spacing[1]*v_y + origin[1]
+            if np.linalg.norm(center-np.array([p_x,p_y,z]))<=diam:
+                mask[int((p_y-origin[1])/spacing[1]),int((p_x-origin[0])/spacing[0])] = 1.0
+    return(mask)
+
+
+
+def create_mask(img, nodules, seriesuid):
+    # read nodules
+    mini_df = nodules[nodules["seriesuid"]==seriesuid] #get all nodules associate with file
+    if len(mini_df)>0:    # some files may not have a nodule--skipping those
+        biggest_node = np.argsort(mini_df["diameter_mm"].values)[-1]   # just using the biggest node
+        node_x = mini_df["coordX"].values[biggest_node]
+        node_y = mini_df["coordY"].values[biggest_node]
+        node_z = mini_df["coordZ"].values[biggest_node]
+        diam = mini_df["diameter_mm"].values[biggest_node]
+
+        # Nodules mask
+        height, width, num_z = img.GetSize()
+        imgs = np.ndarray([3,height,width],dtype=np.uint16)  # TODO: is it necessary the transformation?
+        # masks = np.ndarray([3,height,width],dtype=np.uint8)
+        masks = np.ndarray([num_z,height,width],dtype=np.uint8)
+
+        center = np.array([node_x, node_y, node_z])  # nodule center
+        origin = np.array(img.GetOrigin())  # x,y,z  Origin in world coordinates (mm)
+        spacing = np.array(img.GetSpacing())  # spacing of voxels in world coor. (mm)
+        v_center = np.rint((center-origin)/spacing)  # nodule center in voxel space
+
+        # for each slice in the image, convert the image data to the uint16 range
+        # and generate a binary mask for the nodule location
+        for i_z in range(num_z):
+            if i_z in range(int(v_center[2])-1,int(v_center[2])+2):
+                # print i_z
+                mask = make_mask(center, diam, i_z*spacing[2] + origin[2], width, height, spacing, origin)
+            else:
+                mask = np.zeros((height, width))
+
+            masks[i_z,:,:] = mask
+        return masks
+    else:
+        return None
+        #imgs[i] = matrix2int16(img_array[i_z])  # TODO??
+
 

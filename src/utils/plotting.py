@@ -17,15 +17,22 @@ def multiplot(imgs):
         # plots[i // 11, i % 11].imshow(patient_slices[i], cmap=plt.cm.bone)
 
 
-def plot_bb(img, region):
+def plot_bb(img, regions):
     """Draw the img and the bounding box defined by a scikit image region (measure module)."""
     fig, ax = plt.subplots(ncols=1, nrows=1, figsize=(6, 6))
     ax.imshow(img)
-    minr, minc, maxr, maxc = region.bbox
-    rect = mpatches.Rectangle((minc, minr), maxc - minc, maxr - minr, fill=False, edgecolor='red', linewidth=2)
-    ax.add_patch(rect)
+    for region in regions:
+        minr, minc, maxr, maxc = region.bbox
+        rect = mpatches.Rectangle((minc, minr), maxc - minc, maxr - minr, fill=False, edgecolor='red', linewidth=2)
+        ax.add_patch(rect)
     plt.show()
-    
+
+def plot_mask(img, mask):
+    thr = np.where(mask < np.mean(mask),0.,1.0)  # threshold detected regions
+    label_image = measure.label(thr)  # label them
+    labels = label_image.astype(int)
+    regions = measure.regionprops(labels)
+    plot_bb(img, regions)
     
 def plot_3d(image, threshold=-300):
     
