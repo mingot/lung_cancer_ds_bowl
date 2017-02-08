@@ -63,21 +63,22 @@ for arg in sys.argv[1:]:
         
 if PIPELINE not in accepted_datasets:
     print 'Error, preprocessing ofdataset %s not implemented' % PIPELINE 
-        
-#TODO: put LUNA in nice folders
-if PIPELINE in ['dsb', 'lidc'] :
+
+
+if PIPELINE == 'dsb':
     patient_files = os.listdir(INPUT_FOLDER)
+
+elif PIPELINE == 'lidc':
+    patient_files = os.listdir(INPUT_FOLDER)
+    try:
+        nodules = pandas.read_csv(NODULES_PATH)
+        nodules.index = nodules['case']
+    except:
+        print 'There are no nodules descriptor in this dataset.'
+
 elif PIPELINE == 'luna':
     patient_files = glob(INPUT_FOLDER + '/*.mhd')  # patients from subset
     df_nodules = pd.read_csv(NODULES_PATH)
-    
-
-try:
-    if PIPELINE == 'lidc':
-        nodules = pandas.read_csv(NODULES_PATH)
-        nodules.index = nodules['case']
-except:
-    print 'There are no nodules descriptor in this dataset.'
 
 
 
@@ -101,7 +102,7 @@ for patient_file in patient_files:
         elif PIPELINE == 'luna':
             patient = sitk.ReadImage(patient_file) 
             patient_pixels = sitk.GetArrayFromImage(patient) #indexes are z,y,x
-            patient_pixels[patient_pixels<-1500] = 0
+            patient_pixels[patient_pixels<-1500] = -1000  # set to air parts that fell outside
             originalSpacing = [patient.GetSpacing()[2], patient.GetSpacing()[0], patient.GetSpacing()[1]]
             pat_id = patient_file.split('.')[-2]
             seriesuid = patient_file.split('/')[-1].replace('.mhd','')
@@ -167,7 +168,7 @@ for patient_file in patient_files:
     pix = pix_resampled
     
     # extend to 512
-    pix = preprocessing.extend_image(pix, val=0)  # if zero_centered: -0.25
+    pix = preprocessing.extend_image(pix, val=-1000)  # if zero_centered: -0.25
     lung_mask = preprocessing.extend_image(lung_mask, val=0)
     
     #Load nodules, after resampling to do it faster.
