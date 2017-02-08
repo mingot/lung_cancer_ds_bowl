@@ -14,16 +14,6 @@ python 00_preprocess.py --input=/home/shared/data/stage1 --output=/mnt/hd2/prepr
 
 """
 
-def extend_512(img, val=-0.25):
-    result = np.zeros((img.shape[0],512, 512))
-    result.fill(val)
-    
-    x = (512 - img.shape[1])/2
-    y = (512 - img.shape[2])/2
-    result[:, x:x+img.shape[1], y:y+img.shape[2] ] = img
-    return result
-
-
 accepted_datasets = ['dsb', 'lidc', 'luna']
 
 import os
@@ -47,7 +37,7 @@ TMP_FOLDER = os.path.join(wp, 'data/jm_tmp/')
 INPUT_FOLDER = os.path.join(wp, 'data/stage1/')  # 'data/stage1/stage1/'
 OUTPUT_FOLDER = os.path.join(wp, 'data/stage1_proc/')
 PIPELINE = 'dsb'  # for filename
-NODULES_PATH = os.path.join(wp, 'data/nodules/%s.csv' % PIPELINE)
+NODULES_PATH = os.path.join(wp, 'data/luna/annotations.csv')
 grid_resolution =1 #mm, spatial resolution of the new grid
 
 show_intermediate_images = False  # Execution parameters
@@ -111,6 +101,7 @@ for patient_file in patient_files:
         elif PIPELINE == 'luna':
             patient = sitk.ReadImage(patient_file) 
             patient_pixels = sitk.GetArrayFromImage(patient) #indexes are z,y,x
+            patient_pixels[patient_pixels<-1500] = 0
             originalSpacing = [patient.GetSpacing()[2], patient.GetSpacing()[0], patient.GetSpacing()[1]]
             pat_id = patient_file.split('.')[-2]
             seriesuid = patient_file.split('/')[-1].replace('.mhd','')
@@ -143,9 +134,9 @@ for patient_file in patient_files:
 
     # Resampling
     # TODO: Accelerate the resampling
-    pix_resampled, new_spacing = preprocessing.resample(patient_pixels, spacing=spacing, new_spacing=common_spacing)
+    pix_resampled, new_spacing = preprocessing.resample(patient_pixels, spacing=originalSpacing, new_spacing=common_spacing)
     if nodule_mask is not None:
-        nodule_mask, new_spacing = preprocessing.resample(nodule_mask, spacing=spacing, new_spacing=common_spacing)
+        nodule_mask, new_spacing = preprocessing.resample(nodule_mask, spacing=originalSpacing, new_spacing=common_spacing)
     if show_intermediate_images:
         print("Shape after resampling\t", pix_resampled.shape)
         plt.figure()
@@ -176,8 +167,8 @@ for patient_file in patient_files:
     pix = pix_resampled
     
     # extend to 512
-    pix = extend_512(pix, val=-2000)  # if zero_centered: -0.25
-    lung_mask = extend_512(lung_mask, val=0)
+    pix = preprocessing.extend_image(pix, val=0)  # if zero_centered: -0.25
+    lung_mask = preprocessing.extend_image(lung_mask, val=0)
     
     #Load nodules, after resampling to do it faster.
     # try:
@@ -210,7 +201,7 @@ for patient_file in patient_files:
     if nodule_mask is None:
         output = np.stack((pix, lung_mask))
     else:
-        nodule_mask = extend_512(nodule_mask, val=0)
+        nodule_mask = preprocessing.extend_image(nodule_mask, val=0)
         output = np.stack((pix, lung_mask, nodule_mask))
     # TODO: The following line crashes if the output folder does not exist
     np.savez_compressed(os.path.join(OUTPUT_FOLDER, "%s_%s.npz") % (PIPELINE, pat_id), output)  # 10x compression over np.save (~400Mb vs 40Mg), but 10x slower  (~1.5s vs ~15s)

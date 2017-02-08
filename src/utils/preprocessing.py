@@ -78,4 +78,14 @@ def zero_center(image):
     return image
 
 
+def extend_image(img, val=-0.25, size=512):
+    """
+    Resize <img> centered to <size> filling with extra values <val>
+    """
+    result = np.zeros((img.shape[0],size, size))
+    result.fill(val)
 
+    x = (size - img.shape[1])/2
+    y = (size - img.shape[2])/2
+    result[:, x:x+img.shape[1], y:y+img.shape[2] ] = img
+    return result
