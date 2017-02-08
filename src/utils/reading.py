@@ -10,6 +10,19 @@ import operator
 from skimage import measure, morphology
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
+
+def ball(R, frac_disp, spatialScaling = [1, 1, 1]):
+    """
+    @param R: radius of the ball
+    @param frac_disp: fractional displacement. Due to the pixels transformations, maybe the real center lies between coordinates.
+
+    returns a list of coordinates (x, y, z) that are in the ball of radius r centered in 0.
+    """
+    r = int(R)
+    x, y, z = np.meshgrid(xrange(-r, r + 2), xrange(-r, r + 2), xrange(-r, r + 2))
+    mask = ((x +frac_disp[0])*spatialScaling[0])**2+ ((y + frac_disp[1])*spatialScaling[1])**2 + ((z + frac_disp[2])*spatialScaling[2]) **2<= R**2
+    return np.stack((x[mask], y[mask], z[mask])).T
+
 def list_final_subfolders(path, maxDepth = 10):
     """
     recursively list all subfolders that do not have.
@@ -23,7 +36,19 @@ def list_final_subfolders(path, maxDepth = 10):
         return reduce(operator.__add__, ( list_final_subfolders(f, maxDepth - 1) for f in files), [])
     else:
         return [ path ]
-    
+
+def read_nodules_lidc(nodules, patIdNum, SeriesNum, originalSpacing):
+    """
+    Reads the nodule list from the csv and returns a list of ((px_coordinates), diameter (mm))
+    """
+    res = []
+    nodules_pat = nodules[ nodules.index == patIdNum]
+    for i in xrange(len(nodules_pat)):
+        if nodules_pat['scan'].iloc[i] == SeriesNum:
+            px_coordinates = np.array([nodules_pat['slice no.'].iloc[i], nodules_pat['x loc.'].iloc[i], nodules_pat['y loc.'].iloc[i]], dtype = np.float32)
+            d = nodules_pat['eq. diam.'].iloc[i]
+            res.append((px_coordinates * originalSpacing, d))
+    return res
     
 
 def read_patient_lidc(path):
@@ -88,7 +113,18 @@ def load_scan(patient_path):
         
     for s in slices:
         s.SliceThickness = slice_thickness
-        
+
+    #Yet another sanity check
+    try:
+        if slices[0].PositionReferenceIndicator != 'SN':
+            """
+            Gabriel: For more information about this field, see http://dicom.nema.org/medical/Dicom/2015a/output/chtml/part03/sect_C.7.6.2.html#sect_C.7.6.2.1.1
+
+            I really really love working with DICOMS <3<3<3
+            """
+            print ' Warning at patient %s, the position reference  is not "SN" but "%s' %(patient_path, slices[0].PositionReferenceIndicator)
+    except:
+        pass        
     return slices
 
     

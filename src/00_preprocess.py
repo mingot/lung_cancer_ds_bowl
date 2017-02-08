@@ -10,6 +10,8 @@ python 00_preprocess.py --input=/Users/mingot/Projectes/kaggle/ds_bowl_lung/data
 
 python 00_preprocess.py --input=/home/shared/data/luna/images --output=/mnt/hd2/preprocessed/ --pipeline=luna
 python 00_preprocess.py --input=/home/shared/data/stage1 --output=/mnt/hd2/preprocessed/ --pipeline=dsb
+
+
 """
 
 def extend_512(img, val=-0.25):
@@ -35,15 +37,19 @@ import matplotlib.pyplot as plt
 from glob import glob
 import pandas as pd
 import SimpleITK as sitk
+import pandas
 
 
 # Define folder locations
+PIPELINE = 'dsb'  # for filename
 wp = os.environ['LUNG_PATH']
 TMP_FOLDER = os.path.join(wp, 'data/jm_tmp/')
 INPUT_FOLDER = os.path.join(wp, 'data/stage1/')  # 'data/stage1/stage1/'
 OUTPUT_FOLDER = os.path.join(wp, 'data/stage1_proc/')
-ANNOTATION_FILE = os.path.join(wp, 'data/luna/annotations.csv')  # nodes csv for luna
 PIPELINE = 'dsb'  # for filename
+NODULES_PATH = os.path.join(wp, 'data/nodules/%s.csv' % PIPELINE)
+grid_resolution =1 #mm, spatial resolution of the new grid
+
 show_intermediate_images = False  # Execution parameters
 
 
@@ -59,6 +65,8 @@ for arg in sys.argv[1:]:
         PIPELINE = ''.join(arg.split('=')[1:])
     elif arg.startswith('--debug'):
         show_intermediate_images = True
+    elif arg.startswith('--nodules='):
+        NODULES_PATH = ''.join(arg.split('=')[1:])
     else:
         print 'Unknown argument %s. Ignoring.' %arg
         
@@ -66,11 +74,21 @@ for arg in sys.argv[1:]:
 if PIPELINE not in accepted_datasets:
     print 'Error, preprocessing ofdataset %s not implemented' % PIPELINE 
         
+#TODO: put LUNA in nice folders
 if PIPELINE in ['dsb', 'lidc'] :
     patient_files = os.listdir(INPUT_FOLDER)
 elif PIPELINE == 'luna':
-    patient_files = glob(INPUT_FOLDER + '/*.mhd')  # patients from subset1
-    df_nodules = pd.read_csv(ANNOTATION_FILE)
+    patient_files = glob(INPUT_FOLDER + '/*.mhd')  # patients from subset
+    df_nodules = pd.read_csv(NODULES_PATH)
+    
+
+try:
+    if PIPELINE == 'lidc':
+        nodules = pandas.read_csv(NODULES_PATH)
+        nodules.index = nodules['case']
+except:
+    print 'There are no nodules descriptor in this dataset.'
+
 
 
 common_spacing = [1, 1, 1]
@@ -87,13 +105,13 @@ for patient_file in patient_files:
         if PIPELINE == 'dsb':
             patient = reading.load_scan(os.path.join(INPUT_FOLDER, patient_file))
 
-            spacing = reading.dicom_get_spacing(patient)
+            originalSpacing = reading.dicom_get_spacing(patient)
             pat_id = patient_file
 
         elif PIPELINE == 'luna':
             patient = sitk.ReadImage(patient_file) 
             patient_pixels = sitk.GetArrayFromImage(patient) #indexes are z,y,x
-            spacing = [patient.GetSpacing()[2], patient.GetSpacing()[0], patient.GetSpacing()[1]]
+            originalSpacing = [patient.GetSpacing()[2], patient.GetSpacing()[0], patient.GetSpacing()[1]]
             pat_id = patient_file.split('.')[-2]
             seriesuid = patient_file.split('/')[-1].replace('.mhd','')
             nodules = df_nodules[df_nodules["seriesuid"]==seriesuid]
@@ -102,7 +120,7 @@ for patient_file in patient_files:
 
         elif PIPELINE == 'lidc':
             patient = reading.read_patient_lidc(os.path.join(INPUT_FOLDER, patient_file))
-            spacing = reading.dicom_get_spacing(patient)
+            originalSpacing = reading.dicom_get_spacing(patient)
             pat_id = patient_file
                 
     except Exception as e:
@@ -125,9 +143,9 @@ for patient_file in patient_files:
 
     # Resampling
     # TODO: Accelerate the resampling
-    pix_resampled, ss = preprocessing.resample(patient_pixels, spacing=spacing, new_spacing=common_spacing)
+    pix_resampled, new_spacing = preprocessing.resample(patient_pixels, spacing=spacing, new_spacing=common_spacing)
     if nodule_mask is not None:
-        nodule_mask, ss = preprocessing.resample(nodule_mask, spacing=spacing, new_spacing=common_spacing)
+        nodule_mask, new_spacing = preprocessing.resample(nodule_mask, spacing=spacing, new_spacing=common_spacing)
     if show_intermediate_images:
         print("Shape after resampling\t", pix_resampled.shape)
         plt.figure()
@@ -135,16 +153,17 @@ for patient_file in patient_files:
         plt.title('Resampled data')
         # plt.figure()
         # plotting.plot_3d(pix_resampled, 400)
+        
     
     # Segment lungs
     lung_mask = preprocessing.segment_lung_mask(pix_resampled, fill_lung_structures=True)
     if show_intermediate_images:
         print("Size of the mask\t", lung_mask.shape)
         plt.figure()
-        plt.imshow(lung_mask[90])
+        plt.imshow(lung_mask[50])
         # plotting.plot_3d(segmented_lungs_fill, 0)
         # plotting.plot_3d(segmented_lungs_fill - segmented_lungs, 0)
-    
+
     # Compute volume for sanity test
     voxel_volume_l = common_spacing[0]*common_spacing[1]*common_spacing[2]/(1000000.0)
     lung_volume_l = np.sum(lung_mask)*voxel_volume_l
@@ -160,6 +179,33 @@ for patient_file in patient_files:
     pix = extend_512(pix, val=-2000)  # if zero_centered: -0.25
     lung_mask = extend_512(lung_mask, val=0)
     
+    #Load nodules, after resampling to do it faster.
+    # try:
+    #     nodule_mask_ok = False
+    #     if PIPELINE == 'lidc':
+    #         nodule_list = reading.read_nodules_lidc(nodules, int(pat_id[-4:]), patient[0].SeriesNumber, originalSpacing)
+    #     else:
+    #         print 'Unsupported nodules loading!'
+    #         raise Exception('no nodules')
+    #
+    #     nodule_mask = np.zeros(pix.shape ,dtype = np.dtype(bool))
+    #     #transform the old voxel coordinates to the new system
+    #     #TODO: improve, I think there might be some loses due to precision
+    #     for nodule_world_coordinates, d in nodule_list:
+    #         voxel_coordinates = nodule_world_coordinates/new_spacing
+    #         voxel_coordinates_integer = np.floor(voxel_coordinates).astype(int)
+    #         print 'nodule at position', voxel_coordinates_integer, d
+    #         voxel_coordinates_residual = voxel_coordinates - voxel_coordinates_integer
+    #
+    #         ball_voxels = reading.ball(d/2, voxel_coordinates_residual, new_spacing)
+    #         for p in ball_voxels:
+    #             indices = p + voxel_coordinates_integer
+    #             nodule_mask[indices[0], indices[1], indices[2]] = True
+    #     nodule_mask_ok = True
+    # except Exception as e:
+    #     print e
+    #     pass
+    
     # store output (processed lung and lung mask)
     if nodule_mask is None:
         output = np.stack((pix, lung_mask))
@@ -169,10 +215,12 @@ for patient_file in patient_files:
     # TODO: The following line crashes if the output folder does not exist
     np.savez_compressed(os.path.join(OUTPUT_FOLDER, "%s_%s.npz") % (PIPELINE, pat_id), output)  # 10x compression over np.save (~400Mb vs 40Mg), but 10x slower  (~1.5s vs ~15s)
     # np.save("prova.npy", output)
-    
+    # if nodule_mask_ok:
+    #     np.savez_compressed(os.path.join(OUTPUT_FOLDER, "%s_%s_nodules.npz") % (PIPELINE, pat_id), nodule_mask)
+
     x = time()-n
-    print("Time: %s", str(x))
+    print("Patient %s, Time: %f" % (pat_id , x))
     times.append(x)
 
-print("Average time per image: %s", str(np.mean(times)))
+print("Average time per image: %s"  %str(np.mean(times)))
 
