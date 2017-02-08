@@ -14,7 +14,7 @@ Basic references to understand the problem and the data:
  [TBD]
  1 - Download the repo:
  ```
- $ git clone git@github.com:mingot/lung_cancer_ds_bowl.git
+ $ git clone https://github.com/mingot/lung_cancer_ds_bowl.git
  ```
  2 - Create [virtual enviroment](http://docs.python-guide.org/en/latest/dev/virtualenvs/) (see `virtualenvwrapper`) and install python requirements
 ```
