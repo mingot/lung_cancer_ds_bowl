@@ -9,9 +9,7 @@ python 00_preprocess.py --input=/Users/mingot/Projectes/kaggle/ds_bowl_lung/data
 python 00_preprocess.py --input=/Users/mingot/Projectes/kaggle/ds_bowl_lung/data/sample_images --output=/Users/mingot/Projectes/kaggle/ds_bowl_lung/data/preproc_dsb --pipeline=dsb
 
 python 00_preprocess.py --input=/home/shared/data/luna/images --output=/mnt/hd2/preprocessed2/ --pipeline=luna --nodules=/home/shared/data/luna/annotations.csv
-python 00_preprocess.py --input=/home/shared/data/stage1 --output=/mnt/hd2/preprocessed/ --pipeline=dsb
-
-
+python 00_preprocess.py --input=/home/shared/data/stage1 --output=/mnt/hd2/preprocessed2/ --pipeline=dsb
 """
 
 accepted_datasets = ['dsb', 'lidc', 'luna']
@@ -113,7 +111,7 @@ for patient_file in patient_files:
             seriesuid = patient_file.split('/')[-1].replace('.mhd','')
             nodules = df_nodules[df_nodules["seriesuid"]==seriesuid]
             nodule_mask = reading.create_mask(img=patient, nodules=nodules, seriesuid=seriesuid)
-           
+            print nodule_mask.shape
 
         elif PIPELINE == 'lidc':
             patient = reading.read_patient_lidc(os.path.join(INPUT_FOLDER, patient_file))
