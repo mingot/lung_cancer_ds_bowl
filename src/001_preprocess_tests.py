@@ -21,7 +21,7 @@ import SimpleITK as sitk
 # carga luna orginal
 OF = '/Users/mingot/Projectes/kaggle/ds_bowl_lung/data/luna/subset0/*.mhd'
 patient_files = glob(OF)
-patient = sitk.ReadImage(patient_files[40])
+patient = sitk.ReadImage(patient_files[20])
 patient = sitk.GetArrayFromImage(patient) #indexes are z,y,x
 plt.imshow(patient[40])
 plt.show()
@@ -40,7 +40,17 @@ plt.show()
 plt.hist(z, bins=80)
 plt.show()
 
-# carga DSB original
+from skimage import draw
+
+img = np.zeros((100, 100), dtype=np.uint8)
+rr, cc = draw.circle(50,50,50)
+img[rr,cc] = 1
+
+plt.imshow(img)
+plt.show()
+
+
+## carga DSB original
 OF = '/Users/mingot/Projectes/kaggle/ds_bowl_lung/data/sample_images'
 patient_files = os.listdir(OF)
 patient = preprocessing.get_pixels_hu(reading.load_scan(os.path.join(OF, patient_files[0])))
@@ -71,7 +81,7 @@ OUTPUT_FOLDER = '/Users/mingot/Projectes/kaggle/ds_bowl_lung/data/preproc_dsb/*.
 OUTPUT_FOLDER = '/Users/mingot/Projectes/kaggle/ds_bowl_lung/data/preproc_luna/*.npz'
 proc_file = glob(OUTPUT_FOLDER)  # patients from subset1
 pfile = random.choice(proc_file)
-p = np.load(pfile)['arr_0']  # abrir archivo
+p = np.load(proc_file[4])['arr_0']  # abrir archivo
 p.shape
 
 
@@ -90,8 +100,8 @@ for i in range(p[2].shape[0]):
     if np.max(p[2,i])!=0:
         print i
 
-plt.imshow(p[2,85])
-plt.show()
+# plt.imshow(p[2,43])
+# plt.show()
 
-plotting.plot_mask(p[0,85], p[2,85])
-proc_file
+plotting.plot_mask(p[0,58], p[2,58])
+

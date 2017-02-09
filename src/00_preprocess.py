@@ -8,7 +8,7 @@ Example usage:
 python 00_preprocess.py --input=/Users/mingot/Projectes/kaggle/ds_bowl_lung/data/luna/subset0 --output=/Users/mingot/Projectes/kaggle/ds_bowl_lung/data/preproc_luna --pipeline=luna
 python 00_preprocess.py --input=/Users/mingot/Projectes/kaggle/ds_bowl_lung/data/sample_images --output=/Users/mingot/Projectes/kaggle/ds_bowl_lung/data/preproc_dsb --pipeline=dsb
 
-python 00_preprocess.py --input=/home/shared/data/luna/images --output=/mnt/hd2/preprocessed/ --pipeline=luna
+python 00_preprocess.py --input=/home/shared/data/luna/images --output=/mnt/hd2/preprocessed2/ --pipeline=luna --nodules=/home/shared/data/luna/annotations.csv
 python 00_preprocess.py --input=/home/shared/data/stage1 --output=/mnt/hd2/preprocessed/ --pipeline=dsb
 
 
@@ -28,14 +28,12 @@ from glob import glob
 import pandas as pd
 import SimpleITK as sitk
 import pandas
+from skimage import draw
 
 
 # Define folder locations
 PIPELINE = 'dsb'  # for filename
-try:
-    wp = os.environ['LUNG_PATH']
-except:
-    wp = ''
+wp = os.environ.get('LUNG_PATH', '')
 TMP_FOLDER = os.path.join(wp, 'data/jm_tmp/')
 INPUT_FOLDER = os.path.join(wp, 'data/stage1/')  # 'data/stage1/stage1/'
 OUTPUT_FOLDER = os.path.join(wp, 'data/stage1_proc/')
@@ -84,7 +82,9 @@ elif PIPELINE == 'luna':
     df_nodules = pd.read_csv(NODULES_PATH)
 
 
-common_spacing = [1, 1, 1]
+common_spacing = [2, 0.6, 0.6]
+# common_spacing = [1, 1, 1]
+
 # Main loop over the ensemble of the database
 times = []
 for patient_file in patient_files:
@@ -97,6 +97,7 @@ for patient_file in patient_files:
     try:
         if PIPELINE == 'dsb':
             patient = reading.load_scan(os.path.join(INPUT_FOLDER, patient_file))
+            patient_pixels = preprocessing.get_pixels_hu(patient)  # From pixels to HU
 
             originalSpacing = reading.dicom_get_spacing(patient)
             pat_id = patient_file
@@ -107,6 +108,8 @@ for patient_file in patient_files:
             patient_pixels[patient_pixels<-1500] = -1000  # set to air parts that fell outside
             originalSpacing = [patient.GetSpacing()[2], patient.GetSpacing()[0], patient.GetSpacing()[1]]
             pat_id = patient_file.split('.')[-2]
+
+            # load nodules
             seriesuid = patient_file.split('/')[-1].replace('.mhd','')
             nodules = df_nodules[df_nodules["seriesuid"]==seriesuid]
             nodule_mask = reading.create_mask(img=patient, nodules=nodules, seriesuid=seriesuid)
@@ -114,17 +117,18 @@ for patient_file in patient_files:
 
         elif PIPELINE == 'lidc':
             patient = reading.read_patient_lidc(os.path.join(INPUT_FOLDER, patient_file))
+            patient_pixels = preprocessing.get_pixels_hu(patient)  # From pixels to HU
             originalSpacing = reading.dicom_get_spacing(patient)
             pat_id = patient_file
             pat_id_nr = int(pat_id[-4:])
             nodules = reading.read_nodules_lidc(df_nodules, pat_id_nr, patient[0].SeriesNumber, originalSpacing)
-            
-            #Dimensions
+
+            # Dimensions
             zSize = len(patient)
             xSize  = patient[0].Rows
             ySize = patient[0].Columns #or the other way around
 
-           #Generate the nodule mask
+            # Generate the nodule mask
             nodule_mask = np.zeros((zSize, xSize, ySize) , dtype = np.uint8)
         
             for pixel_coordinates, diameter in nodules:
@@ -138,30 +142,28 @@ for patient_file in patient_files:
         # Some patients have no data, ignore them
         continue
     
-    if PIPELINE != 'luna':
-        # From pixels to HU
-        patient_pixels = preprocessing.get_pixels_hu(patient)
-        if show_intermediate_images:
-            print("Shape of raw data\t", patient_pixels.shape)
-            plt.figure()
-            plt.imshow(patient_pixels[3])
-            plt.title('Raw pixel data')
-            plt.figure()
-            plt.hist(patient_pixels.flatten(), bins=80, color='c')
-            plt.title('Histogram')
+
+    if show_intermediate_images:
+        print("Shape of raw data\t", patient_pixels.shape)
+        plt.figure()
+        plt.imshow(patient_pixels[3])
+        plt.title('Raw pixel data')
+        plt.figure()
+        plt.hist(patient_pixels.flatten(), bins=80, color='c')
+        plt.title('Histogram')
+
 
     # Resampling
     # TODO: Accelerate the resampling
     pix_resampled, new_spacing = preprocessing.resample(patient_pixels, spacing=originalSpacing, new_spacing=common_spacing)
     if nodule_mask is not None:
         nodule_mask, new_spacing = preprocessing.resample(nodule_mask, spacing=originalSpacing, new_spacing=common_spacing)
+
     if show_intermediate_images:
         print("Shape after resampling\t", pix_resampled.shape)
         plt.figure()
         plt.imshow(pix_resampled[50])
         plt.title('Resampled data')
-        # plt.figure()
-        # plotting.plot_3d(pix_resampled, 400)
         
     
     # Segment lungs
@@ -184,9 +186,11 @@ for patient_file in patient_files:
     #pix = preprocessing.zero_center(pix)
     pix = pix_resampled
     
-    # extend to 512
-    pix = preprocessing.extend_image(pix, val=-1000)  # if zero_centered: -0.25
-    lung_mask = preprocessing.extend_image(lung_mask, val=0)
+    # extend image to homogenize sizes
+    pix = preprocessing.extend_image(pix, val=-1000, size=800)  # if zero_centered: -0.25
+    lung_mask = preprocessing.extend_image(lung_mask, val=0, size=800)
+    if nodule_mask is not None:
+        nodule_mask = preprocessing.extend_image(nodule_mask, val=0, size=800)
 
     #Load nodules, after resampling to do it faster.
     # try:
@@ -219,13 +223,10 @@ for patient_file in patient_files:
     if nodule_mask is None:
         output = np.stack((pix, lung_mask))
     else:
-        nodule_mask = preprocessing.extend_image(nodule_mask, val=0)
         output = np.stack((pix, lung_mask, nodule_mask))
-    # TODO: The following line crashes if the output folder does not exist
+
+
     np.savez_compressed(os.path.join(OUTPUT_FOLDER, "%s_%s.npz") % (PIPELINE, pat_id), output)  # 10x compression over np.save (~400Mb vs 40Mg), but 10x slower  (~1.5s vs ~15s)
-    # np.save("prova.npy", output)
-    # if nodule_mask_ok:
-    #     np.savez_compressed(os.path.join(OUTPUT_FOLDER, "%s_%s_nodules.npz") % (PIPELINE, pat_id), nodule_mask)
 
     x = time()-n
     print("Patient %s, Time: %f" % (pat_id , x))
