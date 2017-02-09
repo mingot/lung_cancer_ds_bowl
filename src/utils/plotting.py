@@ -14,6 +14,7 @@ def multiplot(imgs):
     for i in range(nimg):
         plots[i // num_rows, i % num_rows].axis('off')
         plots[i // num_rows, i % num_rows].imshow(imgs[i])
+    plt.show()
         # plots[i // 11, i % 11].imshow(patient_slices[i], cmap=plt.cm.bone)
 
 

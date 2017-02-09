@@ -80,6 +80,11 @@ elif PIPELINE == 'luna':
     df_nodules = pd.read_csv(NODULES_PATH)
 
 
+# get IDS in the output folder to avoid recalculating them
+current_ids = glob(OUTPUT_FOLDER+'/*.npz')
+current_ids = [x.split('_')[-1].replace('.npz','') for x in current_ids]
+
+
 common_spacing = [2, 0.6, 0.6]
 # common_spacing = [1, 1, 1]
 
@@ -89,6 +94,7 @@ for patient_file in patient_files:
     
     n = time()
     nodule_mask = None
+    print 'Trying patient: %s' % patient_file
     
     # Read
     # patid = patients[10]
@@ -106,7 +112,6 @@ for patient_file in patient_files:
             patient_pixels[patient_pixels<-1500] = -1000  # set to air parts that fell outside
             originalSpacing = [patient.GetSpacing()[2], patient.GetSpacing()[0], patient.GetSpacing()[1]]
             pat_id = patient_file.split('.')[-2]
-            print 'Trying patient: %s' % patient_file
 
             # load nodules
             seriesuid = patient_file.split('/')[-1].replace('.mhd','')
@@ -140,7 +145,10 @@ for patient_file in patient_files:
         print e
         # Some patients have no data, ignore them
         continue
-    
+
+    # avoid computing the id if not already present
+    if pat_id in current_ids:
+        continue
 
     if show_intermediate_images:
         print("Shape of raw data\t", patient_pixels.shape)
@@ -186,10 +194,14 @@ for patient_file in patient_files:
     pix = pix_resampled
     
     # extend image to homogenize sizes
-    pix = preprocessing.extend_image(pix, val=-1000, size=800)  # if zero_centered: -0.25
-    lung_mask = preprocessing.extend_image(lung_mask, val=0, size=800)
-    if nodule_mask is not None:
-        nodule_mask = preprocessing.extend_image(nodule_mask, val=0, size=800)
+    try:
+        pix = preprocessing.extend_image(pix, val=-1000, size=800)  # if zero_centered: -0.25
+        lung_mask = preprocessing.extend_image(lung_mask, val=0, size=800)
+        if nodule_mask is not None:
+            nodule_mask = preprocessing.extend_image(nodule_mask, val=0, size=800)
+    except:
+        print 'Error: %s did not fit in 800x800'
+        continue
 
     #Load nodules, after resampling to do it faster.
     # try:
@@ -219,14 +231,10 @@ for patient_file in patient_files:
     #     pass
     
     # store output (processed lung and lung mask)
-    try:
-        if nodule_mask is None:
-            output = np.stack((pix, lung_mask))
-        else:
-            output = np.stack((pix, lung_mask, nodule_mask))
-    except:
-        print 'Memory error for patient %s' % str(pat_id)  # TODO: review!!
-        continue
+    if nodule_mask is None:
+        output = np.stack((pix, lung_mask))
+    else:
+        output = np.stack((pix, lung_mask, nodule_mask))
 
 
     np.savez_compressed(os.path.join(OUTPUT_FOLDER, "%s_%s.npz") % (PIPELINE, pat_id), output)  # 10x compression over np.save (~400Mb vs 40Mg), but 10x slower  (~1.5s vs ~15s)
