@@ -19,7 +19,7 @@ import SimpleITK as sitk
 
 
 # carga luna orginal
-OF = '/Users/mingot/Projectes/kaggle/ds_bowl_lung/data/luna/subset0/*.mhd'
+OF = '/Users/mingot/Projectes/kaggle/ds_bowl_lung/data/luna/subset9/*.mhd'
 patient_files = glob(OF)
 patient = sitk.ReadImage(patient_files[20])
 patient = sitk.GetArrayFromImage(patient) #indexes are z,y,x
@@ -29,10 +29,13 @@ plt.show()
 x = []
 z = []
 for p in patient_files:
-    patient = sitk.ReadImage(p)
-    x.append(patient.GetSpacing()[1])
-    z.append(patient.GetSpacing()[2])
-    print str(patient.GetSpacing()[0]) + ',' + str(patient.GetSpacing()[1]) + ',' + str(patient.GetSpacing()[2])
+    if '242761658169703141430370511586' in p:
+        print "hola!"
+print 'Fin'
+    # patient = sitk.ReadImage(p)
+    # x.append(patient.GetSpacing()[1])
+    # z.append(patient.GetSpacing()[2])
+    # print str(patient.GetSpacing()[0]) + ',' + str(patient.GetSpacing()[1]) + ',' + str(patient.GetSpacing()[2])
 
 plt.hist(x, bins=80)
 plt.show()

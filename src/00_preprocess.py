@@ -33,7 +33,7 @@ from skimage import draw
 PIPELINE = 'dsb'  # for filename
 wp = os.environ.get('LUNG_PATH', '')
 TMP_FOLDER = os.path.join(wp, 'data/jm_tmp/')
-INPUT_FOLDER = os.path.join(wp, 'data/stage1/')  # 'data/stage1/stage1/'
+INPUT_FOLDER = os.path.join(wp, 'data/luna/subset0/')  # 'data/stage1/stage1/'
 OUTPUT_FOLDER = os.path.join(wp, 'data/stage1_proc/')
 PIPELINE = 'dsb'  # for filename
 NODULES_PATH = os.path.join(wp, 'data/luna/annotations.csv')
@@ -219,10 +219,14 @@ for patient_file in patient_files:
     #     pass
     
     # store output (processed lung and lung mask)
-    if nodule_mask is None:
-        output = np.stack((pix, lung_mask))
-    else:
-        output = np.stack((pix, lung_mask, nodule_mask))
+    try:
+        if nodule_mask is None:
+            output = np.stack((pix, lung_mask))
+        else:
+            output = np.stack((pix, lung_mask, nodule_mask))
+    except:
+        print 'Memory error for patient %s' % str(pat_id)  # TODO: review!!
+        continue
 
 
     np.savez_compressed(os.path.join(OUTPUT_FOLDER, "%s_%s.npz") % (PIPELINE, pat_id), output)  # 10x compression over np.save (~400Mb vs 40Mg), but 10x slower  (~1.5s vs ~15s)
