@@ -109,7 +109,6 @@ for patient_file in patient_files:
         elif PIPELINE == 'luna':
             patient = sitk.ReadImage(patient_file) 
             patient_pixels = sitk.GetArrayFromImage(patient) #indexes are z,y,x
-            patient_pixels[patient_pixels<-1500] = -1000  # set to air parts that fell outside
             originalSpacing = [patient.GetSpacing()[2], patient.GetSpacing()[0], patient.GetSpacing()[1]]
             pat_id = patient_file.split('.')[-2]
 
@@ -149,6 +148,9 @@ for patient_file in patient_files:
     # avoid computing the id if not already present
     if pat_id in current_ids:
         continue
+
+    # set to air parts that fell outside
+    patient_pixels[patient_pixels<-1500] = -1000
 
     if show_intermediate_images:
         print("Shape of raw data\t", patient_pixels.shape)
