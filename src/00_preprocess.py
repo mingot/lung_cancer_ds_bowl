@@ -5,7 +5,7 @@ File for preprocessing the datasets. It gets as input the DCOMS path, and conver
 Datasets accepted: [DSB, LIDC, LUNA]
 
 Example usage:
-python 00_preprocess.py --input=/Users/mingot/Projectes/kaggle/ds_bowl_lung/data/luna/subset0 --output=/Users/mingot/Projectes/kaggle/ds_bowl_lung/data/preproc_luna --pipeline=luna
+python 00_preprocess.py --input=/Users/mingot/Projectes/kaggle/ds_bowl_lung/data/luna/subset0 --output=/Users/mingot/Projectes/kaggle/ds_bowl_lung/data/preproc_luna --pipeline=luna --nodules=/Users/mingot/Projectes/kaggle/ds_bowl_lung/data/luna/annotations.csv
 python 00_preprocess.py --input=/Users/mingot/Projectes/kaggle/ds_bowl_lung/data/sample_images --output=/Users/mingot/Projectes/kaggle/ds_bowl_lung/data/preproc_dsb --pipeline=dsb
 
 python 00_preprocess.py --input=/home/shared/data/luna/images --output=/mnt/hd2/preprocessed2/ --pipeline=luna --nodules=/home/shared/data/luna/annotations.csv
@@ -106,6 +106,7 @@ for patient_file in patient_files:
             patient_pixels[patient_pixels<-1500] = -1000  # set to air parts that fell outside
             originalSpacing = [patient.GetSpacing()[2], patient.GetSpacing()[0], patient.GetSpacing()[1]]
             pat_id = patient_file.split('.')[-2]
+            print 'Trying patient: %s' % patient_file
 
             # load nodules
             seriesuid = patient_file.split('/')[-1].replace('.mhd','')
