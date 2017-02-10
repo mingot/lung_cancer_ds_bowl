@@ -5,32 +5,25 @@ import os
 from networks.unet import UNETArchitecture
 
 K.set_image_dim_ordering('th')
+smooth     = 1.
 
 # PARAMETERS
-# smooth: No he llegit que es, poso el que estava al tutorial
-# nb_epoch: numero de epocas entrenament
-# batch_size: numero de PACIENTS per batch d'entrenament
-smooth     = 1.
+# nb_epoch: # training epochs
+# batch_size: # PATIENTS in a batch
 nb_epoch   = 1
 batch_size = 1
 input_path = '/home/aiorla/test_input'
 output_path = '/home/aiorla/test_output'
-
-# def miniBatchGeneratorLUNA(dataset, index, number_of_patients):
-# 	mylist = os.listdir('/mnt/hd2/preprocessed2/')
-# 	file_list = [g for g in mylist if g.startswith('luna_')]
-# 	file_list.sort()
-# 	file_list = file_list[index: index + number_of_patients]
-# 	ret = []
-# 	for filename in file_list:
-# 		b = np.load(os.path.join(mypath,filename))['arr_0']
-# 		ret.append(b)
-#     return ret
+model_path = '/home/aiorla'
 
 def load_patients(index,num_patients,filelist):
-    X_batch, Y_batch = np.empty((num_patients,800,800)), np.empty((num_patients,800,800))
-    for filename in file_list:
-        b = np.load(os.path.join(input_path,filename))['arr_0']
+    X_batch, Y_batch = [], []
+    for i in range(num_patients):
+       b = np.load(os.path.join(input_path,filelist[index+i]))['arr_0']
+       for j in range(b.shape[1]):
+           X_batch.append(b[0,j,:,:])
+           Y_batch.append(b[2,j,:,:])
+       print(len(X_batch))
     return X_batch, Y_batch
 
 def dice_coef(y_true, y_pred):
@@ -50,13 +43,15 @@ file_list = [g for g in mylist if g.startswith('luna_')]
 arch = UNETArchitecture((1,800,800))
 model = arch.get_model()
 
-# TRAIN MODEL
+# TRAIN & SAVE MODEL
 model.compile(optimizer=Adam(lr=1.0e-5), loss=dice_coef_loss, metrics=[dice_coef])
 
 for e in range(nb_epoch):
     print("epoch %d" % e)
     for i in range(0,len(file_list),batch_size):
         X_batch, Y_batch = load_patients(i,batch_size,file_list)
-        model.train(X_batch, Y_batch)
+        #model.train(X_batch, Y_batch) # TOTRY
+    model.save(model_path+'/unet-'+str(e)+'.h5')
 
 # LOAD & PREDICT & SAVE TEST DATA
+# TODO...
