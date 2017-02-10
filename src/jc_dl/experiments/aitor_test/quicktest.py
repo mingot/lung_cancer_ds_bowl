@@ -3,6 +3,7 @@ from keras.optimizers import Adam
 from keras import backend as K
 import os
 from networks.unet import UNETArchitecture
+import time
 
 K.set_image_dim_ordering('th')
 smooth     = 1.
@@ -12,9 +13,9 @@ smooth     = 1.
 # batch_size: # PATIENTS in a batch
 nb_epoch   = 1
 batch_size = 1
-input_path = '/home/aiorla/test_input'
-output_path = '/home/aiorla/test_output'
-model_path = '/home/aiorla'
+input_path = '/home/aitor/test'
+#output_path = '/home/aiorla/test_output'
+model_path = '/home/aitor/lung_cancer_ds_bowl/models'
 
 def load_patients(index,num_patients,filelist):
     X_batch, Y_batch = [], []
@@ -50,7 +51,16 @@ for e in range(nb_epoch):
     print("epoch %d" % e)
     for i in range(0,len(file_list),batch_size):
         X_batch, Y_batch = load_patients(i,batch_size,file_list)
-        #model.train(X_batch, Y_batch) # TOTRY
+	print("pacient %d" % i)
+	for j in range(len(X_batch)):
+		X = np.expand_dims(np.expand_dims(X_batch[j],axis=0),axis=0)
+		Y = np.expand_dims(np.expand_dims(Y_batch[j],axis=0),axis=0)
+		model.train_on_batch(X,Y)
+		print("slice %d" % j)
+		
+        #X = np.expand_dims(np.asarray(X_batch),axis=1) #it needs an array of size (N,1,800,800)
+        #Y = np.expand_dims(np.asarray(Y_batch),axis=1) #it needs an array of size (N,1,800,800)
+        #model.train_on_batch(X, Y) # TOTRY
     model.save(model_path+'/unet-'+str(e)+'.h5')
 
 # LOAD & PREDICT & SAVE TEST DATA
