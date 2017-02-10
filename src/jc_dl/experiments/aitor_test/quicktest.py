@@ -49,9 +49,9 @@ for e in range(nb_epoch):
     for i in range(0,len(file_list),batch_size):
         X_patients, Y_patients = load_patients(i,1,file_list)
         print("pacient %d" % i)
-    	for j in range(0,len(X_batch),batch_size):
-    		X = np.expand_dims(np.asarray(X_patients[j:(j+batch_size-1)]),axis=1)
-    		Y = np.expand_dims(np.asarray(Y_patients[j:(j+batch_size-1)]),axis=1)
+    	for j in range(0,len(X_patients),batch_size):
+    		X = np.expand_dims(np.asarray(X_patients[j:(j+batch_size)]),axis=1)
+    		Y = np.expand_dims(np.asarray(Y_patients[j:(j+batch_size)]),axis=1)
     		model.train_on_batch(X,Y)
     		print("slice %d" % j)
     model.save(output_model_path+'/unet-'+str(e)+'.h5')
