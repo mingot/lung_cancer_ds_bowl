@@ -6,7 +6,7 @@ from skimage import morphology
 from skimage import measure
 from sklearn.cluster import KMeans
 from skimage.transform import resize
-
+import itertools
 
 def segment_lungs(image, fill_lung=True, method='Thresholding'):
 
@@ -33,10 +33,13 @@ def __segment_by_thresholding__(image, fill_lung_structures=True):
     #   Improvement: Pick multiple background labels from around the patient
     #   More resistant to "trays" on which the patient lays cutting the air
     #   around the person in half
-    background_label = labels[0, 0, 0]
-
-    # Fill the air around the person
-    binary_image[background_label == labels] = 2
+    background_labels = set()
+    for x, y, z in  itertools.product([-1, 0], repeat = 3):
+        l = labels[x , y, z]
+        if l not in background_labels: 
+            # Fill the air around the person
+            binary_image[l == labels] = 2
+            background_labels.add(l)
 
     # Method of filling the lung structures (that is superior to something like
     # morphological closing)
