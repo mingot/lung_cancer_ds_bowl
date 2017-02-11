@@ -20,19 +20,24 @@ def multiplot(imgs):
 def multiplot_single_image(imgs):
     """Plot multiple imags in a grid."""
 
-    spacing = np.array(list(spacing))
-
-    nimg = len(imgs)
-    print nimg
+    nimg = imgs.shape[0]
     num_rows = int(math.sqrt(nimg)) + 1
-    print num_rows
-    print imgs.shape
-    print imgs.shape[0]
-    print imgs.shape[1]
-    print imgs.shape[2]
+    num_cols = int(math.sqrt(nimg)) + 1
 
+    flat_image = np.zeros([num_rows*imgs.shape[1], num_cols*imgs.shape[2]])
+    index_row = 0
+    index_column = 0
+    for index_image in range(0, nimg):
+        single_image = imgs[index_image].squeeze()
+        flat_image[index_row*single_image.shape[0]:(index_row+1)*single_image.shape[0], index_column*single_image.shape[1]:(index_column+1)*single_image.shape[1]] = single_image
+        index_column += 1
+        if index_column >= num_cols:
+            index_column = 0
+            index_row += 1
 
-
+    plt.figure()
+    plt.imshow(flat_image)
+    plt.show()
 
 
 def plot_bb(img, regions):
