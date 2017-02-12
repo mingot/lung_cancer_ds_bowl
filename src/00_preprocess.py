@@ -159,7 +159,7 @@ for patient_file in patient_files:
     if DEBUG_IMAGES:
         plt.imshow(pix_resampled[50])
 
-    
+
     # Segment lungs
     lung_mask = preprocessing.segment_lung_mask(image=pix_resampled, fill_lung_structures=True)
     if DEBUG_IMAGES:

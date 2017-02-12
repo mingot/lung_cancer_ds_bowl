@@ -1,12 +1,12 @@
+import itertools
+
 import numpy as np
 import scipy
-import plotting
-import matplotlib.pyplot as plt
-from skimage import morphology
 from skimage import measure
-from sklearn.cluster import KMeans
+from skimage import morphology
 from skimage.transform import resize
-import itertools
+from sklearn.cluster import KMeans
+
 
 def segment_lungs(image, fill_lung=True, method='Thresholding'):
 
@@ -29,14 +29,27 @@ def __segment_by_thresholding__(image, fill_lung_structures=True):
     binary_image = np.array(image > -320, dtype=np.int8) + 1
     labels = measure.label(morphology.dilation(binary_image))  # dilate the image to avoid gaps in conex components
 
+
     # Pick the pixel in the very corner to determine which label is air.
     #   Improvement: Pick multiple background labels from around the patient
     #   More resistant to "trays" on which the patient lays cutting the air
     #   around the person in half
-    corners = [(0,0,0),(0,0,-1),(0,-1,0),(0,-1,-1),
-               (0,3,3),(0,3,-3),(0,-3,3),(0,-3,-3)]
-    for corner in corners:
-        binary_image[labels == labels[corner]] = 2
+    extra_points = [(0,3,3),(0,3,-3),(0,-3,3),(0,-3,-3),
+                    (-1,3,3),(-1,3,-3),(-1,-3,3),(-1,-3,-3)]
+
+    background_labels = set()
+    for corner in extra_points:
+        background_labels.add(labels[corner])
+    for x, y, z in itertools.product([-1, 0], repeat=3):
+        background_labels.add(labels[x, y, z])
+    n_z, n_x, n_y = image.shape
+    background_labels |= set(np.unique(labels[0:n_z, 0:n_x, 0]))
+    background_labels |= set(np.unique(labels[0:n_z, 0, 0:n_y]))
+
+
+    # change value of background labels
+    for l in background_labels:
+        binary_image[labels==l] = 2
 
 
     # Method of filling the lung structures (that is superior to something like
@@ -98,8 +111,8 @@ def luna_segmentation(img):
     
     # To improve threshold finding, I'm moving the 
     # underflow and overflow on the pixel spectrum
-    img[img==max]=mean
-    img[img==min]=mean
+    img[img == max] = mean
+    img[img == min] = mean
     
     # Using K-means to separate foreground (radio-opaque tissue) and background (radio transparent tissue ie lungs)
     # Doing this only on the center of the image to avoid the non-tissue parts of the image as much as possible

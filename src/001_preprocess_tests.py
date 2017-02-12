@@ -115,13 +115,7 @@ for i in range(p[2].shape[0]):
     if np.max(p[2,i])!=0:
         print i
 
-for i in range(masks.shape[0]):
-    if np.max(masks[i])!=0:
-        print i
-
-
 plotting.plot_mask(p[0,58], p[2,58])
-
 
 
 ## Detect bad segmentation
