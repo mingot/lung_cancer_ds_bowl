@@ -17,7 +17,7 @@ def multiplot(imgs):
     plt.show()
 
 
-def multiplot_single_image(imgs):
+def multiplot_single_image(imgs, show=True):
     """Plot multiple imags in a grid."""
 
     nimg = imgs.shape[0]
@@ -35,9 +35,12 @@ def multiplot_single_image(imgs):
             index_column = 0
             index_row += 1
 
-    plt.figure()
-    plt.imshow(flat_image)
-    plt.show()
+    if show:
+        plt.figure()
+        plt.imshow(flat_image)
+        plt.show()
+
+    return flat_image
 
 
 def plot_bb(img, regions):
