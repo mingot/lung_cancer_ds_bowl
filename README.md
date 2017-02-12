@@ -89,7 +89,7 @@ The preprocessed images are stored at `/mnt/hd2/preprocessed/`. To open the comp
 
 ## Troubleshoot
 
-### "Could not find a version that satisfies the requirement SimpleITK==0.8.0"
+### "Could not find a version that satisfies the requirement SimpleITK==0.10.0"
 
 The solution is to manually download the egg from the [official website](https://itk.org/SimpleITKDoxygen/html/PyDownloadPage.html) and install it with `easy_install`.
 
