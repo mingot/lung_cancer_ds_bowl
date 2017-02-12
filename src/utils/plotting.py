@@ -15,7 +15,32 @@ def multiplot(imgs):
         plots[i // num_rows, i % num_rows].axis('off')
         plots[i // num_rows, i % num_rows].imshow(imgs[i])
     plt.show()
-        # plots[i // 11, i % 11].imshow(patient_slices[i], cmap=plt.cm.bone)
+
+
+def multiplot_single_image(imgs, show=True):
+    """Plot multiple imags in a grid."""
+
+    nimg = imgs.shape[0]
+    num_rows = int(math.sqrt(nimg)) + 1
+    num_cols = int(math.sqrt(nimg)) + 1
+
+    flat_image = np.zeros([num_rows*imgs.shape[1], num_cols*imgs.shape[2]])
+    index_row = 0
+    index_column = 0
+    for index_image in range(0, nimg):
+        single_image = imgs[index_image].squeeze()
+        flat_image[index_row*single_image.shape[0]:(index_row+1)*single_image.shape[0], index_column*single_image.shape[1]:(index_column+1)*single_image.shape[1]] = single_image
+        index_column += 1
+        if index_column >= num_cols:
+            index_column = 0
+            index_row += 1
+
+    if show:
+        plt.figure()
+        plt.imshow(flat_image)
+        plt.show()
+
+    return flat_image
 
 
 def plot_bb(img, regions):
@@ -28,13 +53,15 @@ def plot_bb(img, regions):
         ax.add_patch(rect)
     plt.show()
 
+
 def plot_mask(img, mask):
-    thr = np.where(mask < np.mean(mask),0.,1.0)  # threshold detected regions
+    thr = np.where(mask < np.mean(mask), 0., 1.0)  # threshold detected regions
     label_image = measure.label(thr)  # label them
     labels = label_image.astype(int)
     regions = measure.regionprops(labels)
     plot_bb(img, regions)
-    
+
+
 def plot_3d(image, threshold=-300):
     
     # Position the scan upright, 
@@ -91,17 +118,16 @@ def cube_show_slider(cube, axis=2, **kwargs):
 
     # define slider
     axcolor = 'lightgoldenrodyellow'
-    ax = fig.add_axes([0.25, 0.1, 0.65, 0.03], axisbg=axcolor)
+    ax = fig.add_axes([0.25, 0.1, 0.65, 0.03], facecolor=axcolor)
 
     slider = Slider(ax, 'Axis %i index' % axis, 0, cube.shape[axis] - 1,
                     valinit=0, valfmt='%i')
 
     def update(val):
         ind = int(slider.val)
-        s = [slice(ind, ind + 1) if i == axis else slice(None)
-                 for i in xrange(3)]
+        s = [slice(ind, ind + 1) if i == axis else slice(None) for i in xrange(3)]
         im = cube[s].squeeze()
-        l.set_data(im, **kwargs)
+        l.set_data(im)
         fig.canvas.draw()
 
     slider.on_changed(update)
