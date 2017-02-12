@@ -30,16 +30,16 @@ from skimage import draw
 
 
 # Define folder locations
-PIPELINE = 'dsb'  # for filename
 wp = os.environ.get('LUNG_PATH', '')
 TMP_FOLDER = os.path.join(wp, 'data/jm_tmp/')
 INPUT_FOLDER = os.path.join(wp, 'data/luna/subset0/')  # 'data/stage1/stage1/'
 OUTPUT_FOLDER = os.path.join(wp, 'data/stage1_proc/')
-PIPELINE = 'dsb'  # for filename
 NODULES_PATH = os.path.join(wp, 'data/luna/annotations.csv')
-grid_resolution =1 #mm, spatial resolution of the new grid
 
-show_intermediate_images = False  # Execution parameters
+# define parametres
+PIPELINE = 'dsb'  # for filename
+COMMON_SPACING = [2, 0.7, 0.7]
+DEBUG_IMAGES = False  # Show intermediate imaged
 
 
 # Overwriting parameters by console
@@ -53,7 +53,7 @@ for arg in sys.argv[1:]:
     elif arg.startswith('--pipeline='):
         PIPELINE = ''.join(arg.split('=')[1:])
     elif arg.startswith('--debug'):
-        show_intermediate_images = True
+        DEBUG_IMAGES = True
     elif arg.startswith('--nodules='):
         NODULES_PATH = ''.join(arg.split('=')[1:])
     else:
@@ -79,14 +79,10 @@ elif PIPELINE == 'luna':
     patient_files = glob(INPUT_FOLDER + '/*.mhd')  # patients from subset
     df_nodules = pd.read_csv(NODULES_PATH)
 
-
 # get IDS in the output folder to avoid recalculating them
 current_ids = glob(OUTPUT_FOLDER+'/*.npz')
 current_ids = [x.split('_')[-1].replace('.npz','') for x in current_ids]
 
-
-common_spacing = [2, 0.7, 0.7]
-# common_spacing = [1, 1, 1]
 
 # Main loop over the ensemble of the database
 times = []
@@ -150,28 +146,28 @@ for patient_file in patient_files:
     # set to air parts that fell outside
     patient_pixels[patient_pixels<-1500] = -2000
 
-    if show_intermediate_images:
+    if DEBUG_IMAGES:
         plt.imshow(patient_pixels[3])
         plt.hist(patient_pixels.flatten(), bins=80, color='c')
 
 
     # Resampling
-    pix_resampled, new_spacing = preprocessing.resample(patient_pixels, spacing=originalSpacing, new_spacing=common_spacing)
+    pix_resampled, new_spacing = preprocessing.resample(patient_pixels, spacing=originalSpacing, new_spacing=COMMON_SPACING)
     print 'pix resampled shape: %s' % str(pix_resampled.shape)
     if nodule_mask is not None:
-        nodule_mask, new_spacing = preprocessing.resample(nodule_mask, spacing=originalSpacing, new_spacing=common_spacing)
-    if show_intermediate_images:
+        nodule_mask, new_spacing = preprocessing.resample(nodule_mask, spacing=originalSpacing, new_spacing=COMMON_SPACING)
+    if DEBUG_IMAGES:
         plt.imshow(pix_resampled[50])
 
     
     # Segment lungs
-    lung_mask = preprocessing.segment_lung_mask(pix_resampled, fill_lung_structures=True)
-    if show_intermediate_images:
+    lung_mask = preprocessing.segment_lung_mask(image=pix_resampled, fill_lung_structures=True)
+    if DEBUG_IMAGES:
         plt.imshow(lung_mask[50])
 
 
     # Compute volume for sanity test
-    voxel_volume_l = common_spacing[0]*common_spacing[1]*common_spacing[2]/(1000000.0)
+    voxel_volume_l = COMMON_SPACING[0]*COMMON_SPACING[1]*COMMON_SPACING[2]/(1000000.0)
     lung_volume_l = np.sum(lung_mask)*voxel_volume_l
     if lung_volume_l < 2 or lung_volume_l > 10:
         print("Warning lung volume: %s out of physiological values. Double Check segmentation.", pat_id)

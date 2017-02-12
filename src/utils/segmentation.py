@@ -27,20 +27,17 @@ def __segment_by_thresholding__(image, fill_lung_structures=True):
     # 0 is treated as background, which we do not want
 
     binary_image = np.array(image > -320, dtype=np.int8) + 1
-    #binary_image = morphology.dilation(binary_image)  # dilatar la imagen para evitar componentes conexas
-    labels = measure.label(morphology.dilation(binary_image))
+    labels = measure.label(morphology.dilation(binary_image))  # dilate the image to avoid gaps in conex components
 
     # Pick the pixel in the very corner to determine which label is air.
     #   Improvement: Pick multiple background labels from around the patient
     #   More resistant to "trays" on which the patient lays cutting the air
     #   around the person in half
-    background_labels = set()
-    for x, y, z in  itertools.product([-1, 0], repeat = 3):
-        l = labels[x , y, z]
-        if l not in background_labels: 
-            # Fill the air around the person
-            binary_image[l == labels] = 2
-            background_labels.add(l)
+    corners = [(0,0,0),(0,0,-1),(0,-1,0),(0,-1,-1),
+               (0,3,3),(0,3,-3),(0,-3,3),(0,-3,-3)]
+    for corner in corners:
+        binary_image[labels == labels[corner]] = 2
+
 
     # Method of filling the lung structures (that is superior to something like
     # morphological closing)
