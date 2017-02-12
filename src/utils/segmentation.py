@@ -1,12 +1,12 @@
+import itertools
+
 import numpy as np
 import scipy
-import plotting
-import matplotlib.pyplot as plt
-from skimage import morphology
 from skimage import measure
-from sklearn.cluster import KMeans
+from skimage import morphology
 from skimage.transform import resize
-import itertools
+from sklearn.cluster import KMeans
+
 
 def segment_lungs(image, fill_lung=True, method='Thresholding'):
 
@@ -27,7 +27,6 @@ def __segment_by_thresholding__(image, fill_lung_structures=True):
     # 0 is treated as background, which we do not want
 
     binary_image = np.array(image > -320, dtype=np.int8) + 1
-    #binary_image = morphology.dilation(binary_image)  # dilatar la imagen para evitar componentes conexas
     labels = measure.label(morphology.dilation(binary_image))
 
     # Pick the pixel in the very corner to determine which label is air.
@@ -35,12 +34,39 @@ def __segment_by_thresholding__(image, fill_lung_structures=True):
     #   More resistant to "trays" on which the patient lays cutting the air
     #   around the person in half
     background_labels = set()
-    for x, y, z in  itertools.product([-1, 0], repeat = 3):
-        l = labels[x , y, z]
+    for x, y, z in itertools.product([-1, 0], repeat=3):
+        l = labels[x, y, z]
         if l not in background_labels: 
             # Fill the air around the person
             binary_image[l == labels] = 2
             background_labels.add(l)
+
+    # TODO: There must be a way to implement this faster
+    for z in range(0, binary_image.shape[0]):
+        for x in range(0, binary_image.shape[1]):
+            l = labels[z, x, 0]
+            if l not in background_labels:
+                # Fill the air around the person
+                binary_image[l == labels] = 2
+                background_labels.add(l)
+            l = labels[z, x, -1]
+            if l not in background_labels:
+                # Fill the air around the person
+                binary_image[l == labels] = 2
+                background_labels.add(l)
+
+    for z in range(0, binary_image.shape[0]):
+        for y in range(0, binary_image.shape[2]):
+            l = labels[z, 0, y]
+            if l not in background_labels:
+                # Fill the air around the person
+                binary_image[l == labels] = 2
+                background_labels.add(l)
+            l = labels[z, -1, y]
+            if l not in background_labels:
+                # Fill the air around the person
+                binary_image[l == labels] = 2
+                background_labels.add(l)
 
     # Method of filling the lung structures (that is superior to something like
     # morphological closing)
@@ -101,8 +127,8 @@ def luna_segmentation(img):
     
     # To improve threshold finding, I'm moving the 
     # underflow and overflow on the pixel spectrum
-    img[img==max]=mean
-    img[img==min]=mean
+    img[img == max] = mean
+    img[img == min] = mean
     
     # Using K-means to separate foreground (radio-opaque tissue) and background (radio transparent tissue ie lungs)
     # Doing this only on the center of the image to avoid the non-tissue parts of the image as much as possible
