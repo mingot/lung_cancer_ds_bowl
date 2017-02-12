@@ -114,8 +114,8 @@ for patient_file in patient_files:
 
             # load nodules
             seriesuid = patient_file.split('/')[-1].replace('.mhd','')
-            nodules = df_nodules[df_nodules["seriesuid"]==seriesuid]
-            nodule_mask = reading.create_mask(img=patient, nodules=nodules, seriesuid=seriesuid)
+            nodules = df_nodules[df_nodules["seriesuid"]==seriesuid]  # filter nodules for patient
+            nodule_mask = reading.create_mask(img=patient, nodules=nodules)
 
         elif PIPELINE == 'lidc':
             patient = reading.read_patient_lidc(os.path.join(INPUT_FOLDER, patient_file))
