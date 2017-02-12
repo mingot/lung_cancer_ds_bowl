@@ -18,11 +18,11 @@ import SimpleITK as sitk
 
 
 ## carga luna orginal
-OF = '/Users/mingot/Projectes/kaggle/ds_bowl_lung/data/luna/subset9/*.mhd'
+OF = '/Users/mingot/Projectes/kaggle/ds_bowl_lung/data/luna/subset0/*.mhd'
 patient_files = glob(OF)
-patient = sitk.ReadImage(patient_files[20])
-patient = sitk.GetArrayFromImage(patient) #indexes are z,y,x
-plt.imshow(patient[40])
+patient_data = sitk.ReadImage(patient_files[1])
+patient = sitk.GetArrayFromImage(patient_data) #indexes are z,y,x
+plt.imshow(patient[80])
 plt.show()
 
 x = []
@@ -32,6 +32,20 @@ for p in patient_files:
     x.append(patient.GetSpacing()[1])
     z.append(patient.GetSpacing()[2])
     print str(patient.GetSpacing()[0]) + ',' + str(patient.GetSpacing()[1]) + ',' + str(patient.GetSpacing()[2])
+
+
+common_spacing = [2, 0.6, 0.6]
+originalSpacing = [patient_data.GetSpacing()[2], patient_data.GetSpacing()[0], patient_data.GetSpacing()[1]]
+pix_resampled, new_spacing = preprocessing.resample(patient, spacing=originalSpacing, new_spacing=common_spacing)
+preprocessing.extend_image(patient, val=-1000, size=800)  # if zero_centered: -0.25
+
+pix_cropped = crop_image(pix_resampled)
+
+plt.imshow(pix_resampled[40])
+plt.show()
+
+plt.imshow(pix_cropped[80])
+plt.show()
 
 plt.hist(x, bins=80)
 plt.show()
@@ -79,12 +93,11 @@ plt.show()
 OUTPUT_FOLDER = '/Users/mingot/Projectes/kaggle/ds_bowl_lung/data/preproc_dsb/*.npz'
 OUTPUT_FOLDER = '/Users/mingot/Projectes/kaggle/ds_bowl_lung/data/preproc_luna/*.npz'
 proc_file = glob(OUTPUT_FOLDER)  # patients from subset1
-p = np.load(proc_file[4])['arr_0']  # abrir archivo
+
+p = np.load(proc_file[1])['arr_0']  # abrir archivo
 sample = random.choice(proc_file)
 p = np.load(sample)['arr_0']  # abrir archivo
 p.shape
-
-
 
 
 # 3d sliding plot
@@ -108,7 +121,6 @@ plotting.plot_mask(p[0,58], p[2,58])
 
 ## Detect bad segmentation
 for p in proc_file:
-    p = sample
     print 'Testing %s' % p
     data = np.load(p)['arr_0']  # abrir archivo
 
@@ -124,12 +136,15 @@ for p in proc_file:
 
 
 ## Show segmentations
-plots = np.zeros((len(proc_file),800,800))
+plots = np.zeros((len(proc_file),512,512))
 for i,p in enumerate(proc_file):
     print i
     data = np.load(p)['arr_0']  # abrir archivo
     nslice = data.shape[1]/2
-    plots[i] = data[1,nslice]
+    try:
+        plots[i] = data[1,nslice]
+    except:
+        continue
 print 'Fin!'
 plotting.multiplot(plots)
 plt.imshow(plots[13])

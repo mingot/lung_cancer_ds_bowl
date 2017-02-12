@@ -89,3 +89,19 @@ def extend_image(img, val=-0.25, size=512):
     y = (size - img.shape[2])/2
     result[:, x:x+img.shape[1], y:y+img.shape[2] ] = img
     return result
+
+
+def crop_image(img, size=512):
+    cx = img.shape[1]/2
+    cy = img.shape[2]/2
+    new_img = img[:, cx - size/2:cx + size/2, cy - size/2:cy + size/2]
+    return new_img
+
+def resize_image(img, size=512):
+    x = img.shape[1]
+    if x<size:
+        return extend_image(img, val=img[0,0,0], size=size)
+    elif x>size:
+        return crop_image(img, size=size)
+    else:
+        return img

@@ -85,7 +85,7 @@ current_ids = glob(OUTPUT_FOLDER+'/*.npz')
 current_ids = [x.split('_')[-1].replace('.npz','') for x in current_ids]
 
 
-common_spacing = [2, 0.6, 0.6]
+common_spacing = [2, 0.7, 0.7]
 # common_spacing = [1, 1, 1]
 
 # Main loop over the ensemble of the database
@@ -116,7 +116,6 @@ for patient_file in patient_files:
             seriesuid = patient_file.split('/')[-1].replace('.mhd','')
             nodules = df_nodules[df_nodules["seriesuid"]==seriesuid]
             nodule_mask = reading.create_mask(img=patient, nodules=nodules, seriesuid=seriesuid)
-            print nodule_mask.shape
 
         elif PIPELINE == 'lidc':
             patient = reading.read_patient_lidc(os.path.join(INPUT_FOLDER, patient_file))
@@ -139,10 +138,9 @@ for patient_file in patient_files:
                 nodule_point_list = reading.ball( diameter/ 2,  pixel_coordinates, originalSpacing)
                 nodule_mask = reading.draw_in_mask(nodule_mask, nodule_point_list)
 
-    except Exception as e:
+    except Exception as e:  # Some patients have no data, ignore them
         print 'There was some problem reading patient %s. Ignoring and live goes on.' % (patient_file)
         print e
-        # Some patients have no data, ignore them
         continue
 
     # avoid computing the id if not already present
@@ -150,39 +148,27 @@ for patient_file in patient_files:
         continue
 
     # set to air parts that fell outside
-    patient_pixels[patient_pixels<-1500] = -1000
+    patient_pixels[patient_pixels<-1500] = -2000
 
     if show_intermediate_images:
-        print("Shape of raw data\t", patient_pixels.shape)
-        plt.figure()
         plt.imshow(patient_pixels[3])
-        plt.title('Raw pixel data')
-        plt.figure()
         plt.hist(patient_pixels.flatten(), bins=80, color='c')
-        plt.title('Histogram')
 
 
     # Resampling
-    # TODO: Accelerate the resampling
     pix_resampled, new_spacing = preprocessing.resample(patient_pixels, spacing=originalSpacing, new_spacing=common_spacing)
+    print 'pix resampled shape: %s' % str(pix_resampled.shape)
     if nodule_mask is not None:
         nodule_mask, new_spacing = preprocessing.resample(nodule_mask, spacing=originalSpacing, new_spacing=common_spacing)
-
     if show_intermediate_images:
-        print("Shape after resampling\t", pix_resampled.shape)
-        plt.figure()
         plt.imshow(pix_resampled[50])
-        plt.title('Resampled data')
-        
+
     
     # Segment lungs
     lung_mask = preprocessing.segment_lung_mask(pix_resampled, fill_lung_structures=True)
     if show_intermediate_images:
-        print("Size of the mask\t", lung_mask.shape)
-        plt.figure()
         plt.imshow(lung_mask[50])
-        # plotting.plot_3d(segmented_lungs_fill, 0)
-        # plotting.plot_3d(segmented_lungs_fill - segmented_lungs, 0)
+
 
     # Compute volume for sanity test
     voxel_volume_l = common_spacing[0]*common_spacing[1]*common_spacing[2]/(1000000.0)
@@ -196,14 +182,22 @@ for patient_file in patient_files:
     pix = pix_resampled
     
     # extend image to homogenize sizes
-    try:
-        pix = preprocessing.extend_image(pix, val=-1000, size=800)  # if zero_centered: -0.25
-        lung_mask = preprocessing.extend_image(lung_mask, val=0, size=800)
-        if nodule_mask is not None:
-            nodule_mask = preprocessing.extend_image(nodule_mask, val=0, size=800)
-    except:
-        print 'Error: %s did not fit in 800x800'
-        continue
+    # try:
+    #     pix = preprocessing.extend_image(pix, val=-1000, size=800)  # if zero_centered: -0.25
+    #     lung_mask = preprocessing.extend_image(lung_mask, val=0, size=800)
+    #     if nodule_mask is not None:
+    #         nodule_mask = preprocessing.extend_image(nodule_mask, val=0, size=800)
+    # except:
+    #     print 'Error: %s did not fit in 800x800'
+    #     continue
+
+    pix = preprocessing.resize_image(pix, size=512)  # if zero_centered: -0.25
+    lung_mask = preprocessing.resize_image(lung_mask, size=512)
+    if nodule_mask is not None:
+        nodule_mask = preprocessing.resize_image(nodule_mask, size=512)
+
+
+    print 'pix cropped shape: %s' % str(pix.shape)
 
     #Load nodules, after resampling to do it faster.
     # try:
