@@ -1,5 +1,24 @@
 # Lung Cancer Data Science Bowl 2017
 
+## Index
+Access to latest results of each team and to documentation
+
+  1. Preprocessing and datasets (README TBD)
+    1. [Utils (git)](https://github.com/mingot/lung_cancer_ds_bowl/tree/master/src/utils) 
+    2. [Bad segmentation spreadsheet (gdocs)](https://docs.google.com/spreadsheets/d/15wi07edzdVLqpnviPI4qhO5gOA_Ve6MQ7RCE92YGERE/edit#gid=0)
+    3. Preprocessed v2 (AWS): /mnt/hd2/preprocessed2 
+  2. DL ([README](https://github.com/mingot/lung_cancer_ds_bowl/blob/master/src/jc_dl/README.md))
+    1. Slices: TBD
+    2. Segmentation: TBD
+  3. Final model (README TBD)
+    1. New features: TBD
+    2. XGBoost: TBD
+    3. Final learner - submission: TBD
+  4. Literature: 
+    1. Preprocessing ([google drive](https://drive.google.com/drive/folders/0BwtD1eiXdLQRVXo4aXFYVDVZNHM))
+    2. DL ([google drive](https://drive.google.com/drive/folders/0BwtD1eiXdLQRMlhvTzJsZjNkeWs))
+    3. Features ([google drive](https://drive.google.com/drive/folders/0BwtD1eiXdLQRS1d3eVlwSVpCblU))
+
 ## References quick start
 Basic references to understand the problem and the data:
 
