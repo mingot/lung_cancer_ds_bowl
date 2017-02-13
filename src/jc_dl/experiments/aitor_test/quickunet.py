@@ -19,7 +19,6 @@ batch_size  = 1 # VRAM limited
 # PATHS
 input_path  = '/home/aiorla/Projects/Lung/test/input'
 model_path  = '/home/aiorla/Projects/Lung/test/model'
-output_path = '/home/aiorla/Projects/Lung/test/output'
 
 # I/O METHOD
 def load_patients(index,num_patients,filelist):

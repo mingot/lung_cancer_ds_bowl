@@ -13,13 +13,12 @@ K.set_image_dim_ordering('th')
 
 # PARAMETERS
 num_epoch   = 1
-num_patient = 2 # RAM  limited
+num_patient = 1 # RAM  limited
 batch_size  = 1 # VRAM limited
 
 # PATHS
 input_path  = '/home/aiorla/Projects/Lung/test/input'
 model_path  = '/home/aiorla/Projects/Lung/test/model'
-output_path = '/home/aiorla/Projects/Lung/test/output'
 
 # I/O METHOD
 def load_patients(index,num_patients,filelist):
