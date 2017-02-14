@@ -6,7 +6,7 @@ Access to latest results of each team and to documentation
   1. Preprocessing and datasets (README TBD)
     1. [Utils (git)](https://github.com/mingot/lung_cancer_ds_bowl/tree/master/src/utils) 
     2. [Bad segmentation spreadsheet (gdocs)](https://docs.google.com/spreadsheets/d/15wi07edzdVLqpnviPI4qhO5gOA_Ve6MQ7RCE92YGERE/edit#gid=0)
-    3. Preprocessed v2 (AWS): /mnt/hd2/preprocessed2 
+    3. Preprocessed v3 (AWS): /mnt/hd2/preprocessed3 
   2. DL ([README](https://github.com/mingot/lung_cancer_ds_bowl/blob/master/src/jc_dl/README.md))
     1. Slices: TBD
     2. Segmentation: TBD
