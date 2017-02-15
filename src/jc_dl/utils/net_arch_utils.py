@@ -6,8 +6,8 @@ import numpy as np
 from six.moves.urllib.error import HTTPError, URLError
 from six.moves.urllib.request import urlretrieve
 
-models_path = os.environ['LUNG_PATH'] + "/models/"
-weights_path = os.environ['LUNG_PATH'] + "/models/weights/"
+models_path = os.environ['LUNG_PATH'] + "/models"
+weights_path = os.environ['LUNG_PATH'] + "/models/weights"
 
 def download_file(fname, origin):
     fpath = os.path.join(models_path, fname)
