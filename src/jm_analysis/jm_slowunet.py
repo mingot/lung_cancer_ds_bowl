@@ -6,6 +6,7 @@
 import os
 import numpy as np
 import keras
+from time import time
 from keras.optimizers import Adam
 from keras import backend as K
 from networks.unet import UNETArchitecture
@@ -15,7 +16,11 @@ K.set_image_dim_ordering('th')
 
 wp = os.environ['LUNG_PATH']
 print wp
-tb = keras.callbacks.TensorBoard(log_dir=wp + 'logs/overfit2', histogram_freq=10, write_graph=True, write_images=True)
+
+logdir = wp + 'logs/%s' % str(int(time()))
+if not os.path.exists(logdir):
+    os.makedirs(logdir)
+tb = keras.callbacks.TensorBoard(log_dir=logdir, histogram_freq=10, write_graph=True, write_images=True)
 
 # PARAMETERS
 num_epoch = 10
@@ -61,11 +66,11 @@ for i_epoch in range(num_epoch):
     print("Current epoch " + str(i_epoch))
 
     ## TRAIN CHUNK BY CHUNK
-    for is_valid, (X, Y_mask, Y) in dataset.get_data('train', 5, normalize):
+    for is_valid, (X, Y_mask, Y) in dataset.get_data('train', 2, normalize):
         if is_valid:
             #print X.shape
             #print Y_mask.shape
-            model.fit(X, Y_mask, verbose=1, nb_epoch=1, batch_size=5, shuffle=True, callbacks=[tb])
+            model.fit(X, Y_mask, verbose=1, nb_epoch=1, batch_size=2, shuffle=True, callbacks=[tb])
             #break
         # if i%%10==0:
         #     print 'Predicting'
