@@ -80,11 +80,14 @@ class LunaMasked_SlicesDataset(Generic_SlicesDataset):
     # We overwrite the function to load a specific patient data to load the mask for this specific format dataset
     def _load_patient_from_path_(self, filepath):
         b = np.load(filepath)['arr_0']
+
         for j in range(b.shape[1]):
             if b.shape[0]!=3:
                 continue
             else:
-                yield b[0,j,:,:]*b[1,j,:,:], b[2,j,:,:], None  # apply lung mask
+                if b[2,j,:,:].sum()!=0:  # apply filter here (TODO: UNDO)
+                    yield b[0,j,:,:]*b[1,j,:,:], b[2,j,:,:], None  # apply lung mask
+                    break  ## Single slice per patient! (TODO: UNDO)
 
 
 ## This dataset returns Luna datasets and masks
