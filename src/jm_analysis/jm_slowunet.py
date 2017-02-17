@@ -14,24 +14,23 @@ from datasets.basic_dataset import LunaNonEmptyMasked_SlicesDataset
 from experiments.jose_cordero_sample_experiment.experiments_utils import visualize_case #, dice_coef_loss
 K.set_image_dim_ordering('th')
 
-wp = os.environ['LUNG_PATH']
-print wp
-
-logdir = wp + 'logs/%s' % str(int(time()))
-if not os.path.exists(logdir):
-    os.makedirs(logdir)
-tb = keras.callbacks.TensorBoard(log_dir=logdir, histogram_freq=10, write_graph=True, write_images=True)
-
 # PARAMETERS
 num_epoch = 10
 max_data_chunk = 2
 max_batch_size = 2
 prefixes_to_load = ['luna_']
-#input_paths = ['../../data/preprocessed3_small']#/mnt/hd2/preprocessed2']
-input_paths = ['/mnt/hd2/preprocessed3']#/mnt/hd2/preprocessed2']
 
 # PATHS
-model_path  = '/home/jose/kaggle/cfis/lung_cancer_ds_bowl/models'
+wp = os.environ['LUNG_PATH']
+model_path  = wp + 'models/'
+#input_paths = ['../../data/preprocessed3_small']#/mnt/hd2/preprocessed2']
+input_paths = ['/mnt/hd2/preprocessed3']#/mnt/hd2/preprocessed2']
+logdir = wp + 'logs/%s' % str(int(time()))
+if not os.path.exists(logdir):
+    os.makedirs(logdir)
+
+# TENSORBOARD
+tb = keras.callbacks.TensorBoard(log_dir=logdir, histogram_freq=10, write_graph=True, write_images=True)
 
 # LOAD LUNA DATASET
 dataset = LunaNonEmptyMasked_SlicesDataset(prefixes_to_load, input_paths)
@@ -41,7 +40,6 @@ normalize = lambda x: (x - np.mean(x))/np.std(x)
 # LOAD MODEL
 arch = UNETArchitecture((1,512,512),False)
 model = arch.get_model()
-
 
 
 def dice_coef_loss(y_true, y_pred):
@@ -98,7 +96,7 @@ for i_epoch in range(num_epoch):
         #     np.save()
 
     ## SAVE MODEL AFTER 1 EPOCH
-    #model.save(model_path+'/slowunet.hdf5')
+    model.save(model_path + 'jm_slowunet.hdf5')
 
     ## VALIDATE THE MODEL ON VALID SET
     vals_metrics = []
