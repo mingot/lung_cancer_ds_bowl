@@ -14,3 +14,6 @@
 
 # folder for personal use
 personal/
+
+# tensorboard files
+events.out.tfevents.*

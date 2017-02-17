@@ -2,7 +2,7 @@ import os
 import numpy as np
 from keras import backend as K
 from networks.unet import UNETArchitecture
-from utils.buffering import buffered_gen_mp, buffered_gen_threaded
+# from utils.buffering import buffered_gen_mp, buffered_gen_threaded
 
 
 # A dataset class implements a generator function "generate_data" which returns:
@@ -81,7 +81,9 @@ class LunaMasked_SlicesDataset(Generic_SlicesDataset):
     def _load_patient_from_path_(self, filepath):
         b = np.load(filepath)['arr_0']
         for j in range(b.shape[1]):
-            yield b[0,j,:,:], b[2,j,:,:], None
+            if b.shape[0]!=3:
+                continue
+            yield b[0,j,:,:]*b[1,j,:,:], b[2,j,:,:], None  # apply lung mask
 
 
 ## This dataset returns Luna datasets and masks

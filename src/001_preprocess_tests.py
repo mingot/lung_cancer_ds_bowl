@@ -100,8 +100,24 @@ p = np.load(sample)['arr_0']  # abrir archivo
 p.shape
 
 
+# # For slice 80
+# X = b[0,80]
+# lung_mask = b[1,80]
+# X_clean = X*lung_mask
+# X_clean = (X_clean - np.mean(X_clean))/np.std(X_clean)
+# plt.imshow(X)
+# plt.imshow(filtre)
+# plt.imshow(filtre*X)
+# plt.imshow(X_clean)
+# plt.show()
+# # Aplicar filtre pulmo
+
+
+
 # 3d sliding plot
-plotting.cube_show_slider(p[0])  # image
+filter = np.where(p[0].any()>-1000 and p[0].any()<750)
+
+plotting.cube_show_slider(p[0]*filter)  # image
 plotting.cube_show_slider(p[1])  # lung mask
 plotting.cube_show_slider(p[2])  # nodule mask (if exists)
 
@@ -115,7 +131,7 @@ for i in range(p[2].shape[0]):
     if np.max(p[2,i])!=0:
         print i
 
-plotting.plot_mask(p[0,58], p[2,58])
+plotting.plot_mask(p[0,41], p[2,41])
 
 
 ## Detect bad segmentation
