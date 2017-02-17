@@ -27,8 +27,8 @@ num_epoch = 10
 max_data_chunk = 2
 max_batch_size = 2
 prefixes_to_load = ['luna_']
-input_paths = ['../../data/preprocessed3_small']#/mnt/hd2/preprocessed2']
-#input_paths = ['/mnt/hd2/preprocessed3']#/mnt/hd2/preprocessed2']
+#input_paths = ['../../data/preprocessed3_small']#/mnt/hd2/preprocessed2']
+input_paths = ['/mnt/hd2/preprocessed3']#/mnt/hd2/preprocessed2']
 
 # PATHS
 model_path  = '/home/jose/kaggle/cfis/lung_cancer_ds_bowl/models'
