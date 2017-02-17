@@ -71,18 +71,18 @@ for i_epoch in range(num_epoch):
     ## TRAIN CHUNK BY CHUNK
     # c
 
-    X_tot = []
-    Y_tot = []
-    for is_valid, (X, Y_mask, Y) in dataset.get_data('train', 2, normalize):
+    # X_tot = []
+    # Y_tot = []
+    for is_valid, (X, Y_mask, Y) in dataset.get_data('train', 20, normalize):
         if is_valid:
-            X_tot.append(X[0,0])
-            Y_tot.append(Y_mask[0,0])
-    X_tot = np.expand_dims(np.asarray(X_tot),axis=1)
-    Y_tot = np.expand_dims(np.asarray(Y_tot),axis=1)
+    #         X_tot.append(X[0,0])
+    #         Y_tot.append(Y_mask[0,0])
+    # X_tot = np.expand_dims(np.asarray(X_tot),axis=1)
+    # Y_tot = np.expand_dims(np.asarray(Y_tot),axis=1)
             #print X.shape
             #print Y_mask.shape
-            #model.fit(X, Y_mask, verbose=1, nb_epoch=1, batch_size=2, shuffle=True, callbacks=[tb])
-    model.fit(X_tot, Y_tot, verbose=1, nb_epoch=1, batch_size=2, shuffle=True, callbacks=[tb])
+            model.fit(X, Y_mask, verbose=1, nb_epoch=1, batch_size=2, shuffle=True, callbacks=[tb])
+    # model.fit(X_tot, Y_tot, verbose=1, nb_epoch=1, batch_size=2, shuffle=True, callbacks=[tb])
             #break
         # if i%%10==0:
         #     print 'Predicting'
