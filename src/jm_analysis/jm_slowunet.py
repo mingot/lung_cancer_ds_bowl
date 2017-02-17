@@ -25,8 +25,8 @@ prefixes_to_load = ['luna_']
 # PATHS
 wp = os.environ['LUNG_PATH']
 model_path  = wp + 'models/'
-input_paths = [wp + 'data/preprocessed3_small']#/mnt/hd2/preprocessed2']
-#input_paths = ['/mnt/hd2/preprocessed3']#/mnt/hd2/preprocessed2']
+#input_paths = [wp + 'data/preprocessed3_small']#/mnt/hd2/preprocessed2']
+input_paths = ['/mnt/hd2/preprocessed3']#/mnt/hd2/preprocessed2']
 logdir = wp + 'logs/%s' % str(int(time()))
 if not os.path.exists(logdir):
     os.makedirs(logdir)
@@ -65,7 +65,7 @@ model.compile(optimizer=Adam(lr=1.0e-5), loss=dice_coef_loss, metrics=[dice_coef
 
 X_val = []
 Y_val = []
-for is_valid, (X, Y_mask, Y) in dataset.get_data('valid', 2, normalize):
+for is_valid, (X, Y_mask, Y) in dataset.get_data('valid', 1, normalize):
     if is_valid:
         X_val.append(X[0,0])
         Y_val.append(Y_mask[0,0])
@@ -74,51 +74,52 @@ Y_val = np.expand_dims(np.asarray(Y_val),axis=1)
 
 print X_val.shape
 
+X_tot = []
+Y_tot = []
+for is_valid, (X, Y_mask, Y) in dataset.get_data('train', 1, normalize):
+    if is_valid:
+        X_tot.append(X[0,0])
+        Y_tot.append(Y_mask[0,0])
+X_tot = np.expand_dims(np.asarray(X_tot),axis=1)
+Y_tot = np.expand_dims(np.asarray(Y_tot),axis=1)
+
+model_checkpoint = keras.callbacks.ModelCheckpoint(model_path + 'jm_slowunet_v2.hdf5', monitor='loss', save_best_only=True)
+model.fit(X_tot, Y_tot, verbose=1, nb_epoch=10, batch_size=2, validation_data=(X_val, Y_val), shuffle=True, callbacks=[tb])
 
 
-## TRAIN
-for i_epoch in range(num_epoch):
-    print("Current epoch " + str(i_epoch))
-
-    ## TRAIN CHUNK BY CHUNK
-    # c
-
-    X_tot = []
-    Y_tot = []
-    for is_valid, (X, Y_mask, Y) in dataset.get_data('train', 1, normalize):
-        if is_valid:
-            X_tot.append(X[0,0])
-            Y_tot.append(Y_mask[0,0])
-    X_tot = np.expand_dims(np.asarray(X_tot),axis=1)
-    Y_tot = np.expand_dims(np.asarray(Y_tot),axis=1)
-            #print X.shape
-            #print Y_mask.shape
-            #model.fit(X, Y_mask, verbose=1, nb_epoch=1, batch_size=4, validation_data=(X_val, Y_val), shuffle=True, callbacks=[tb])  # validation_split=.25
-    model.fit(X_tot, Y_tot, verbose=1, nb_epoch=1, batch_size=2, validation_data=(X_val, Y_val), shuffle=True, callbacks=[tb])
-            #break
-        # if i%%10==0:
-        #     print 'Predicting'
-        #     Y_pred = model.predict(X)
-        #     plt.imshow(X[0,0])
-        #     plt.show()
-        #     plt.imshow(Y_mask[0,0])
-        #     plt.show()
-        #     plotting.plot_mask(X[0,0], Y_mask[0,0])
-        #     plt.imshow(Y_pred[0,0])
-        #     plt.show()
-        #     dice_coef_np(y_true=Y_mask[0,0].astype(np.float32), y_pred=Y_pred[0,0])
-        #     #Y_mask.astype(np.float32)
-        #     np.save()
-
-    ## SAVE MODEL AFTER 1 EPOCH
-    model.save(model_path + 'jm_slowunet.hdf5')
-
-    ## VALIDATE THE MODEL ON VALID SET
-    vals_metrics = []
-    for is_valid, (X, Y_mask, Y) in dataset.get_data('valid', max_data_chunk, normalize):
-        if is_valid:
-            vals_metrics.append(model.evaluate(X,Y_mask,batch_size=max_batch_size))
-    print("Validation loss " + str(np.mean(vals_metrics)))
+# ## TRAIN
+# for i_epoch in range(num_epoch):
+#     print("Current epoch " + str(i_epoch))
+#
+#     ## TRAIN CHUNK BY CHUNK
+#
+#     for is_valid, (X, Y_mask, Y) in dataset.get_data('train', 50, normalize):
+#         if is_valid:
+#             model.fit(X, Y_mask, verbose=1, nb_epoch=1, batch_size=2, shuffle=True, callbacks=[tb])  # validation_split=.25
+#
+#         # if i%%10==0:
+#         #     print 'Predicting'
+#         #     Y_pred = model.predict(X)
+#         #     plt.imshow(X[0,0])
+#         #     plt.show()
+#         #     plt.imshow(Y_mask[0,0])
+#         #     plt.show()
+#         #     plotting.plot_mask(X[0,0], Y_mask[0,0])
+#         #     plt.imshow(Y_pred[0,0])
+#         #     plt.show()
+#         #     dice_coef_np(y_true=Y_mask[0,0].astype(np.float32), y_pred=Y_pred[0,0])
+#         #     #Y_mask.astype(np.float32)
+#         #     np.save()
+#
+#     ## SAVE MODEL AFTER 1 EPOCH
+#     model.save(model_path + 'jm_slowunet.hdf5')
+#
+#     ## VALIDATE THE MODEL ON VALID SET
+#     vals_metrics = []
+#     for is_valid, (X, Y_mask, Y) in dataset.get_data('valid', max_data_chunk, normalize):
+#         if is_valid:
+#             vals_metrics.append(model.evaluate(X,Y_mask,batch_size=max_batch_size))
+#     print("Validation loss " + str(np.mean(vals_metrics)))
 
 
 # VISUALIZE RESULTS
