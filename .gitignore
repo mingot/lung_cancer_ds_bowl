@@ -17,3 +17,6 @@ personal/
 
 # tensorboard files
 events.out.tfevents.*
+
+# models
+*.hdf5

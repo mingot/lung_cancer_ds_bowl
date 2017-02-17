@@ -85,7 +85,8 @@ class LunaMasked_SlicesDataset(Generic_SlicesDataset):
             if b.shape[0]!=3:
                 continue
             else:
-                yield b[0,j,:,:]*b[1,j,:,:], b[2,j,:,:], None  # apply lung mask
+                #yield b[0,j,:,:]*b[1,j,:,:], b[2,j,:,:], None  # apply lung mask
+                yield b[0,j,:,:], b[1,j,:,:], None  # apply lung mask
 
 
 

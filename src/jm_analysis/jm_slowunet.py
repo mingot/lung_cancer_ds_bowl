@@ -12,6 +12,8 @@ from keras import backend as K
 from networks.unet import UNETArchitecture
 from datasets.basic_dataset import LunaNonEmptyMasked_SlicesDataset
 from experiments.jose_cordero_sample_experiment.experiments_utils import visualize_case #, dice_coef_loss
+from utils.tb_callback import TensorBoard
+
 K.set_image_dim_ordering('th')
 
 # PARAMETERS
@@ -23,14 +25,15 @@ prefixes_to_load = ['luna_']
 # PATHS
 wp = os.environ['LUNG_PATH']
 model_path  = wp + 'models/'
-#input_paths = ['../../data/preprocessed3_small']#/mnt/hd2/preprocessed2']
-input_paths = ['/mnt/hd2/preprocessed3']#/mnt/hd2/preprocessed2']
+input_paths = [wp + 'data/preprocessed3_small']#/mnt/hd2/preprocessed2']
+#input_paths = ['/mnt/hd2/preprocessed3']#/mnt/hd2/preprocessed2']
 logdir = wp + 'logs/%s' % str(int(time()))
 if not os.path.exists(logdir):
     os.makedirs(logdir)
 
 # TENSORBOARD
-tb = keras.callbacks.TensorBoard(log_dir=logdir, histogram_freq=10, write_graph=True, write_images=True)
+#tb = keras.callbacks.TensorBoard(log_dir=logdir, histogram_freq=1, write_graph=False, write_images=True)
+tb = TensorBoard(log_dir=logdir, histogram_freq=1, write_graph=False, write_images=True)
 
 # LOAD LUNA DATASET
 dataset = LunaNonEmptyMasked_SlicesDataset(prefixes_to_load, input_paths)
@@ -45,7 +48,7 @@ model = arch.get_model()
 def dice_coef_loss(y_true, y_pred):
     y_true_f = K.flatten(y_true)
     y_pred_f = K.flatten(y_pred)
-    intersection = 1000*K.sum(y_true_f * y_pred_f)
+    intersection = K.sum(y_true_f * y_pred_f)
     return -(2. * intersection + 1.0) / (K.sum(y_true_f) + K.sum(y_pred_f) + 1.0)
 
 def dice_coef_np(y_true,y_pred):
@@ -70,7 +73,7 @@ for i_epoch in range(num_epoch):
 
     # X_tot = []
     # Y_tot = []
-    for is_valid, (X, Y_mask, Y) in dataset.get_data('train', 50, normalize):
+    for is_valid, (X, Y_mask, Y) in dataset.get_data('train', 2, normalize):
         if is_valid:
     #         X_tot.append(X[0,0])
     #         Y_tot.append(Y_mask[0,0])
