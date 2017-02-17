@@ -85,9 +85,8 @@ class LunaMasked_SlicesDataset(Generic_SlicesDataset):
             if b.shape[0]!=3:
                 continue
             else:
-                if b[2,j,:,:].sum()!=0:  # apply filter here (TODO: UNDO)
-                    yield b[0,j,:,:]*b[1,j,:,:], b[2,j,:,:], None  # apply lung mask
-                    break  ## Single slice per patient! (TODO: UNDO)
+                yield b[0,j,:,:]*b[1,j,:,:], b[2,j,:,:], None  # apply lung mask
+
 
 
 ## This dataset returns Luna datasets and masks
