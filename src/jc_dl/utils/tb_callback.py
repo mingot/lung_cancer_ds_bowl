@@ -53,6 +53,7 @@ class TensorBoard(Callback):
         self.sess = K.get_session()
         if self.histogram_freq and self.merged is None:
             for layer in self.model.layers:
+                print('[TB] Layer: %s ' % layer.name)
 
                 for weight in layer.weights:
                     tf.summary.histogram(weight.name, weight)
@@ -72,15 +73,12 @@ class TensorBoard(Callback):
                         tf.summary.image(weight.name, w_img)
 
                 if hasattr(layer, 'output'):
-                    tf.summary.histogram('{}_out'.format(layer.name),
-                                             layer.output)
-
+                    tf.summary.histogram('{}_out'.format(layer.name), layer.output)
 
         self.merged = tf.summary.merge_all()
 
         if self.write_graph:
-            self.writer = tf.summary.FileWriter(self.log_dir,
-                                                self.sess.graph)
+            self.writer = tf.summary.FileWriter(self.log_dir, self.sess.graph)
         else:
             self.writer = tf.summary.FileWriter(self.log_dir)
 
@@ -91,6 +89,7 @@ class TensorBoard(Callback):
 
         if self.model.validation_data and self.histogram_freq:
             if epoch % self.histogram_freq == 0:
+                print('[TBD] Inside histogram_freq')
                 # TODO: implement batched calls to sess.run
                 # (current call will likely go OOM on GPU)
                 if self.model.uses_learning_phase:
@@ -102,10 +101,12 @@ class TensorBoard(Callback):
                     tensors = self.model.inputs
                 feed_dict = dict(zip(tensors, val_data))
                 result = self.sess.run([self.merged], feed_dict=feed_dict)
+                print('[TBD] Inside histogram_freq, result: %s' % str(result[0]))
                 summary_str = result[0]
                 self.writer.add_summary(summary_str, epoch)
 
         for name, value in logs.items():
+            print('[TB] name:%s, value:%s' % (str(name), str(value)))
             if name in ['batch', 'size']:
                 continue
             summary = tf.Summary()
