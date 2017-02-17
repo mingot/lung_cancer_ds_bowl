@@ -27,8 +27,8 @@ num_epoch = 10
 max_data_chunk = 2
 max_batch_size = 2
 prefixes_to_load = ['luna_']
-#input_paths = ['../../data/preprocessed3_small']#/mnt/hd2/preprocessed2']
-input_paths = ['/mnt/hd2/preprocessed3']#/mnt/hd2/preprocessed2']
+input_paths = ['../../data/preprocessed3_small']#/mnt/hd2/preprocessed2']
+#input_paths = ['/mnt/hd2/preprocessed3']#/mnt/hd2/preprocessed2']
 
 # PATHS
 model_path  = '/home/jose/kaggle/cfis/lung_cancer_ds_bowl/models'
@@ -62,16 +62,27 @@ def dice_coef_np(y_true,y_pred):
 model.compile(optimizer=Adam(lr=1.0e-5), loss=dice_coef_loss, metrics=[dice_coef_loss])
 
 
+
+
 ## TRAIN
 for i_epoch in range(num_epoch):
     print("Current epoch " + str(i_epoch))
 
     ## TRAIN CHUNK BY CHUNK
+    # c
+
+    X_tot = []
+    Y_tot = []
     for is_valid, (X, Y_mask, Y) in dataset.get_data('train', 2, normalize):
         if is_valid:
+            X_tot.append(X[0,0])
+            Y_tot.append(Y_mask[0,0])
+    X_tot = np.expand_dims(np.asarray(X_tot),axis=1)
+    Y_tot = np.expand_dims(np.asarray(Y_tot),axis=1)
             #print X.shape
             #print Y_mask.shape
-            model.fit(X, Y_mask, verbose=1, nb_epoch=1, batch_size=2, shuffle=True, callbacks=[tb])
+            #model.fit(X, Y_mask, verbose=1, nb_epoch=1, batch_size=2, shuffle=True, callbacks=[tb])
+    model.fit(X_tot, Y_tot, verbose=1, nb_epoch=1, batch_size=2, shuffle=True, callbacks=[tb])
             #break
         # if i%%10==0:
         #     print 'Predicting'
