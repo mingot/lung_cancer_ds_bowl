@@ -73,7 +73,7 @@ for i_epoch in range(num_epoch):
 
     # X_tot = []
     # Y_tot = []
-    for is_valid, (X, Y_mask, Y) in dataset.get_data('train', 2, normalize):
+    for is_valid, (X, Y_mask, Y) in dataset.get_data('train', 50, normalize):
         if is_valid:
     #         X_tot.append(X[0,0])
     #         Y_tot.append(Y_mask[0,0])
