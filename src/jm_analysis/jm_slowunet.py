@@ -91,7 +91,7 @@ def load_patients(filelist):
             lung_image[lung_mask==0]=-1000  # apply mask
             X.append(normalize(lung_image))
             Y.append(nodules_mask)
-            if tot>3:  # at most 3 slices per patient
+            if tot>2:  # at most 3 slices per patient
                 break
         print 'patient %s added %d slices' % (filename, tot)
 
@@ -106,7 +106,7 @@ file_list = [g for g in mylist if g.startswith('luna_')]
 #file_list = file_list[:20]
 random.shuffle(file_list)
 print 'Creating test set...'
-X_test, Y_test = load_patients(file_list[-20:])
+X_test, Y_test = load_patients(file_list[-10:])
 
 
 NUM_EPOCHS = 10
@@ -114,8 +114,8 @@ print('Training...\n')
 model_checkpoint = keras.callbacks.ModelCheckpoint(model_path + 'jm_slowunet_v2.hdf5', monitor='loss', save_best_only=True)
 for i in range(NUM_EPOCHS):
     print 'Epoch: %d/%d' % (i, NUM_EPOCHS)
-    for j in range(10):
-        X_train, Y_train = load_patients(file_list[j*50:(j+1)*50])
+    for j in range(15):
+        X_train, Y_train = load_patients(file_list[j*20:(j+1)*20])
         model.fit(X_train, Y_train, verbose=1, nb_epoch=1, batch_size=2, validation_data=(X_test, Y_test), shuffle=True, callbacks=[tb])
 
 
