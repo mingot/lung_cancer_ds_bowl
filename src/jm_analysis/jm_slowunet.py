@@ -25,15 +25,15 @@ prefixes_to_load = ['luna_']
 # PATHS
 wp = os.environ['LUNG_PATH']
 model_path  = wp + 'models/'
-#input_paths = [wp + 'data/preprocessed3_small']#/mnt/hd2/preprocessed2']
-input_paths = ['/mnt/hd2/preprocessed3']#/mnt/hd2/preprocessed2']
+input_paths = [wp + 'data/preprocessed3_small']#/mnt/hd2/preprocessed2']
+#input_paths = ['/mnt/hd2/preprocessed3']#/mnt/hd2/preprocessed2']
 logdir = wp + 'logs/%s' % str(int(time()))
 if not os.path.exists(logdir):
     os.makedirs(logdir)
 
 # TENSORBOARD
 #tb = keras.callbacks.TensorBoard(log_dir=logdir, histogram_freq=1, write_graph=False, write_images=True)
-tb = TensorBoard(log_dir=logdir, histogram_freq=1, write_graph=False, write_images=True)
+tb = TensorBoard(log_dir=logdir, histogram_freq=1, write_graph=False, write_images=False)
 
 # LOAD LUNA DATASET
 dataset = LunaNonEmptyMasked_SlicesDataset(prefixes_to_load, input_paths)
@@ -62,7 +62,7 @@ def dice_coef_np(y_true,y_pred):
 # model.compile(optimizer=Adam(lr=1.0e-5), loss='binary_crossentropy', metrics=['binary_crossentropy', dice_coef_loss])
 model.compile(optimizer=Adam(lr=1.0e-5), loss=dice_coef_loss, metrics=[dice_coef_loss])
 
-
+print('Creating validation set...\n')
 X_val = []
 Y_val = []
 for is_valid, (X, Y_mask, Y) in dataset.get_data('valid', 1, normalize):
@@ -72,8 +72,8 @@ for is_valid, (X, Y_mask, Y) in dataset.get_data('valid', 1, normalize):
 X_val = np.expand_dims(np.asarray(X_val),axis=1)
 Y_val = np.expand_dims(np.asarray(Y_val),axis=1)
 
-print X_val.shape
 
+print('Creating training set...\n')
 X_tot = []
 Y_tot = []
 for is_valid, (X, Y_mask, Y) in dataset.get_data('train', 1, normalize):
@@ -83,6 +83,8 @@ for is_valid, (X, Y_mask, Y) in dataset.get_data('train', 1, normalize):
 X_tot = np.expand_dims(np.asarray(X_tot),axis=1)
 Y_tot = np.expand_dims(np.asarray(Y_tot),axis=1)
 
+
+print('Training...\n')
 model_checkpoint = keras.callbacks.ModelCheckpoint(model_path + 'jm_slowunet_v2.hdf5', monitor='loss', save_best_only=True)
 model.fit(X_tot, Y_tot, verbose=1, nb_epoch=10, batch_size=2, validation_data=(X_val, Y_val), shuffle=True, callbacks=[tb])
 
