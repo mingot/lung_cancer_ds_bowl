@@ -103,7 +103,9 @@ file_list = [g for g in mylist if g.startswith('luna_')]
 file_list = file_list[:20]
 random.shuffle(file_list)
 fl_train, fl_test = file_list[:int(.8*len(file_list))], file_list[int(.8*len(file_list)):]
+print 'Creating training set...'
 X_train, Y_train = load_patients(fl_train)
+print 'Creating test set...'
 X_test, Y_test = load_patients(fl_test)
 
 

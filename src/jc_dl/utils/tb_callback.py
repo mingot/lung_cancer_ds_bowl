@@ -53,7 +53,7 @@ class TensorBoard(Callback):
         self.sess = K.get_session()
         if self.histogram_freq and self.merged is None:
             for layer in self.model.layers:
-                print('[TB] Layer: %s ' % layer.name)
+                # print('[TB] Layer: %s ' % layer.name)
 
                 for weight in layer.weights:
                     tf.summary.histogram(weight.name, weight)
@@ -84,12 +84,12 @@ class TensorBoard(Callback):
 
     def on_epoch_end(self, epoch, logs=None):
         logs = logs or {}
-        print('[TB] EPOCH FINISHED!\n')
-        print(epoch)
+        # print('[TB] EPOCH FINISHED!\n')
+        # print(epoch)
 
         if self.model.validation_data and self.histogram_freq:
             if epoch % self.histogram_freq == 0:
-                print('[TBD] Inside histogram_freq')
+                # print('[TBD] Inside histogram_freq')
                 # TODO: implement batched calls to sess.run
                 # (current call will likely go OOM on GPU)
                 if self.model.uses_learning_phase:
@@ -101,12 +101,12 @@ class TensorBoard(Callback):
                     tensors = self.model.inputs
                 feed_dict = dict(zip(tensors, val_data))
                 result = self.sess.run([self.merged], feed_dict=feed_dict)
-                print('[TBD] Inside histogram_freq, result: %s' % str(result[0]))
+                # print('[TBD] Inside histogram_freq, result: %s' % str(result[0]))
                 summary_str = result[0]
                 self.writer.add_summary(summary_str, epoch)
 
         for name, value in logs.items():
-            print('[TB] name:%s, value:%s' % (str(name), str(value)))
+            # print('[TB] name:%s, value:%s' % (str(name), str(value)))
             if name in ['batch', 'size']:
                 continue
             summary = tf.Summary()
