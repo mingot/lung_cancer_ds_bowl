@@ -85,7 +85,13 @@ class LunaMasked_SlicesDataset(Generic_SlicesDataset):
             if b.shape[0]!=3:
                 continue
             else:
-                yield b[0,j,:,:]*b[1,j,:,:], b[2,j,:,:], None  # apply lung mask
+                # Filter lungs
+                lung_mask = b[1,j,:,:]
+                voxel_volume_l = 2*0.7*0.7/(1000000.0)
+                lung_volume_l = np.sum(lung_mask)*voxel_volume_l
+                if lung_volume_l < 2 or lung_volume_l > 10:
+                    continue  # skip slices with bad lung segmentation
+                yield b[0,j,:,:]*lung_mask, b[2,j,:,:], None  # apply lung mask
                 #yield b[0,j,:,:], b[1,j,:,:], None  # apply lung mask
 
 
