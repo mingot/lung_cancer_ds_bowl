@@ -101,7 +101,7 @@ def load_patients(filelist):
 import random
 mylist = os.listdir(input_path)
 file_list = [g for g in mylist if g.startswith('luna_')]
-file_list = file_list[:20]
+#file_list = file_list[:20]
 random.shuffle(file_list)
 fl_train, fl_test = file_list[:int(.8*len(file_list))], file_list[int(.8*len(file_list)):]
 print 'Creating training set...'
