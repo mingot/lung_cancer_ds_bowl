@@ -141,9 +141,11 @@ X_test, Y_test = load_patients(fl_test)
 # Y_tot = np.expand_dims(np.asarray(Y_tot),axis=1)
 
 
+NUM_EPOCHS = 10
 print('Training...\n')
 model_checkpoint = keras.callbacks.ModelCheckpoint(model_path + 'jm_slowunet_v2.hdf5', monitor='loss', save_best_only=True)
-for i in range(10):
+for i in range(NUM_EPOCHS):
+    print 'Epoch: %d/%d' % (i, NUM_EPOCHS)
     model.fit(X_train, Y_train, verbose=1, nb_epoch=1, batch_size=2, validation_data=(X_test, Y_test), shuffle=True, callbacks=[tb])
 
 
