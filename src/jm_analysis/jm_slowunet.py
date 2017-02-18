@@ -143,7 +143,8 @@ X_test, Y_test = load_patients(fl_test)
 
 print('Training...\n')
 model_checkpoint = keras.callbacks.ModelCheckpoint(model_path + 'jm_slowunet_v2.hdf5', monitor='loss', save_best_only=True)
-model.fit(X_train, Y_train, verbose=1, nb_epoch=10, batch_size=2, validation_data=(X_test, Y_test), shuffle=True, callbacks=[tb])
+for i in range(10):
+    model.fit(X_train, Y_train, verbose=1, nb_epoch=1, batch_size=2, validation_data=(X_test, Y_test), shuffle=True, callbacks=[tb])
 
 
 # ## TRAIN
