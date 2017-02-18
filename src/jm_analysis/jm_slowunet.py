@@ -76,10 +76,13 @@ Y_val = np.expand_dims(np.asarray(Y_val),axis=1)
 print('Creating training set...\n')
 X_tot = []
 Y_tot = []
+i=0
 for is_valid, (X, Y_mask, Y) in dataset.get_data('train', 1, normalize):
     if len(X_tot)>10:
         break
     if is_valid:
+        print("Iteration: %d" % i)
+        i+=1
         X_tot.append(X[0,0])
         Y_tot.append(Y_mask[0,0])
 X_tot = np.expand_dims(np.asarray(X_tot),axis=1)
