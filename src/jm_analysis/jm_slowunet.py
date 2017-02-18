@@ -25,8 +25,8 @@ prefixes_to_load = ['luna_']
 # PATHS
 wp = os.environ['LUNG_PATH']
 model_path  = wp + 'models/'
-input_paths = [wp + 'data/preprocessed3_small']#/mnt/hd2/preprocessed2']
-#input_paths = ['/mnt/hd2/preprocessed3']#/mnt/hd2/preprocessed2']
+#input_paths = [wp + 'data/preprocessed3_small']#/mnt/hd2/preprocessed2']
+input_paths = ['/mnt/hd2/preprocessed3']#/mnt/hd2/preprocessed2']
 logdir = wp + 'logs/%s' % str(int(time()))
 if not os.path.exists(logdir):
     os.makedirs(logdir)
