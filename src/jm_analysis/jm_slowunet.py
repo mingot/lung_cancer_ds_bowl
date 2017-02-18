@@ -88,7 +88,8 @@ def load_patients(filelist):
 
             # if ok append
             tot+=1
-            X.append(normalize(lung_image*lung_mask))
+            lung_image[lung_mask==0]=-1000  # apply mask
+            X.append(normalize(lung_image))
             Y.append(nodules_mask)
         print 'patient %s added %d slices' % (filename, tot)
 
