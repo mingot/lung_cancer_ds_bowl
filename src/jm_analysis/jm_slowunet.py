@@ -65,8 +65,11 @@ model.compile(optimizer=Adam(lr=1.0e-5), loss=dice_coef_loss, metrics=[dice_coef
 print('Creating validation set...\n')
 X_val = []
 Y_val = []
+i=0
 for is_valid, (X, Y_mask, Y) in dataset.get_data('valid', 1, normalize):
     if is_valid:
+        print("Iteration: %d" % i)
+        i+=1
         X_val.append(X[0,0])
         Y_val.append(Y_mask[0,0])
 X_val = np.expand_dims(np.asarray(X_val),axis=1)
