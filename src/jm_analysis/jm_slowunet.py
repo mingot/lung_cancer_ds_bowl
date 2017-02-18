@@ -77,7 +77,7 @@ print X_val.shape
 X_tot = []
 Y_tot = []
 for is_valid, (X, Y_mask, Y) in dataset.get_data('train', 1, normalize):
-    if len(X) == 10: break
+    if len(X_tot) == 10: break
     if is_valid:
         X_tot.append(X[0,0])
         Y_tot.append(Y_mask[0,0])
