@@ -91,6 +91,8 @@ def load_patients(filelist):
             lung_image[lung_mask==0]=-1000  # apply mask
             X.append(normalize(lung_image))
             Y.append(nodules_mask)
+            if tot>3:  # at most 3 slices per patient
+                continue
         print 'patient %s added %d slices' % (filename, tot)
 
     X = np.expand_dims(np.asarray(X),axis=1)
@@ -103,11 +105,20 @@ mylist = os.listdir(input_path)
 file_list = [g for g in mylist if g.startswith('luna_')]
 #file_list = file_list[:20]
 random.shuffle(file_list)
-fl_train, fl_test = file_list[:int(.8*len(file_list))], file_list[int(.8*len(file_list)):]
-print 'Creating training set...'
-X_train, Y_train = load_patients(fl_train)
 print 'Creating test set...'
-X_test, Y_test = load_patients(fl_test)
+X_test, Y_test = load_patients(file_list[-20:])
+
+
+NUM_EPOCHS = 10
+print('Training...\n')
+model_checkpoint = keras.callbacks.ModelCheckpoint(model_path + 'jm_slowunet_v2.hdf5', monitor='loss', save_best_only=True)
+for i in range(NUM_EPOCHS):
+    print 'Epoch: %d/%d' % (i, NUM_EPOCHS)
+    for j in range(10):
+        X_train, Y_train = load_patients(file_list[j*50:(j+1)*50])
+        model.fit(X_train, Y_train, verbose=1, nb_epoch=1, batch_size=2, validation_data=(X_test, Y_test), shuffle=True, callbacks=[tb])
+
+
 
 
 
@@ -141,12 +152,7 @@ X_test, Y_test = load_patients(fl_test)
 # Y_tot = np.expand_dims(np.asarray(Y_tot),axis=1)
 
 
-NUM_EPOCHS = 10
-print('Training...\n')
-model_checkpoint = keras.callbacks.ModelCheckpoint(model_path + 'jm_slowunet_v2.hdf5', monitor='loss', save_best_only=True)
-for i in range(NUM_EPOCHS):
-    print 'Epoch: %d/%d' % (i, NUM_EPOCHS)
-    model.fit(X_train, Y_train, verbose=1, nb_epoch=1, batch_size=2, validation_data=(X_test, Y_test), shuffle=True, callbacks=[tb])
+
 
 
 # ## TRAIN
