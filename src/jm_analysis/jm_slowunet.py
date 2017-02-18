@@ -33,7 +33,7 @@ if not os.path.exists(logdir):
 
 # TENSORBOARD
 #tb = keras.callbacks.TensorBoard(log_dir=logdir, histogram_freq=1, write_graph=False, write_images=True)
-tb = TensorBoard(log_dir=logdir, histogram_freq=1, write_graph=False, write_images=True)
+tb = TensorBoard(log_dir=logdir, histogram_freq=1, write_graph=False, write_images=False)
 
 # LOAD LUNA DATASET
 dataset = LunaNonEmptyMasked_SlicesDataset(prefixes_to_load, input_paths)
@@ -77,6 +77,7 @@ print X_val.shape
 X_tot = []
 Y_tot = []
 for is_valid, (X, Y_mask, Y) in dataset.get_data('train', 1, normalize):
+    if len(X) == 10: break
     if is_valid:
         X_tot.append(X[0,0])
         Y_tot.append(Y_mask[0,0])
