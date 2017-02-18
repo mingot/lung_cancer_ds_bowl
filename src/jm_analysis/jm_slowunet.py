@@ -92,7 +92,7 @@ def load_patients(filelist):
             X.append(normalize(lung_image))
             Y.append(nodules_mask)
             if tot>3:  # at most 3 slices per patient
-                continue
+                break
         print 'patient %s added %d slices' % (filename, tot)
 
     X = np.expand_dims(np.asarray(X),axis=1)
