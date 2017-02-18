@@ -25,8 +25,8 @@ prefixes_to_load = ['luna_']
 # PATHS
 wp = os.environ['LUNG_PATH']
 model_path  = wp + 'models/'
-#input_paths = [wp + 'data/preprocessed3_small']#/mnt/hd2/preprocessed2']
-input_paths = ['/mnt/hd2/preprocessed3']#/mnt/hd2/preprocessed2']
+#input_path = wp + 'data/preprocessed3_small' #/mnt/hd2/preprocessed2'
+input_path = '/mnt/hd2/preprocessed3'#/mnt/hd2/preprocessed2']
 logdir = wp + 'logs/%s' % str(int(time()))
 if not os.path.exists(logdir):
     os.makedirs(logdir)
@@ -36,13 +36,8 @@ if not os.path.exists(logdir):
 tb = TensorBoard(log_dir=logdir, histogram_freq=1, write_graph=False, write_images=False)
 
 # LOAD LUNA DATASET
-dataset = LunaNonEmptyMasked_SlicesDataset(prefixes_to_load, input_paths)
 # DEFINE NORMALIZE FUNCTION (PROVISIONAL)
 normalize = lambda x: (x - np.mean(x))/np.std(x)
-
-# LOAD MODEL
-arch = UNETArchitecture((1,512,512),False)
-model = arch.get_model()
 
 
 def dice_coef_loss(y_true, y_pred):
@@ -57,44 +52,95 @@ def dice_coef_np(y_true,y_pred):
     intersection = 1000*np.sum(y_true_f * y_pred_f)
     return -(2. * intersection + 1.0) / (np.sum(y_true_f) + np.sum(y_pred_f) + 1.0)
 
-
+# LOAD MODEL
+arch = UNETArchitecture((1,512,512),False)
+model = arch.get_model()
 ## COMPILE THE MODEL
 # model.compile(optimizer=Adam(lr=1.0e-5), loss='binary_crossentropy', metrics=['binary_crossentropy', dice_coef_loss])
 model.compile(optimizer=Adam(lr=1.0e-5), loss=dice_coef_loss, metrics=[dice_coef_loss])
 
-print('Creating validation set...\n')
-X_val = []
-Y_val = []
-i=0
-for is_valid, (X, Y_mask, Y) in dataset.get_data('valid', 1, normalize):
-    if is_valid:
-        print("Iteration: %d" % i)
-        i+=1
-        X_val.append(X[0,0])
-        Y_val.append(Y_mask[0,0])
-X_val = np.expand_dims(np.asarray(X_val),axis=1)
-Y_val = np.expand_dims(np.asarray(Y_val),axis=1)
 
 
-print('Creating training set...\n')
-X_tot = []
-Y_tot = []
-i=0
-for is_valid, (X, Y_mask, Y) in dataset.get_data('train', 1, normalize):
-    if len(X_tot)>10:
-        break
-    if is_valid:
-        print("Iteration: %d" % i)
-        i+=1
-        X_tot.append(X[0,0])
-        Y_tot.append(Y_mask[0,0])
-X_tot = np.expand_dims(np.asarray(X_tot),axis=1)
-Y_tot = np.expand_dims(np.asarray(Y_tot),axis=1)
+
+def load_patients(filelist):
+    X, Y = [], []
+    for filename in filelist:
+        b = np.load(os.path.join(input_path, filename))['arr_0']
+        if b.shape[0]!=3:
+            continue
+
+        tot = 0
+        for j in range(b.shape[1]):
+
+            lung_image = b[0,j,:,:]
+            lung_mask = b[1,j,:,:]
+            nodules_mask = b[2,j,:,:]
+
+            # Discard if no nodules
+            if nodules_mask.sum() == 0:
+                continue
+
+            # Discard if bad segmentation
+            voxel_volume_l = 2*0.7*0.7/(1000000.0)
+            lung_volume_l = np.sum(lung_mask)*voxel_volume_l
+            if lung_volume_l < 0.02 or lung_volume_l > 0.1:
+                continue  # skip slices with bad lung segmentation
+
+            # if ok append
+            tot+=1
+            X.append(normalize(lung_image*lung_mask))
+            Y.append(nodules_mask)
+        print 'patient %s added %d slices' % (filename, tot)
+
+    X = np.expand_dims(np.asarray(X),axis=1)
+    Y = np.expand_dims(np.asarray(Y),axis=1)
+    return X, Y
+
+
+import random
+mylist = os.listdir(input_path)
+file_list = [g for g in mylist if g.startswith('luna_')]
+file_list = file_list[:20]
+random.shuffle(file_list)
+fl_train, fl_test = file_list[:int(.8*len(file_list))], file_list[int(.8*len(file_list)):]
+X_train, Y_train = load_patients(fl_train)
+X_test, Y_test = load_patients(fl_test)
+
+
+
+# print('Creating validation set...\n')
+# X_val = []
+# Y_val = []
+# i=0
+# for is_valid, (X, Y_mask, Y) in dataset.get_data('valid', 1, normalize):
+#     if is_valid:
+#         print("Iteration: %d" % i)
+#         i+=1
+#         X_val.append(X[0,0])
+#         Y_val.append(Y_mask[0,0])
+# X_val = np.expand_dims(np.asarray(X_val),axis=1)
+# Y_val = np.expand_dims(np.asarray(Y_val),axis=1)
+#
+#
+# print('Creating training set...\n')
+# X_tot = []
+# Y_tot = []
+# i=0
+# for is_valid, (X, Y_mask, Y) in dataset.get_data('train', 1, normalize):
+#     if len(X_tot)>10:
+#         break
+#     if is_valid:
+#         print("Iteration: %d" % i)
+#         i+=1
+#         X_tot.append(X[0,0])
+#         Y_tot.append(Y_mask[0,0])
+# X_tot = np.expand_dims(np.asarray(X_tot),axis=1)
+# Y_tot = np.expand_dims(np.asarray(Y_tot),axis=1)
 
 
 print('Training...\n')
 model_checkpoint = keras.callbacks.ModelCheckpoint(model_path + 'jm_slowunet_v2.hdf5', monitor='loss', save_best_only=True)
-model.fit(X_tot, Y_tot, verbose=1, nb_epoch=10, batch_size=2, validation_data=(X_val, Y_val), shuffle=True, callbacks=[tb])
+model.fit(X_train, Y_train, verbose=1, nb_epoch=10, batch_size=2, validation_data=(X_test, Y_test), shuffle=True, callbacks=[tb])
 
 
 # ## TRAIN
