@@ -124,6 +124,6 @@ model.fit(X_tot, Y_tot, verbose=1, nb_epoch=10, batch_size=2, validation_data=(X
 
 
 # VISUALIZE RESULTS
-for is_valid, (X, Y_mask, Y) in dataset.get_data('valid', max_data_chunk, normalize):
-    visualize_case(X,Y_mask,model)
-    break
+# for is_valid, (X, Y_mask, Y) in dataset.get_data('valid', max_data_chunk, normalize):
+#     visualize_case(X,Y_mask,model)
+#     break
