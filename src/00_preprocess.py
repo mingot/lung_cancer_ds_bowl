@@ -8,8 +8,8 @@ Example usage:
 python 00_preprocess.py --input=/Users/mingot/Projectes/kaggle/ds_bowl_lung/data/luna/subset0 --output=/Users/mingot/Projectes/kaggle/ds_bowl_lung/data/preproc_luna --pipeline=luna --nodules=/Users/mingot/Projectes/kaggle/ds_bowl_lung/data/luna/annotations.csv
 python 00_preprocess.py --input=/Users/mingot/Projectes/kaggle/ds_bowl_lung/data/sample_images --output=/Users/mingot/Projectes/kaggle/ds_bowl_lung/data/preproc_dsb --pipeline=dsb
 
-python 00_preprocess.py --input=/home/shared/data/luna/images --output=/mnt/hd2/preprocessed3/ --pipeline=luna --nodules=/home/shared/data/luna/annotations.csv
-python 00_preprocess.py --input=/home/shared/data/stage1 --output=/mnt/hd2/preprocessed3/ --pipeline=dsb
+python 00_preprocess.py --input=/home/shared/data/luna/images --output=/mnt/hd2/preprocessed4/ --pipeline=luna --nodules=/home/shared/data/luna/annotations.csv
+python 00_preprocess.py --input=/home/shared/data/stage1 --output=/mnt/hd2/preprocessed4/ --pipeline=dsb
 """
 
 accepted_datasets = ['dsb', 'lidc', 'luna']
@@ -42,7 +42,7 @@ COMMON_SPACING = [2, 0.7, 0.7]
 
 # Execution parameters
 SHOW_DEBUG_IMAGES = False  # Show intermediate imaged
-SAVE_DEBUG_IMAGES = True
+SAVE_DEBUG_IMAGES = False
 SAVE_RESULTS = True
 
 # Overwriting parameters by console

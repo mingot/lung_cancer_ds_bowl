@@ -22,45 +22,36 @@ max_data_chunk = 2
 max_batch_size = 2
 prefixes_to_load = ['luna_']
 
-# PATHS
+
+## paths
 wp = os.environ['LUNG_PATH']
 model_path  = wp + 'models/'
 #input_path = wp + 'data/preprocessed3_small' #/mnt/hd2/preprocessed2'
-input_path = '/mnt/hd2/preprocessed3'#/mnt/hd2/preprocessed2']
-logdir = wp + 'logs/%s' % str(int(time()))
-if not os.path.exists(logdir):
-    os.makedirs(logdir)
+input_path = '/mnt/hd2/preprocessed3'
+logs_path = wp + 'logs/%s' % str(int(time()))
+if not os.path.exists(logs_path):
+    os.makedirs(logs_path)
 
-# TENSORBOARD
+
+## tensorboard logs
 #tb = keras.callbacks.TensorBoard(log_dir=logdir, histogram_freq=1, write_graph=False, write_images=True)
-tb = TensorBoard(log_dir=logdir, histogram_freq=1, write_graph=False, write_images=False)
-
-# LOAD LUNA DATASET
-# DEFINE NORMALIZE FUNCTION (PROVISIONAL)
-normalize = lambda x: (x - np.mean(x))/np.std(x)
+tb = TensorBoard(log_dir=logs_path, histogram_freq=1, write_graph=False, write_images=False)
 
 
+## model loading
 def dice_coef_loss(y_true, y_pred):
-    y_true_f = K.flatten(y_true)
-    y_pred_f = K.flatten(y_pred)
-    intersection = K.sum(y_true_f * y_pred_f)
-    return -(2. * intersection + 1.0) / (K.sum(y_true_f) + K.sum(y_pred_f) + 1.0)
+    y_true_f = K.flatten(y_true)  # y_true.flatten()
+    y_pred_f = K.flatten(y_pred)  # y_pred.flatten()
+    intersection = K.sum(y_true_f * y_pred_f)  # np.sum(y_true_f * y_pred_f)
+    return -(2. * intersection + 1.0) / (K.sum(y_true_f) + K.sum(y_pred_f) + 1.0)  # -(2. * intersection + 1.0) / (np.sum(y_true_f) + np.sum(y_pred_f) + 1.0)
 
-def dice_coef_np(y_true,y_pred):
-    y_true_f = y_true.flatten()
-    y_pred_f = y_pred.flatten()
-    intersection = 1000*np.sum(y_true_f * y_pred_f)
-    return -(2. * intersection + 1.0) / (np.sum(y_true_f) + np.sum(y_pred_f) + 1.0)
-
-# LOAD MODEL
 arch = UNETArchitecture((1,512,512),False)
 model = arch.get_model()
-## COMPILE THE MODEL
-# model.compile(optimizer=Adam(lr=1.0e-5), loss='binary_crossentropy', metrics=['binary_crossentropy', dice_coef_loss])
 model.compile(optimizer=Adam(lr=1.0e-6), loss=dice_coef_loss, metrics=[dice_coef_loss])
 
 
-
+## Load LUNA dataset
+normalize = lambda x: (x - np.mean(x))/np.std(x)
 
 def load_patients(filelist):
     X, Y = [], []
@@ -111,7 +102,6 @@ def load_patients(filelist):
 import random
 mylist = os.listdir(input_path)
 file_list = [g for g in mylist if g.startswith('luna_')]
-#file_list = file_list[:20]
 random.shuffle(file_list)
 print 'Creating test set...'
 X_test, Y_test = load_patients(file_list[-10:])
@@ -127,9 +117,6 @@ for i in range(NUM_EPOCHS):
     for j in range(30):
         X_train, Y_train = load_patients(file_list[j*20:(j+1)*20])
         model.fit(X_train, Y_train, verbose=1, nb_epoch=1, batch_size=2, validation_data=(X_test, Y_test), shuffle=True, callbacks=[tb])
-
-
-
 
 
 
