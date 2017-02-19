@@ -70,7 +70,7 @@ def load_patients(filelist):
             continue
 
         tot = 0
-        last_slice = 1e3  # big initialization
+        last_slice = -1e3  # big initialization
         slices = []
         for j in range(b.shape[1]):
 
