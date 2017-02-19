@@ -24,7 +24,7 @@ def process_patient_file(patient_file):
     pix = np.flip(pix, axis=0)
     pix[pix < -1500] = -3400
     original_spacing = dicom_get_spacing(patient)
-    pix_resampled, new_spacing = resample(pix, patient, spacing=original_spacing, new_spacing=common_spacing)
+    pix_resampled, new_spacing = resample(pix, spacing=original_spacing, new_spacing=common_spacing)
     
     bone = np.logical_and(pix_resampled > 350, pix_resampled < 2500)
     lower_half = [y > pix_resampled.shape[1]/2 for y in range(pix_resampled.shape[1])]
