@@ -57,7 +57,7 @@ arch = UNETArchitecture((1,512,512),False)
 model = arch.get_model()
 ## COMPILE THE MODEL
 # model.compile(optimizer=Adam(lr=1.0e-5), loss='binary_crossentropy', metrics=['binary_crossentropy', dice_coef_loss])
-model.compile(optimizer=Adam(lr=1.0e-5), loss=dice_coef_loss, metrics=[dice_coef_loss])
+model.compile(optimizer=Adam(lr=1.0e-6), loss=dice_coef_loss, metrics=[dice_coef_loss])
 
 
 
