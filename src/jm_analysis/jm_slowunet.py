@@ -70,6 +70,7 @@ def load_patients(filelist):
             continue
 
         tot = 0
+        last_slice = 1e3  # big initialization
         for j in range(b.shape[1]):
 
             lung_image = b[0,j,:,:]
@@ -86,7 +87,12 @@ def load_patients(filelist):
             if lung_volume_l < 0.02 or lung_volume_l > 0.1:
                 continue  # skip slices with bad lung segmentation
 
+            # discard if consecutive slices
+            if j<last_slice + 5:
+                continue
+
             # if ok append
+            last_slice = j
             tot+=1
             lung_image[lung_mask==0]=-1000  # apply mask
             X.append(normalize(lung_image))
