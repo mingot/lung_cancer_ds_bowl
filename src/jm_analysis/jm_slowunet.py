@@ -71,6 +71,7 @@ def load_patients(filelist):
 
         tot = 0
         last_slice = 1e3  # big initialization
+        slices = []
         for j in range(b.shape[1]):
 
             lung_image = b[0,j,:,:]
@@ -93,13 +94,14 @@ def load_patients(filelist):
 
             # if ok append
             last_slice = j
+            slices.append(j)
             tot+=1
             lung_image[lung_mask==0]=-1000  # apply mask
             X.append(normalize(lung_image))
             Y.append(nodules_mask)
             if tot>2:  # at most 3 slices per patient
                 break
-        print 'patient %s added %d slices' % (filename, tot)
+        print 'patient %s added %d slices: %s' % (filename, tot, str(slices))
 
     X = np.expand_dims(np.asarray(X),axis=1)
     Y = np.expand_dims(np.asarray(Y),axis=1)
