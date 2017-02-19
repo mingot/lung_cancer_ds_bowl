@@ -42,7 +42,7 @@ COMMON_SPACING = [2, 0.7, 0.7]
 
 # Execution parameters
 SHOW_DEBUG_IMAGES = False  # Show intermediate imaged
-SAVE_DEBUG_IMAGES = False
+SAVE_DEBUG_IMAGES = True
 SAVE_RESULTS = True
 
 # Overwriting parameters by console
@@ -96,18 +96,16 @@ for patient_file in patient_files:
     print 'Trying patient: %s' % patient_file
     
     # Read
-    # patid = patients[10]
     try:
         if PIPELINE == 'dsb':
             patient = reading.load_scan(os.path.join(INPUT_FOLDER, patient_file))
             patient_pixels = preprocessing.get_pixels_hu(patient)  # From pixels to HU
-
             originalSpacing = reading.dicom_get_spacing(patient)
             pat_id = patient_file
 
         elif PIPELINE == 'luna':
             patient = sitk.ReadImage(patient_file) 
-            patient_pixels = sitk.GetArrayFromImage(patient) # indexes are z,y,x
+            patient_pixels = sitk.GetArrayFromImage(patient)  # indexes are z,y,x
             originalSpacing = [patient.GetSpacing()[2], patient.GetSpacing()[0], patient.GetSpacing()[1]]
             pat_id = patient_file.split('.')[-2]
 
@@ -130,7 +128,7 @@ for patient_file in patient_files:
             ySize = patient[0].Columns # or the other way around
 
             # Generate the nodule mask
-            nodule_mask = np.zeros((zSize, xSize, ySize), dtype = np.uint8)
+            nodule_mask = np.zeros((zSize, xSize, ySize), dtype=np.uint8)
         
             for pixel_coordinates, diameter in nodules:
                 print pixel_coordinates, diameter, originalSpacing
@@ -138,8 +136,8 @@ for patient_file in patient_files:
                 nodule_mask = reading.draw_in_mask(nodule_mask, nodule_point_list)
 
     except Exception as e:  # Some patients have no data, ignore them
-        print 'There was some problem reading patient %s. Ignoring and live goes on.' % (patient_file)
-        print e
+        print("There was some problem reading patient {}. Ignoring and live goes on.".format(patient_file))
+        print(e)
         continue
 
     # avoid computing the id if not already present
@@ -155,7 +153,7 @@ for patient_file in patient_files:
 
     # Resampling
     pix_resampled, new_spacing = preprocessing.resample(patient_pixels, spacing=originalSpacing, new_spacing=COMMON_SPACING)
-    print 'pix resampled shape: %s' % str(pix_resampled.shape)
+    print("pix resampled shape: {}".format(pix_resampled.shape))
     if nodule_mask is not None:
         nodule_mask, new_spacing = preprocessing.resample(nodule_mask, spacing=originalSpacing, new_spacing=COMMON_SPACING)
     if SHOW_DEBUG_IMAGES:
@@ -165,7 +163,6 @@ for patient_file in patient_files:
         composite_image -= np.min(composite_image)
         composite_image *= 255.0 / np.max(composite_image)
         Image.fromarray(composite_image.astype(np.uint8)).save(os.path.join(OUTPUT_FOLDER, "%s_%s.jpg") % (PIPELINE, pat_id))
-
 
     # Segment lungs
     lung_mask = preprocessing.segment_lung_mask(image=pix_resampled, fill_lung_structures=True)
@@ -181,7 +178,7 @@ for patient_file in patient_files:
     voxel_volume_l = COMMON_SPACING[0]*COMMON_SPACING[1]*COMMON_SPACING[2]/(1000000.0)
     lung_volume_l = np.sum(lung_mask)*voxel_volume_l
     if lung_volume_l < 2 or lung_volume_l > 10:
-        print("Warning lung volume: %s out of physiological values. Double Check segmentation.", pat_id)
+        print("Warning lung volume: {} out of physiological values. Double Check segmentation.".format(pat_id))
 
     # zero center and normalization
     #pix = preprocessing.normalize(pix_resampled)
@@ -203,7 +200,7 @@ for patient_file in patient_files:
     if nodule_mask is not None:
         nodule_mask = preprocessing.resize_image(nodule_mask, size=512)
 
-    print 'pix cropped shape: %s' % str(pix.shape)
+    print("pix cropped shape: {}".format(pix.shape))
 
     #Load nodules, after resampling to do it faster.
     # try:
