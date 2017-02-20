@@ -29,13 +29,12 @@ def __segment_by_thresholding__(image, fill_lung_structures=True):
     binary_image = np.array(image > -320, dtype=np.int8) + 1
     labels = measure.label(morphology.dilation(binary_image))  # dilate the image to avoid gaps in conex components
 
-
     # Pick the pixel in the very corner to determine which label is air.
     #   Improvement: Pick multiple background labels from around the patient
     #   More resistant to "trays" on which the patient lays cutting the air
     #   around the person in half
-    extra_points = [(0,3,3),(0,3,-3),(0,-3,3),(0,-3,-3),
-                    (-1,3,3),(-1,3,-3),(-1,-3,3),(-1,-3,-3)]
+    extra_points = [(0, 3, 3),(0, 3, -3), (0, -3, 3), (0, -3, -3),
+                    (-1, 3, 3), (-1, 3, -3), (-1, -3, 3), (-1, -3, -3)]
 
     background_labels = set()
     for corner in extra_points:
@@ -46,11 +45,9 @@ def __segment_by_thresholding__(image, fill_lung_structures=True):
     background_labels |= set(np.unique(labels[0:n_z, 0:n_x, 0]))
     background_labels |= set(np.unique(labels[0:n_z, 0, 0:n_y]))
 
-
     # change value of background labels
     for l in background_labels:
-        binary_image[labels==l] = 2
-
+        binary_image[labels == l] = 2
 
     # Method of filling the lung structures (that is superior to something like
     # morphological closing)
@@ -74,7 +71,7 @@ def __segment_by_thresholding__(image, fill_lung_structures=True):
         binary_image[labels != l_max] = 0
 
     # Binary dilation
-    binary_image = __dilate__(binary_image, 3)
+    binary_image = __dilate__(binary_image, 5)
 
     return binary_image
 
@@ -95,16 +92,14 @@ def __dilate__(image, iterations_dilate):
 
     if iterations_dilate < 1:
         iterations_dilate = 1
-
     dilated_image = scipy.ndimage.morphology.binary_dilation(image, iterations=iterations_dilate)
-
     return dilated_image
 
 
 def luna_segmentation(img):
     """Perform segmentation as defined in LUNA code."""
     img = (img-np.mean(img))/np.std(img)  # Standardize the pixel values
-    middle = img[100:400,100:400]  # Find the average pixel value near the lungs to renormalize washed out images
+    middle = img[100:400, 100:400]  # Find the average pixel value near the lungs to renormalize washed out images
     mean = np.mean(middle)  
     max = np.max(img)
     min = np.min(img)
@@ -163,7 +158,7 @@ def luna_apply_mask(img, mask):
     
     # pulling the background color up to the lower end of the pixel range for the lungs
     old_min = np.min(img)  # background color
-    img[img==old_min] = new_mean-1.2*new_std   # resetting backgound color
+    img[img == old_min] = new_mean-1.2*new_std   # resetting backgound color
     img -= new_mean
     img /= new_std
     
@@ -192,7 +187,7 @@ def luna_apply_mask(img, mask):
     # cropping the image down to the bounding box for all regions
     # (there's probably an skimage command that can do this in one line)
     img = img[min_row:max_row,min_col:max_col]
-    mask =  mask[min_row:max_row,min_col:max_col]
+    mask = mask[min_row:max_row,min_col:max_col]
     if max_row - min_row < 5 or max_col - min_col < 5:  # skipping all images with no god regions
         return
     else:
