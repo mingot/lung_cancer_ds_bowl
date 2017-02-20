@@ -13,7 +13,7 @@ def get_pixels_hu(slices):
     Given an array of slices from the DICOM, returns and array of images, 
     converting pixel values to HU units.
     """
-    slices = __set_canonical_position__(slices)
+    # slices = __set_canonical_position__(slices)
 
     image = np.stack([s.pixel_array for s in slices])
     # Convert to int16 (from sometimes int16), 
