@@ -73,9 +73,10 @@ if PIPELINE == 'dsb':
 elif PIPELINE == 'lidc':
     patient_files = os.listdir(INPUT_FOLDER)
     try:
-        nodules = pandas.read_csv(NODULES_PATH)
-        nodules.index = nodules['case']
-    except:
+        df_nodules = pandas.read_csv(NODULES_PATH)
+        df_nodules.index = df_nodules['case']
+    except Exception as e:
+        print e
         print 'There are no nodules descriptor in this dataset.'
 
 elif PIPELINE == 'luna':
@@ -131,13 +132,12 @@ for patient_file in patient_files:
             nodule_mask = np.zeros((zSize, xSize, ySize), dtype=np.uint8)
         
             for pixel_coordinates, diameter in nodules:
-                print pixel_coordinates, diameter, originalSpacing
                 nodule_point_list = reading.ball(diameter / 2,  pixel_coordinates, originalSpacing)
                 nodule_mask = reading.draw_in_mask(nodule_mask, nodule_point_list)
 
     except Exception as e:  # Some patients have no data, ignore them
         print("There was some problem reading patient {}. Ignoring and live goes on.".format(patient_file))
-        print(e)
+        print('Exception', e)
         continue
 
     # avoid computing the id if not already present
@@ -234,6 +234,9 @@ for patient_file in patient_files:
         output = np.stack((pix, lung_mask))
     else:
         output = np.stack((pix, lung_mask, nodule_mask))
+        #sanity check: all modules are in the segmentation
+        if np.any(np.logical_and(nodule_mask, 0 == lung_mask)):
+            print ' WARNING! nodules not included in segmentation'
 
     if SAVE_RESULTS:
         np.savez_compressed(os.path.join(OUTPUT_FOLDER, "%s_%s.npz") % (PIPELINE, pat_id), output)
