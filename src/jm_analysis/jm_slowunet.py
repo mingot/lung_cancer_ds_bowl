@@ -30,7 +30,7 @@ if not os.path.exists(logs_path):
 
 
 ## tensorboard logs
-tb = TensorBoard(log_dir=logs_path, histogram_freq=1, write_graph=False, write_images=False)  # replace keras.callbacks.TensorBoard
+# tb = TensorBoard(log_dir=logs_path, histogram_freq=1, write_graph=False, write_images=False)  # replace keras.callbacks.TensorBoard
 
 
 ## model loading
