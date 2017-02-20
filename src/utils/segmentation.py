@@ -2,24 +2,103 @@ import itertools
 
 import numpy as np
 import scipy
-from skimage import measure
 from skimage import morphology
 from skimage.transform import resize
 from sklearn.cluster import KMeans
+from skimage.segmentation import clear_border
+from skimage.measure import label, regionprops, perimeter
+from skimage.morphology import ball, disk, dilation, binary_erosion, remove_small_objects, erosion, closing,\
+    reconstruction, binary_closing
+from skimage.filters import roberts, sobel
+from scipy import ndimage as ndi
 
 
 def segment_lungs(image, fill_lung=True, method='Thresholding'):
 
     if method == 'Thresholding':
         binary_image = __segment_by_thresholding__(image, fill_lung_structures=fill_lung)
-    elif method == 'KMeans':
-        raise NotImplementedError("Segmentation based on KMeans not implemented.")
-    elif method == 'Otsu':
-        raise NotImplementedError("Segmentation based on Otsu thresholding not implemented.")
+    elif method == 'Thresholding2':
+        binary_image = __segment_by_thresholding_2__(image)
     else:
         raise NotImplementedError("Segmentation method not implemented.")
 
     return binary_image
+
+
+def __segment_by_thresholding_2__(image):
+
+    binary_image = np.zeros(shape=image.shape)
+    for k in range(0, image.shape[0]):
+        binary_image[k, :, :] = __segment_lung_2d_image__(image[k, :, :])
+
+    eroded_image = scipy.ndimage.morphology.binary_erosion(binary_image, iterations=3)
+    final_mask = scipy.ndimage.morphology.binary_dilation(eroded_image, iterations=3)
+
+    return final_mask
+
+
+def __segment_lung_2d_image__(im):
+    """
+    This function segments the lungs from the given 2D slice.
+    """
+    '''
+    Step 1: Convert into a binary image.
+    '''
+    binary = im < -400
+    '''
+    Step 2: Remove the blobs connected to the border of the image.
+    '''
+    cleared = clear_border(binary)
+    '''
+    Step 3: Label the image.
+    '''
+    label_image = label(cleared)
+
+    background_labels = set()
+    n_x, n_y = label_image.shape
+    background_labels |= set(np.unique(label_image[0:n_x, 0]))
+    background_labels |= set(np.unique(label_image[0:n_x, -1]))
+    background_labels |= set(np.unique(label_image[0, 0:n_y]))
+    background_labels |= set(np.unique(label_image[-1, 0:n_y]))
+
+    '''
+    Step 4: Keep the labels with 2 largest areas.
+    '''
+    areas = [r.area for r in regionprops(label_image)]
+    areas.sort()
+
+    if len(areas) > 2:
+        for region in regionprops(label_image):
+            if region.label in background_labels:
+                label_image[coordinates[0], coordinates[1]] = 0
+            if region.area < areas[-2]:
+                for coordinates in region.coords:
+                    label_image[coordinates[0], coordinates[1]] = 0
+    binary = label_image > 0
+
+    # change value of background labels
+    #    for l in background_labels:
+    #        binary[label_image == l] = False
+
+    '''
+    Step 5: Erosion operation with a disk of radius 2. This operation is
+    seperate the lung nodules attached to the blood vessels.
+    '''
+    selem = disk(2)
+    binary = binary_erosion(binary, selem)
+    '''
+    Step 6: Closure operation with a disk of radius 10. This operation is
+    to keep nodules attached to the lung wall.
+    '''
+    selem = disk(10)
+    binary = binary_closing(binary, selem)
+    '''
+    Step 7: Fill in the small holes inside the binary mask of lungs.
+    '''
+    edges = roberts(binary)
+    binary = ndi.binary_fill_holes(edges)
+
+    return binary
 
 
 def __segment_by_thresholding__(image, fill_lung_structures=True):
@@ -27,13 +106,13 @@ def __segment_by_thresholding__(image, fill_lung_structures=True):
     # 0 is treated as background, which we do not want
 
     binary_image = np.array(image > -320, dtype=np.int8) + 1
-    labels = measure.label(morphology.dilation(binary_image))  # dilate the image to avoid gaps in conex components
+    labels = label(morphology.dilation(binary_image))  # dilate the image to avoid gaps in conex components
 
     # Pick the pixel in the very corner to determine which label is air.
     #   Improvement: Pick multiple background labels from around the patient
     #   More resistant to "trays" on which the patient lays cutting the air
     #   around the person in half
-    extra_points = [(0, 3, 3),(0, 3, -3), (0, -3, 3), (0, -3, -3),
+    extra_points = [(0, 3, 3), (0, 3, -3), (0, -3, 3), (0, -3, -3),
                     (-1, 3, 3), (-1, 3, -3), (-1, -3, 3), (-1, -3, -3)]
 
     background_labels = set()
@@ -55,7 +134,7 @@ def __segment_by_thresholding__(image, fill_lung_structures=True):
         # For every slice we determine the largest solid structure
         for i, axial_slice in enumerate(binary_image):
             axial_slice = axial_slice - 1
-            labeling = measure.label(axial_slice)
+            labeling = label(axial_slice)
             l_max = __largest_label_volume__(labeling, bg=0)
 
             if l_max is not None:  # This slice contains some lung
@@ -65,7 +144,7 @@ def __segment_by_thresholding__(image, fill_lung_structures=True):
     binary_image = 1 - binary_image  # Invert it, lungs are now 1
 
     # Remove other air pockets inside  body
-    labels = measure.label(binary_image, background=0)
+    labels = label(binary_image, background=0)
     l_max = __largest_label_volume__(labels, bg=0)
     if l_max is not None:  # There are air pockets
         binary_image[labels != l_max] = 0
@@ -126,9 +205,9 @@ def luna_segmentation(img):
     # and bottom of the image, so any regions that are too close to the top and bottom are removed
     # This does not produce a perfect segmentation of the lungs from the image, but it is surprisingly good considering
     # its simplicity.
-    labels = measure.label(dilation)
+    labels = label(dilation)
     label_vals = np.unique(labels)
-    regions = measure.regionprops(labels)
+    regions = regionprops(labels)
     good_labels = []
     for prop in regions:
         B = prop.bbox
@@ -163,8 +242,8 @@ def luna_apply_mask(img, mask):
     img /= new_std
     
     # make image bounding box  (min row, min col, max row, max col)
-    labels = measure.label(mask)
-    regions = measure.regionprops(labels)
+    labels = label(mask)
+    regions = regionprops(labels)
     
     # finding the global min and max row over all regions
     min_row = 512
