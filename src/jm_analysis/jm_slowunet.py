@@ -40,12 +40,15 @@ def dice_coef_loss(y_true, y_pred):
     intersection = K.sum(y_true_f * y_pred_f)  # np.sum(y_true_f * y_pred_f)
     return -(2. * intersection + 1.0) / (K.sum(y_true_f) + K.sum(y_pred_f) + 1.0)  # -(2. * intersection + 1.0) / (np.sum(y_true_f) + np.sum(y_pred_f) + 1.0)
 
+print 'creating model...'
 arch = UNETArchitecture((1,512,512),False)
 model = arch.get_model()
 model.compile(optimizer=Adam(lr=1.0e-6), loss=dice_coef_loss, metrics=[dice_coef_loss])
 
 if USE_EXISTING:
+    print 'loading model...'
     model.load_weights(model_path + 'jm_slowunet_v4.hdf5')
+
 
 ## Load LUNA dataset
 normalize = lambda x: (x - np.mean(x))/np.std(x)
@@ -138,6 +141,7 @@ def intersection_regions(r1, r2):
     unionArea = area1 + area2 - intersectionArea
     overlapArea = intersectionArea*1.0/unionArea # This should be greater than 0.5 to consider it as a valid detection.
     return overlapArea
+
 
 
 tp, fp, fn = 0, 0, 0
