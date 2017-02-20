@@ -21,6 +21,7 @@ num_epoch = 10
 max_data_chunk = 2
 max_batch_size = 2
 prefixes_to_load = ['luna_']
+USE_EXISTING = True
 
 
 ## paths
@@ -49,6 +50,8 @@ arch = UNETArchitecture((1,512,512),False)
 model = arch.get_model()
 model.compile(optimizer=Adam(lr=1.0e-6), loss=dice_coef_loss, metrics=[dice_coef_loss])
 
+if USE_EXISTING:
+    model.load_weights(model_path + 'jm_slowunet_v3.hdf5')
 
 ## Load LUNA dataset
 normalize = lambda x: (x - np.mean(x))/np.std(x)
@@ -107,16 +110,16 @@ print 'Creating test set...'
 X_test, Y_test = load_patients(file_list[-10:])
 
 
-NUM_EPOCHS = 10
+NUM_EPOCHS = 2
 print('Training...\n')
 model_checkpoint = keras.callbacks.ModelCheckpoint(model_path + 'jm_slowunet_v3.hdf5', monitor='loss', save_best_only=True)
 for i in range(NUM_EPOCHS):
     random.shuffle(file_list)
     print 'Epoch: %d/%d' % (i, NUM_EPOCHS)
-    model.save(model_path + 'jm_slowunet_v3.hdf5')
     for j in range(30):
         X_train, Y_train = load_patients(file_list[j*20:(j+1)*20])
         model.fit(X_train, Y_train, verbose=1, nb_epoch=1, batch_size=2, validation_data=(X_test, Y_test), shuffle=True, callbacks=[tb])
+    model.save(model_path + 'jm_slowunet_v4.hdf5')
 
 
 
