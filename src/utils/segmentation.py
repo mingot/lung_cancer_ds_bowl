@@ -71,7 +71,7 @@ def __segment_by_thresholding__(image, fill_lung_structures=True):
         binary_image[labels != l_max] = 0
 
     # Binary dilation
-    binary_image = __dilate__(binary_image, 5)
+    binary_image = __dilate__(binary_image, 7)
 
     return binary_image
 
