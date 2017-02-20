@@ -39,9 +39,16 @@ def get_pixels_hu(slices):
 
 def __set_canonical_position__(slices):
     flag_for_sn = False
+    print(slices[0])
     # Yet another sanity check
     try:
         try:
+            print('PatientOrientation: {}'.format(slices[0].PatientOrientation))
+        except:
+            print('DICOM PatientOrientation field not found')
+
+        try:
+            print('PositionReferenceIndicator: {}'.format(slices[0].PositionReferenceIndicator))
             if slices[0].PositionReferenceIndicator != 'SN':
                 """
                 Gabriel: For more information about this field, see
@@ -56,31 +63,25 @@ def __set_canonical_position__(slices):
             print('DICOM PositionReferenceIndicator field not found')
 
         try:
-            print('PatientOrientation: {}'.format(slices[0].PatientOrientation))
-        except:
-            print('DICOM PatientOrientation field not found')
-
-        try:
-            print('PositionReferenceIndicator: {}'.format(slices[0].PositionReferenceIndicator))
-        except:
-            print('DICOM PositionReferenceIndicator field not found')
-
-        try:
             print('ImageOrientationPatient: {}'.format(slices[0].ImageOrientationPatient))
         except:
             print('DICOM ImageOrientationPatient field not found')
+
+        try:
+            # Reversing stack in z direction
+            delta = slices[0].SliceLocation - slices[-1].SliceLocation
+            print('slices[0].SliceLocation-slices[-1].SliceLocation = {}'.format(delta))
+
+            if flag_for_sn and delta < 0:
+                print('Reorienting dataset...')
+                slices = slices[::-1]
+                for x in range(len(slices)):
+                    slices[x].pixel_array[:, :] = slices[x].pixel_array[:, ::-1]
+        except:
+           print('DICOM SliceLocation field not found')
+
     except:
         print('This is not a CT image stack')
-
-    # Reversing stack in z direction
-    delta = slices[0].SliceLocation-slices[-1].SliceLocation
-    print('slices[0].SliceLocation-slices[-1].SliceLocation = {}'.format(delta))
-
-    if flag_for_sn and delta < 0:
-        print('Reorienting dataset...')
-        slices = slices[::-1]
-        for x in range(len(slices)):
-            slices[x].pixel_array[:, :] = slices[x].pixel_array[:, ::-1]
 
     return slices
 
