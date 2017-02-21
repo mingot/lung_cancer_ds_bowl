@@ -12,36 +12,37 @@ python 00_preprocess.py --input=/home/shared/data/luna/images --output=/mnt/hd2/
 python 00_preprocess.py --input=/home/shared/data/stage1 --output=/mnt/hd2/preprocessed4/ --pipeline=dsb
 """
 
-accepted_datasets = ['dsb', 'lidc', 'luna']
-
 import os
 import sys
-import numpy as np
-from time import time
-from utils import reading
-from utils import preprocessing
-from utils import plotting
-import matplotlib.pyplot as plt
 from glob import glob
-import pandas as pd
+from time import time
+
 import SimpleITK as sitk
+import matplotlib.pyplot as plt
+import numpy as np
 import pandas
-from skimage import draw
+import pandas as pd
 from PIL import Image
+
+from utils import plotting
+from utils import preprocessing
+from utils import reading
+
+accepted_datasets = ['dsb', 'lidc', 'luna']
 
 # Define folder locations
 wp = os.environ.get('LUNG_PATH', '')
 TMP_FOLDER = os.path.join(wp, 'data/jm_tmp/')
-INPUT_FOLDER = os.path.join(wp, 'data/stage1/')  # 'data/stage1/stage1/'
+INPUT_FOLDER = os.path.join(wp, 'data/stage1/')  # 'data/stage1/stage1/'  'data/luna/subset2'
 OUTPUT_FOLDER = os.path.join(wp, 'data/stage1_proc/')
 NODULES_PATH = os.path.join(wp, 'data/luna/annotations.csv')
 
-# define parametres
+# Define parametres
 PIPELINE = 'dsb'  # for filename
 COMMON_SPACING = [2, 0.7, 0.7]
 
 # Execution parameters
-SHOW_DEBUG_IMAGES = False  # Show intermediate imaged
+SHOW_DEBUG_IMAGES = False
 SAVE_DEBUG_IMAGES = False
 SAVE_RESULTS = True
 
@@ -60,12 +61,10 @@ for arg in sys.argv[1:]:
     elif arg.startswith('--nodules='):
         NODULES_PATH = ''.join(arg.split('=')[1:])
     else:
-        print 'Unknown argument %s. Ignoring.' %arg
-        
-        
-if PIPELINE not in accepted_datasets:
-    print 'Error, preprocessing ofdataset %s not implemented' % PIPELINE 
+        print('Unknown argument {}. Ignoring.'.format(arg))
 
+if PIPELINE not in accepted_datasets:
+    print('Error, preprocessing of dataset {} not implemented.'.format(PIPELINE))
 
 if PIPELINE == 'dsb':
     patient_files = os.listdir(INPUT_FOLDER)
@@ -76,8 +75,8 @@ elif PIPELINE == 'lidc':
         df_nodules = pandas.read_csv(NODULES_PATH)
         df_nodules.index = df_nodules['case']
     except Exception as e:
-        print e
-        print 'There are no nodules descriptor in this dataset.'
+        print (e)
+        print ('There are no nodules descriptor in this dataset.')
 
 elif PIPELINE == 'luna':
     patient_files = glob(INPUT_FOLDER + '/*.mhd')  # patients from subset
@@ -87,14 +86,13 @@ elif PIPELINE == 'luna':
 current_ids = glob(OUTPUT_FOLDER+'/*.npz')
 current_ids = [x.split('_')[-1].replace('.npz', '') for x in current_ids]
 
-
 # Main loop over the ensemble of the database
 times = []
 for patient_file in patient_files:
     
     n = time()
     nodule_mask = None
-    print 'Trying patient: %s' % patient_file
+    print('Trying patient: {}'.format(patient_file))
     
     # Read
     try:
@@ -136,7 +134,7 @@ for patient_file in patient_files:
                 nodule_mask = reading.draw_in_mask(nodule_mask, nodule_point_list)
 
     except Exception as e:  # Some patients have no data, ignore them
-        print("There was some problem reading patient {}. Ignoring and live goes on.".format(patient_file))
+        print('There was some problem reading patient {}. Ignoring and live goes on.'.format(patient_file))
         print('Exception', e)
         continue
 
@@ -152,10 +150,12 @@ for patient_file in patient_files:
         plt.hist(patient_pixels.flatten(), bins=80, color='c')
 
     # Resampling
-    pix_resampled, new_spacing = preprocessing.resample(patient_pixels, spacing=originalSpacing, new_spacing=COMMON_SPACING)
-    print("pix resampled shape: {}".format(pix_resampled.shape))
+    pix_resampled, new_spacing = preprocessing.resample(patient_pixels, spacing=originalSpacing,
+                                                        new_spacing=COMMON_SPACING)
+    print('Resampled image size: {}'.format(pix_resampled.shape))
     if nodule_mask is not None:
-        nodule_mask, new_spacing = preprocessing.resample(nodule_mask, spacing=originalSpacing, new_spacing=COMMON_SPACING)
+        nodule_mask, new_spacing = preprocessing.resample(nodule_mask, spacing=originalSpacing,
+                                                          new_spacing=COMMON_SPACING)
     if SHOW_DEBUG_IMAGES:
         plt.imshow(pix_resampled[50])
     if SAVE_DEBUG_IMAGES:
@@ -178,11 +178,11 @@ for patient_file in patient_files:
     voxel_volume_l = COMMON_SPACING[0]*COMMON_SPACING[1]*COMMON_SPACING[2]/(1000000.0)
     lung_volume_l = np.sum(lung_mask)*voxel_volume_l
     if lung_volume_l < 2 or lung_volume_l > 10:
-        print("Warning lung volume: {} out of physiological values. Double Check segmentation.".format(pat_id))
+        print('Warning lung volume: {} out of physiological values. Double-check the segmentation.'.format(pat_id))
 
     # zero center and normalization
-    #pix = preprocessing.normalize(pix_resampled)
-    #pix = preprocessing.zero_center(pix)
+    # pix = preprocessing.normalize(pix_resampled)
+    # pix = preprocessing.zero_center(pix)
     pix = pix_resampled
     
     # extend image to homogenize sizes
@@ -200,13 +200,14 @@ for patient_file in patient_files:
     if nodule_mask is not None:
         nodule_mask = preprocessing.resize_image(nodule_mask, size=512)
 
-    print("pix cropped shape: {}".format(pix.shape))
+    print('Cropped image size: {}'.format(pix.shape))
 
-    #Load nodules, after resampling to do it faster.
+    # Load nodules, after resampling to do it faster.
     # try:
     #     nodule_mask_ok = False
     #     if PIPELINE == 'lidc':
-    #         nodule_list = reading.read_nodules_lidc(nodules, int(pat_id[-4:]), patient[0].SeriesNumber, originalSpacing)
+    #         nodule_list = reading.read_nodules_lidc(nodules, int(pat_id[-4:]), patient[0].SeriesNumber,
+    #                                                 originalSpacing)
     #     else:
     #         print 'Unsupported nodules loading!'
     #         raise Exception('no nodules')
@@ -234,17 +235,17 @@ for patient_file in patient_files:
         output = np.stack((pix, lung_mask))
     else:
         output = np.stack((pix, lung_mask, nodule_mask))
-        #sanity check: all modules are in the segmentation
+        # sanity check: all modules are in the segmentation
         if np.any(np.logical_and(nodule_mask, 0 == lung_mask)):
-            print ' WARNING! nodules not included in segmentation'
+            print('WARNING! nodules not included in segmentation.')
 
     if SAVE_RESULTS:
         np.savez_compressed(os.path.join(OUTPUT_FOLDER, "%s_%s.npz") % (PIPELINE, pat_id), output)
-        # 10x compression over np.save (~400Mb vs 40Mg), but 10x slower  (~1.5s vs ~15s)
+        # 10x compression over np.save (~400Mb vs 40Mb), but 10x slower  (~1.5s vs ~15s)
 
     x = time()-n
-    print("Patient %s, Time: %f" % (pat_id, x))
+    print('Patient {}, Time: {}'.format(pat_id, x))
     times.append(x)
 
-print("Average time per image: %s" % str(np.mean(times)))
+print('Average time per image: {}'.format(np.mean(times)))
 
