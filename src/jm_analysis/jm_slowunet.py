@@ -15,7 +15,7 @@ from skimage import measure
 K.set_image_dim_ordering('th')
 
 # PARAMETERS
-NUM_EPOCHS = 10
+NUM_EPOCHS = 20
 BATCH_SIZE = 2
 USE_EXISTING = False  # load previous model to continue training
 
@@ -53,7 +53,7 @@ print 'creating model...'
 arch = UNETArchitecture((1,512,512),False)
 lrate = LearningRateScheduler(step_decay)
 model = arch.get_model()
-model.compile(optimizer=Adam(lr=1.0e-4), loss=dice_coef_loss, metrics=[dice_coef_loss])
+model.compile(optimizer=Adam(lr=1.0e-6), loss=dice_coef_loss, metrics=[dice_coef_loss])
 
 if USE_EXISTING:
     print 'loading model...'
