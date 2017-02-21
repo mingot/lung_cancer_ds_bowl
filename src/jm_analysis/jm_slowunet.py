@@ -3,13 +3,14 @@
 
 import os
 import numpy as np
-import keras
+import math
 from time import time
 from keras.optimizers import Adam
 from keras import backend as K
 from networks.unet import UNETArchitecture
-from experiments.jose_cordero_sample_experiment.experiments_utils import visualize_case #, dice_coef_loss
 from utils.tb_callback import TensorBoard
+from keras.callbacks import LearningRateScheduler
+from skimage import measure
 
 K.set_image_dim_ordering('th')
 
@@ -29,8 +30,8 @@ if not os.path.exists(logs_path):
     os.makedirs(logs_path)
 
 
-## tensorboard logs
-# tb = TensorBoard(log_dir=logs_path, histogram_freq=1, write_graph=False, write_images=False)  # replace keras.callbacks.TensorBoard
+# tensorboard logs
+tb = TensorBoard(log_dir=logs_path, histogram_freq=1, write_graph=False, write_images=False)  # replace keras.callbacks.TensorBoard
 
 
 ## model loading
@@ -40,8 +41,17 @@ def dice_coef_loss(y_true, y_pred):
     intersection = K.sum(y_true_f * y_pred_f)  # np.sum(y_true_f * y_pred_f)
     return -(2. * intersection + 1.0) / (K.sum(y_true_f) + K.sum(y_pred_f) + 1.0)  # -(2. * intersection + 1.0) / (np.sum(y_true_f) + np.sum(y_pred_f) + 1.0)
 
+# learning rate schedule
+def step_decay(epoch):
+    initial_lrate = 0.1
+    drop = 0.5
+    epochs_drop = 10.0
+    lrate = initial_lrate * math.pow(drop, math.floor((1+epoch)/epochs_drop))
+    return lrate
+
 print 'creating model...'
 arch = UNETArchitecture((1,512,512),False)
+lrate = LearningRateScheduler(step_decay)
 model = arch.get_model()
 model.compile(optimizer=Adam(lr=1.0e-6), loss=dice_coef_loss, metrics=[dice_coef_loss])
 
@@ -52,6 +62,7 @@ if USE_EXISTING:
 
 ## Load LUNA dataset
 normalize = lambda x: (x - np.mean(x))/np.std(x)
+
 
 def load_patients(filelist):
     X, Y = [], []
@@ -104,24 +115,23 @@ mylist = os.listdir(input_path)
 file_list = [g for g in mylist if g.startswith('luna_')]
 random.shuffle(file_list)
 
-# print 'Creating test set...'
-# X_test, Y_test = load_patients(file_list[-10:])
-# file_list = file_list[:-10]
+print 'Creating test set...'
+X_test, Y_test = load_patients(file_list[-10:])
+file_list = file_list[:-15]
 
 
-# print('Training...\n')
+print('Training...\n')
 # model_checkpoint = keras.callbacks.ModelCheckpoint(model_path + 'jm_slowunet_v3.hdf5', monitor='loss', save_best_only=True)
-# for i in range(NUM_EPOCHS):
-#     random.shuffle(file_list)
-#     print 'Epoch: %d/%d' % (i, NUM_EPOCHS)
-#     for j in range(30):
-#         X_train, Y_train = load_patients(file_list[j*20:(j+1)*20])
-#         model.fit(X_train, Y_train, verbose=1, nb_epoch=1, batch_size=2, validation_data=(X_test, Y_test), shuffle=True, callbacks=[tb])
-#     model.save(model_path + 'jm_slowunet_v4.hdf5')
+for i in range(NUM_EPOCHS):
+    random.shuffle(file_list)
+    print 'Epoch: %d/%d' % (i, NUM_EPOCHS)
+    for j in range(43):
+        X_train, Y_train = load_patients(file_list[j*20:(j+1)*20])
+        model.fit(X_train, Y_train, verbose=1, nb_epoch=1, batch_size=10, validation_data=(X_test, Y_test), shuffle=True, callbacks=[tb])
+    model.save(model_path + 'jm_slowunet_v5.hdf5')
 
 
 
-from skimage import measure
 def get_regions(nodule_mask):
     thr = np.where(nodule_mask < np.mean(nodule_mask), 0., 1.0)  # threshold detected regions
     label_image = measure.label(thr)  # label them
@@ -143,45 +153,46 @@ def intersection_regions(r1, r2):
     return overlapArea
 
 
-
-tp, fp, fn = 0, 0, 0
-for j in range(20):
-    X_test, Y_test = load_patients(file_list[j*10:(j+1)*10])
-
-    print 'Predicting... %d' % j
-    pred = model.predict([X_test], verbose=0)
-
-    # # plots
-    # idx = 1
-    # plt.imshow(pred[idx,0])
-    # plt.show()
-    # plot_mask(X_test[idx,0], pred[idx,0])
-    # plot_mask(X_test[idx,0], Y_test[idx,0])
-
-    print 'Evaluating... %d' % j
-    for i in range(pred.shape[0]):
-        regions_pred = get_regions(pred[i,0])
-        regions_real = get_regions(Y_test[i,0])
-        for region_real in regions_real:
-            detected = False
-            for region_pred in regions_pred:
-                # discard regions that occupy everything
-                if region_real.bbox[0]==0 or region_pred.bbox[0]==0:
-                    continue
-                score = intersection_regions(r1=region_pred, r2=region_real)
-                print 'i:%d, score:%s' % (i, str(score))
-                if score>.5:
-                    tp+=1
-                    detected = True
-                else:
-                    fp+=1
-            if not detected:
-                fn += 1
-
-    print 'tp:%d, fp:%d, fn:%d' % (tp,fp,fn)
+#
+# tp, fp, fn = 0, 0, 0
+# for j in range(20):
+#     X_test, Y_test = load_patients(file_list[j*10:(j+1)*10])
+#
+#     print 'Predicting... %d' % j
+#     pred = model.predict([X_test], verbose=0)
+#
+#     # # plots
+#     # idx = 1
+#     # plt.imshow(pred[idx,0])
+#     # plt.show()
+#     # plot_mask(X_test[idx,0], pred[idx,0])
+#     # plot_mask(X_test[idx,0], Y_test[idx,0])
+#
+#     print 'Evaluating... %d' % j
+#     for i in range(pred.shape[0]):
+#         regions_pred = get_regions(pred[i,0])
+#         regions_real = get_regions(Y_test[i,0])
+#         for region_real in regions_real:
+#             detected = False
+#             for region_pred in regions_pred:
+#                 # discard regions that occupy everything
+#                 if region_real.bbox[0]==0 or region_pred.bbox[0]==0:
+#                     continue
+#                 score = intersection_regions(r1=region_pred, r2=region_real)
+#                 print 'i:%d, score:%s' % (i, str(score))
+#                 if score>.5:
+#                     tp+=1
+#                     detected = True
+#                 else:
+#                     fp+=1
+#             if not detected:
+#                 fn += 1
+#
+#     print 'tp:%d, fp:%d, fn:%d' % (tp,fp,fn)
 
 
 # VISUALIZE RESULTS
+# from experiments.jose_cordero_sample_experiment.experiments_utils import visualize_case
 # for is_valid, (X, Y_mask, Y) in dataset.get_data('valid', max_data_chunk, normalize):
 #     visualize_case(X,Y_mask,model)
 #     break

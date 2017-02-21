@@ -32,7 +32,7 @@ from PIL import Image
 # Define folder locations
 wp = os.environ.get('LUNG_PATH', '')
 TMP_FOLDER = os.path.join(wp, 'data/jm_tmp/')
-INPUT_FOLDER = os.path.join(wp, 'data/stage1/')  # 'data/stage1/stage1/'
+INPUT_FOLDER = os.path.join(wp, 'data/stage1/')  # 'data/stage1/stage1/'  'data/luna/subset2'
 OUTPUT_FOLDER = os.path.join(wp, 'data/stage1_proc/')
 NODULES_PATH = os.path.join(wp, 'data/luna/annotations.csv')
 
