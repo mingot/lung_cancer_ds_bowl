@@ -116,7 +116,7 @@ file_list = [g for g in mylist if g.startswith('luna_')]
 random.shuffle(file_list)
 
 print 'Creating test set...'
-X_test, Y_test = load_patients(file_list[-10:])
+X_test, Y_test = load_patients(file_list[-15:])
 file_list = file_list[:-15]
 
 
