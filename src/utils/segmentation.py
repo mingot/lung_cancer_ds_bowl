@@ -2,15 +2,15 @@ import itertools
 
 import numpy as np
 import scipy
+from scipy import ndimage as ndi
 from skimage import morphology
+from skimage.filters import roberts
+from skimage.measure import label, regionprops
+from skimage.morphology import disk, binary_erosion, binary_closing
+from skimage.segmentation import clear_border
 from skimage.transform import resize
 from sklearn.cluster import KMeans
-from skimage.segmentation import clear_border
-from skimage.measure import label, regionprops, perimeter
-from skimage.morphology import ball, disk, dilation, binary_erosion, remove_small_objects, erosion, closing,\
-    reconstruction, binary_closing
-from skimage.filters import roberts, sobel
-from scipy import ndimage as ndi
+import plotting
 
 
 def segment_lungs(image, fill_lung=True, method='Thresholding'):
@@ -31,8 +31,8 @@ def __segment_by_thresholding_2__(image):
     for k in range(0, image.shape[0]):
         binary_image[k, :, :] = __segment_lung_2d_image__(image[k, :, :])
 
-    eroded_image = scipy.ndimage.morphology.binary_erosion(binary_image, iterations=3)
-    final_mask = scipy.ndimage.morphology.binary_dilation(eroded_image, iterations=3)
+    eroded_image = ndi.morphology.binary_erosion(binary_image, iterations=3)
+    final_mask = ndi.morphology.binary_dilation(eroded_image, iterations=3)
 
     return final_mask
 
@@ -149,10 +149,30 @@ def __segment_by_thresholding__(image, fill_lung_structures=True):
     if l_max is not None:  # There are air pockets
         binary_image[labels != l_max] = 0
 
-    # Binary dilation
-    binary_image = __dilate__(binary_image, 7)
+    # Morphological 3D closing
+    ball_11 = __make_ball_structuring_element__(5, spatial_scaling=[2, 0.7, 0.7])
+    ball_7 = __make_ball_structuring_element__(5, spatial_scaling=[2, 0.7, 0.7])
+    binary_image = ndi.morphology.binary_dilation(binary_image, structure=ball_11, iterations=2)
+    binary_image = ndi.morphology.binary_erosion(binary_image, structure=ball_7, iterations=2)
 
     return binary_image
+
+
+def __make_ball_structuring_element__(rad, spatial_scaling=[1, 1, 1]):
+    """
+    Creates a ball of radius R, centered in the coordinates center
+    @param rad: radius of the ball, in mm
+    @param center: center of the ball (slice, x, y) in pixel coordinates
+    @spatialSpacing
+
+    returns a list of coordinates (x, y, z) that are in the ball of radius r centered in 0.
+    """
+    div = [rad / spatial_scaling[0], rad / spatial_scaling[1], rad / spatial_scaling[2]]
+    # Generate the mesh of candidates
+    r = np.ceil(div).astype(int)  # anisotropic spacing
+    x, y, z = np.meshgrid(range(-r[0], r[0] + 1), range(-r[1], r[1] + 1), range(-r[2], r[2] + 1))
+    mask = (x*spatial_scaling[0])**2 + (y * spatial_scaling[1])**2 + (z * spatial_scaling[2])**2 <= rad**2
+    return mask
 
 
 def __largest_label_volume__(im, bg=-1):
@@ -165,14 +185,6 @@ def __largest_label_volume__(im, bg=-1):
         return vals[np.argmax(counts)]
     else:
         return None
-
-
-def __dilate__(image, iterations_dilate):
-
-    if iterations_dilate < 1:
-        iterations_dilate = 1
-    dilated_image = scipy.ndimage.morphology.binary_dilation(image, iterations=iterations_dilate)
-    return dilated_image
 
 
 def luna_segmentation(img):

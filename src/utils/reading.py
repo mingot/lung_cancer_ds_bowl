@@ -14,7 +14,7 @@ from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 def ball(rad, center, spatialScaling = [1, 1, 1]):
     """
     Creates a ball of radius R, centered in the coordinates center
-    @param R: radius of the ball, in mm 
+    @param rad: radius of the ball, in mm
     @param center: center of the ball (slice, x, y) in pixel coordinates
 
     @spatialSpacing
