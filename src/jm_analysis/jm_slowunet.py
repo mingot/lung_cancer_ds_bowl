@@ -53,7 +53,7 @@ print 'creating model...'
 arch = UNETArchitecture((1,512,512),False)
 lrate = LearningRateScheduler(step_decay)
 model = arch.get_model()
-model.compile(optimizer=Adam(lr=1.0e-6), loss=dice_coef_loss, metrics=[dice_coef_loss])
+model.compile(optimizer=Adam(lr=1.0e-4), loss=dice_coef_loss, metrics=[dice_coef_loss])
 
 if USE_EXISTING:
     print 'loading model...'
@@ -124,8 +124,8 @@ print('Training...\n')
 # model_checkpoint = keras.callbacks.ModelCheckpoint(model_path + 'jm_slowunet_v3.hdf5', monitor='loss', save_best_only=True)
 for i in range(NUM_EPOCHS):
     random.shuffle(file_list)
-    print 'Epoch: %d/%d' % (i, NUM_EPOCHS)
     for j in range(43):
+        print 'Epoch: %d/%d, batch:%d' % (i, NUM_EPOCHS, j*20)
         X_train, Y_train = load_patients(file_list[j*20:(j+1)*20])
         model.fit(X_train, Y_train, verbose=1, nb_epoch=1, batch_size=10, validation_data=(X_test, Y_test), shuffle=True, callbacks=[tb])
     model.save(model_path + 'jm_slowunet_v5.hdf5')
