@@ -55,13 +55,22 @@ class TensorBoard(Callback):
             for layer in self.model.layers:
                 # print('[TB] Layer: %s ' % layer.name)
 
+                # TODO: do not harcode the layer to plot
+                if layer.name=='convolution2d_19':
+                    l = layer.output[0]
+                    l = tf.expand_dims(l, -1)
+                    print('[%s] layer output shape: %s' % (layer.name, str(l.get_shape())))
+                    tf.summary.image(layer.name, l)
+
                 for weight in layer.weights:
                     tf.summary.histogram(weight.name, weight)
 
                     if self.write_images:
+
                         w_img = tf.squeeze(weight)
 
                         shape = w_img.get_shape()
+
                         if len(shape) > 1 and shape[0] > shape[1]:
                             w_img = tf.transpose(w_img)
 
