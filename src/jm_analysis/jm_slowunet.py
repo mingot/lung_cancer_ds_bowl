@@ -103,9 +103,9 @@ def load_patients(filelist):
             last_slice = j
             slices.append(j)
             tot+=1
-            lung_image[lung_mask==0]=-1000  # apply mask
+            # lung_image[lung_mask==0]=-1000  # apply mask
             X.append(normalize(lung_image))
-            Y.append(nodules_mask)
+            Y.append(lung_mask) #(nodules_mask)
             if tot>2:  # at most 3 slices per patient
                 break
         print 'patient %s added %d slices: %s' % (filename, tot, str(slices))
@@ -121,7 +121,7 @@ file_list = [g for g in mylist if g.startswith('luna_')]
 random.shuffle(file_list)
 
 print 'Creating test set...'
-TEST_SIZE = 3
+TEST_SIZE = 15
 X_test, Y_test = load_patients(file_list[-TEST_SIZE:])
 file_list = file_list[:-TEST_SIZE]
 
