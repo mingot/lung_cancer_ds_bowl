@@ -22,7 +22,7 @@ input_path = '/mnt/hd2/preprocessed4'
 
 custom_dataset_path = wp + 'src/jc_dl/experiments/slice_classification/new_dataset/'
 try:
-    os.makedirs('/'.join(custom_dataset_path))
+    os.makedirs(custom_dataset_path)
 except OSError as err:
     if err.errno!=17:
         raise
