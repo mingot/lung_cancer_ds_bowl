@@ -27,7 +27,7 @@ OUTPUT_MODEL = 'jm_unet_simplified_v5_p1_detect_image.hdf5'
 ## paths
 wp = os.environ['LUNG_PATH']
 model_path  = wp + 'models/'
-input_path = wp + 'data/preprocessed3_small' #/mnt/hd2/preprocessed2'
+input_path = wp + '/preprocessed3' #/mnt/hd2/preprocessed2'
 # input_path = '/mnt/hd2/preprocessed4'
 logs_path = wp + 'logs/%s' % str(int(time()))
 if not os.path.exists(logs_path):
