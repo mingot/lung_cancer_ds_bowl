@@ -36,18 +36,21 @@ def get_slices_patient( filelist,
                         p_keep_no_nodule_slice = 0.2):
     X, Y = [], []
     for cur_i, filename in enumerate(filelist):
-        print("- %d out of %d" % (cur_i, len(filelist)))
+        print("- %d out of %d    - %d" % (cur_i, len(filelist), len(X)))
         b = np.load(os.path.join(input_path, filename))['arr_0']
         if b.shape[0]!=3:
-            print 'patient %s does not have the expected input shape' % (filename)
-            continue
+            has_nodule = False
+            slice_nodule = False
+        else:
+            has_nodule = True
+            #print 'patient %s does not have the expected input shape' % (filename)
+            #continue
 
         no_nodule_slices = []
         nodule_slices = []
 
         last_slice = -1e3  # big initialization
 
-        X_, Y_ = [], []
         for j in range(ignore_extreme_slices,b.shape[1]-ignore_extreme_slices):
 
             # discard consecutive slices
@@ -56,17 +59,19 @@ def get_slices_patient( filelist,
 
             lung_image = b[0,j,:,:]
             lung_mask = b[1,j,:,:]
-            nodules_mask = b[2,j,:,:]
+            if has_nodule:
+                nodules_mask = b[2,j,:,:]
+                slice_nodule = nodules_mask.sum() != 0
 
-            # Discard if no nodules
-            no_nodule = nodules_mask.sum() == 0
-
-            if no_nodule:
+            # if no nodule, I only keep the slice with some probability
+            if not slice_nodule:
                 if binomial(1, p_keep_no_nodule_slice) == 1:
                     #no_nodule_slices.append(j)
                     last_slice = j
-                    X_.append(lung_image)
-                    Y_.append(0)
+                    X.append(np.array(lung_image))
+                    Y.append(0)
+
+            # othewise I take it
             else:
                 # Discard if bad segmentation
                 voxel_volume_l = 2*0.7*0.7/(1000000.0)
@@ -83,16 +88,14 @@ def get_slices_patient( filelist,
 
                 #nodule_slices.append(j)
                 last_slice = j
-                X_.append(lung_image)
-                Y_.append(1)
-        del b
-        X.append(np.array(X_))
-        Y.append(np.array(Y_))
+                X.append(np.array(lung_image))
+                Y.append(1)
+
 
         if len(X) >= CASES_PER_FILE:
-            yield X[:CASES_PER_FILE], Y[:CASES_PER_FILE]
+            yield np.array(X[:CASES_PER_FILE]), np.array(Y[:CASES_PER_FILE])
             X, Y = list(X[CASES_PER_FILE:]), list(Y[CASES_PER_FILE:])
-
+        del b
     yield X, Y
 
 import random
@@ -103,20 +106,20 @@ random.shuffle(file_list)
 # This way you can load more images from test and reduze train to collect a subsample
 
 current_i = 0
-for test_dataset_slices in get_slices_patient(file_list[-TEST_CASES:], p_keep_no_nodule_slice = 0.15):
-    if len(test_dataset_slices) == 0:
+for test_dataset_slices in get_slices_patient(file_list[-TEST_CASES:], p_keep_no_nodule_slice = 0.05):
+    if len(test_dataset_slices[0]) == 0:
         continue
     current_i += 1
-    X_test  = np.concatenate(test_dataset_slices[0])
-    Y_test  = np.concatenate(test_dataset_slices[1])
+    X_test  = test_dataset_slices[0]
+    Y_test  = test_dataset_slices[1]
     np.savez(custom_dataset_path + '_test_subsample_%d' % current_i, X=X_test, Y=Y_test)
 
 
 current_i = 0
-for train_dataset_slices in get_slices_patient(file_list[:-TEST_CASES], p_keep_no_nodule_slice = 0.15):
-    if len(train_dataset_slices) == 0:
+for train_dataset_slices in get_slices_patient(file_list[:-TEST_CASES], p_keep_no_nodule_slice = 0.05):
+    if len(train_dataset_slices[0]) == 0:
         continue
     current_i += 1
-    X_train = np.concatenate(train_dataset_slices[0])
-    Y_train = np.concatenate(train_dataset_slices[1])
+    X_train = train_dataset_slices[0]
+    Y_train = train_dataset_slices[1]
     np.savez(custom_dataset_path + '_train_subsample_%d' % current_i, X=X_train, Y=Y_train)
