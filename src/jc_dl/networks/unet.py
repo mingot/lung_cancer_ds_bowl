@@ -50,7 +50,11 @@ class UNETArchitecture(object):
 
         avpooling = AveragePooling2D(pool_size=(512, 512))(conv10)  # final average pooling
 
-        return Model(input=inputs, output=avpooling)  # conv10
+        aa = Flatten(name="flatten")(conv10)
+        bb = Dense(1000, name='dense_3')(aa)
+        cc = Activation("softmax",name="softmax")(bb)
+
+        return Model(input=inputs, output=cc)  # conv10
 
     def load_model(self, inp_shape, use_pretrained):
         net = self._get_UNET(inp_shape)
