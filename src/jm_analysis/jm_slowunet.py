@@ -23,7 +23,7 @@ USE_EXISTING = False  # load previous model to continue training
 ## paths
 wp = os.environ['LUNG_PATH']
 model_path  = wp + 'models/'
-#input_path = wp + 'data/preprocessed3_small' #/mnt/hd2/preprocessed2'
+# input_path = wp + 'data/preprocessed3_small' #/mnt/hd2/preprocessed2'
 input_path = '/mnt/hd2/preprocessed4'
 logs_path = wp + 'logs/%s' % str(int(time()))
 if not os.path.exists(logs_path):
@@ -94,13 +94,18 @@ def load_patients(filelist):
             if j<last_slice + 5:
                 continue
 
+            # A AFEGIR: discard if nodules out of lungs
+            if np.any(np.logical_and(nodules_mask, 0 == lung_mask)):
+                print 'nodules out of lungs for %s at %d' % (filename, j)
+                continue
+
             # if ok append
             last_slice = j
             slices.append(j)
             tot+=1
-            lung_image[lung_mask==0]=-1000  # apply mask
+            # lung_image[lung_mask==0]=-1000  # apply mask
             X.append(normalize(lung_image))
-            Y.append(nodules_mask)
+            Y.append(lung_mask) #(nodules_mask)
             if tot>2:  # at most 3 slices per patient
                 break
         print 'patient %s added %d slices: %s' % (filename, tot, str(slices))
@@ -116,8 +121,9 @@ file_list = [g for g in mylist if g.startswith('luna_')]
 random.shuffle(file_list)
 
 print 'Creating test set...'
-X_test, Y_test = load_patients(file_list[-15:])
-file_list = file_list[:-15]
+TEST_SIZE = 15
+X_test, Y_test = load_patients(file_list[-TEST_SIZE:])
+file_list = file_list[:-TEST_SIZE]
 
 
 print('Training...\n')
@@ -127,7 +133,8 @@ for i in range(NUM_EPOCHS):
     for j in range(43):
         print 'Epoch: %d/%d, batch:%d' % (i, NUM_EPOCHS, j*20)
         X_train, Y_train = load_patients(file_list[j*20:(j+1)*20])
-        model.fit(X_train, Y_train, verbose=1, nb_epoch=1, batch_size=10, validation_data=(X_test, Y_test), shuffle=True, callbacks=[tb])
+        print X_train.shape, Y_train.shape, X_test.shape, Y_test.shape
+        model.fit(X_train, Y_train, verbose=1, nb_epoch=1, batch_size=2, validation_data=(X_test, Y_test), shuffle=True, callbacks=[tb])
     model.save(model_path + 'jm_slowunet_v5.hdf5')
 
 
