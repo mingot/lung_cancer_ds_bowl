@@ -110,7 +110,8 @@ class TensorBoard(Callback):
                     tensors = self.model.inputs
                 feed_dict = dict(zip(tensors, val_data))
                 result = self.sess.run([self.merged], feed_dict=feed_dict)
-                # print('[TBD] Inside histogram_freq, result: %s' % str(result[0]))
+                #print('[TBD] Inside histogram_freq, result: %s' % str(result[0]))
+                print('[TBD] Inside histogram_freq, result: %s' % str(len(result)))
                 summary_str = result[0]
                 self.writer.add_summary(summary_str, epoch)
 

@@ -1,5 +1,5 @@
 from keras.models import Model
-from keras.layers import Input, merge, Convolution2D, MaxPooling2D, UpSampling2D
+from keras.layers import Input, merge, Convolution2D, MaxPooling2D, UpSampling2D, AveragePooling2D
 
 from utils import net_arch_utils
 
@@ -47,6 +47,8 @@ class UNETArchitecture(object):
         conv9 = Convolution2D(32, 3, 3, activation='relu', border_mode='same')(conv9)
 
         conv10 = Convolution2D(1, 1, 1, activation='sigmoid')(conv9)
+
+        # avpooling = AveragePooling2D(pool_size=(2, 2))(conv10)  # final average pooling
 
         return Model(input=inputs, output=conv10)
 

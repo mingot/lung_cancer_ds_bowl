@@ -11,6 +11,8 @@ from networks.unet import UNETArchitecture
 from utils.tb_callback import TensorBoard
 from keras.callbacks import LearningRateScheduler
 from skimage import measure
+# sys.path.remove('/Users/mingot/Projectes/kaggle/ds_bowl_lung/src')
+# sys.path.append('/Users/mingot/Projectes/kaggle/ds_bowl_lung/src/jc_dl/')
 
 K.set_image_dim_ordering('th')
 
@@ -23,8 +25,8 @@ USE_EXISTING = False  # load previous model to continue training
 ## paths
 wp = os.environ['LUNG_PATH']
 model_path  = wp + 'models/'
-# input_path = wp + 'data/preprocessed3_small' #/mnt/hd2/preprocessed2'
-input_path = '/mnt/hd2/preprocessed4'
+input_path = wp + 'data/preprocessed3_small' #/mnt/hd2/preprocessed2'
+#input_path = '/mnt/hd2/preprocessed4'
 logs_path = wp + 'logs/%s' % str(int(time()))
 if not os.path.exists(logs_path):
     os.makedirs(logs_path)
@@ -41,6 +43,11 @@ def dice_coef_loss(y_true, y_pred):
     intersection = K.sum(y_true_f * y_pred_f)  # np.sum(y_true_f * y_pred_f)
     return -(2. * intersection + 1.0) / (K.sum(y_true_f) + K.sum(y_pred_f) + 1.0)  # -(2. * intersection + 1.0) / (np.sum(y_true_f) + np.sum(y_pred_f) + 1.0)
 
+
+def av_pooling_loss(y_true, y_pred):
+    y_pred_f = K.mean(K.flatten(y_pred))  # y_true.flatten()
+    return K.mean(K.binary_crossentropy(y_pred_f, y_true), axis=-1)
+
 # learning rate schedule
 def step_decay(epoch):
     initial_lrate = 0.1
@@ -53,7 +60,7 @@ print 'creating model...'
 arch = UNETArchitecture((1,512,512),False)
 lrate = LearningRateScheduler(step_decay)
 model = arch.get_model()
-model.compile(optimizer=Adam(lr=1.0e-6), loss=dice_coef_loss, metrics=[dice_coef_loss])
+model.compile(optimizer=Adam(lr=1.0e-4), loss='binary_crossentropy', metrics=['binary_crossentropy'])
 
 if USE_EXISTING:
     print 'loading model...'
@@ -94,7 +101,7 @@ def load_patients(filelist):
             if j<last_slice + 5:
                 continue
 
-            # A AFEGIR: discard if nodules out of lungs
+            # discard if nodules out of lungs
             if np.any(np.logical_and(nodules_mask, 0 == lung_mask)):
                 print 'nodules out of lungs for %s at %d' % (filename, j)
                 continue
@@ -105,7 +112,8 @@ def load_patients(filelist):
             tot+=1
             # lung_image[lung_mask==0]=-1000  # apply mask
             X.append(normalize(lung_image))
-            Y.append(lung_mask) #(nodules_mask)
+            #Y.append(lung_mask) #(nodules_mask)
+            Y.append(j%2) #(nodules_mask)
             if tot>2:  # at most 3 slices per patient
                 break
         print 'patient %s added %d slices: %s' % (filename, tot, str(slices))
@@ -121,7 +129,7 @@ file_list = [g for g in mylist if g.startswith('luna_')]
 random.shuffle(file_list)
 
 print 'Creating test set...'
-TEST_SIZE = 15
+TEST_SIZE = 3
 X_test, Y_test = load_patients(file_list[-TEST_SIZE:])
 file_list = file_list[:-TEST_SIZE]
 
@@ -133,9 +141,8 @@ for i in range(NUM_EPOCHS):
     for j in range(43):
         print 'Epoch: %d/%d, batch:%d' % (i, NUM_EPOCHS, j*20)
         X_train, Y_train = load_patients(file_list[j*20:(j+1)*20])
-        print X_train.shape, Y_train.shape, X_test.shape, Y_test.shape
         model.fit(X_train, Y_train, verbose=1, nb_epoch=1, batch_size=2, validation_data=(X_test, Y_test), shuffle=True, callbacks=[tb])
-    model.save(model_path + 'jm_slowunet_v5.hdf5')
+    model.save(model_path + 'jm_slowunet_v5_p1_detect_image.hdf5')
 
 
 
