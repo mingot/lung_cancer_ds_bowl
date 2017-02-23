@@ -48,9 +48,9 @@ class UNETArchitecture(object):
 
         conv10 = Convolution2D(1, 1, 1, activation='sigmoid')(conv9)
 
-        # avpooling = AveragePooling2D(pool_size=(2, 2))(conv10)  # final average pooling
+        avpooling = AveragePooling2D(pool_size=(512, 512))(conv10)  # final average pooling
 
-        return Model(input=inputs, output=conv10)
+        return Model(input=inputs, output=avpooling)  # conv10
 
     def load_model(self, inp_shape, use_pretrained):
         net = self._get_UNET(inp_shape)
