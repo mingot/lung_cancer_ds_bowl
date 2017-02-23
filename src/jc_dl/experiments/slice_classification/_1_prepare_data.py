@@ -20,9 +20,9 @@ model_path  = wp + 'models/'
 input_path = '/mnt/hd2/preprocessed4'
 #input_path = '/home/jose/kaggle/cfis/lung_cancer_ds_bowl/data/sample_data'
 
-custom_dataset_path = wp + 'src/jc_dl/experiments/slice_classification/new_dataset/custom_dataset'
+custom_dataset_path = wp + 'src/jc_dl/experiments/slice_classification/new_dataset/'
 try:
-    os.makedirs('/'.join(custom_dataset_path.split("/")[:-2]))
+    os.makedirs('/'.join(custom_dataset_path))
 except OSError as err:
     if err.errno!=17:
         raise
@@ -112,7 +112,7 @@ for test_dataset_slices in get_slices_patient(file_list[-TEST_CASES:], p_keep_no
     current_i += 1
     X_test  = test_dataset_slices[0]
     Y_test  = test_dataset_slices[1]
-    np.savez(custom_dataset_path + '_test_subsample_%d' % current_i, X=X_test, Y=Y_test)
+    np.savez(custom_dataset_path + 'custom_dataset_test_subsample_%d' % current_i, X=X_test, Y=Y_test)
 
 
 current_i = 0
@@ -122,4 +122,4 @@ for train_dataset_slices in get_slices_patient(file_list[:-TEST_CASES], p_keep_n
     current_i += 1
     X_train = train_dataset_slices[0]
     Y_train = train_dataset_slices[1]
-    np.savez(custom_dataset_path + '_train_subsample_%d' % current_i, X=X_train, Y=Y_train)
+    np.savez(custom_dataset_path + 'custom_dataset_train_subsample_%d' % current_i, X=X_train, Y=Y_train)
