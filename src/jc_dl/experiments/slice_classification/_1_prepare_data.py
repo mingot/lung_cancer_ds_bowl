@@ -13,6 +13,7 @@ K.set_image_dim_ordering('th')
 
 ## paths
 TEST_CASES = 20
+CASES_PER_FILE = 1000
 
 wp = os.environ['LUNG_PATH']
 model_path  = wp + 'models/'
@@ -34,7 +35,8 @@ def get_slices_patient( filelist,
                         distance_between_slices = 5,
                         p_keep_no_nodule_slice = 0.2):
     X, Y = [], []
-    for filename in filelist:
+    for cur_i, filename in enumerate(filelist):
+        print("- %d out of %d" % (cur_i, len(filelist)))
         b = np.load(os.path.join(input_path, filename))['arr_0']
         if b.shape[0]!=3:
             print 'patient %s does not have the expected input shape' % (filename)
@@ -83,10 +85,15 @@ def get_slices_patient( filelist,
                 last_slice = j
                 X_.append(lung_image)
                 Y_.append(1)
+        del b
         X.append(np.array(X_))
         Y.append(np.array(Y_))
-        del b
-    return X, Y
+
+        if len(X) >= CASES_PER_FILE:
+            yield X[:CASES_PER_FILE], Y[:CASES_PER_FILE]
+            X, Y = list(X[CASES_PER_FILE:]), list(Y[CASES_PER_FILE:])
+
+    yield X, Y
 
 import random
 mylist = os.listdir(input_path)
@@ -94,13 +101,22 @@ file_list = [g for g in mylist if g.startswith('luna_')]
 random.shuffle(file_list)
 
 # This way you can load more images from test and reduze train to collect a subsample
-test_dataset_slices = get_slices_patient(file_list[-TEST_CASES:], p_keep_no_nodule_slice = 0.15)
-train_dataset_slices = get_slices_patient(file_list[:-TEST_CASES], p_keep_no_nodule_slice = 0.15)
 
-X_train = np.concatenate(train_dataset_slices[0])
-X_test  = np.concatenate(test_dataset_slices[0])
-Y_train = np.concatenate(train_dataset_slices[1])
-Y_test  = np.concatenate(test_dataset_slices[1])
+current_i = 0
+for test_dataset_slices in get_slices_patient(file_list[-TEST_CASES:], p_keep_no_nodule_slice = 0.15):
+    if len(test_dataset_slices) == 0:
+        continue
+    current_i += 1
+    X_test  = np.concatenate(test_dataset_slices[0])
+    Y_test  = np.concatenate(test_dataset_slices[1])
+    np.savez(custom_dataset_path + '_test_subsample_%d' % current_i, X=X_test, Y=Y_test)
 
-np.savez(custom_dataset_path, X_train=X_train, Y_train=Y_train, X_test=X_test, Y_test=Y_test)
 
+current_i = 0
+for train_dataset_slices in get_slices_patient(file_list[:-TEST_CASES], p_keep_no_nodule_slice = 0.15):
+    if len(train_dataset_slices) == 0:
+        continue
+    current_i += 1
+    X_train = np.concatenate(train_dataset_slices[0])
+    Y_train = np.concatenate(train_dataset_slices[1])
+    np.savez(custom_dataset_path + '_train_subsample_%d' % current_i, X=X_train, Y=Y_train)
