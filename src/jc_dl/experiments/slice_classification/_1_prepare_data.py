@@ -17,8 +17,8 @@ CASES_PER_FILE = 1000
 
 wp = os.environ['LUNG_PATH']
 model_path  = wp + 'models/'
-#input_path = '/mnt/hd2/preprocessed4'
-input_path = '/home/jose/kaggle/cfis/lung_cancer_ds_bowl/data/sample_data'
+input_path = '/mnt/hd2/preprocessed4'
+#input_path = '/home/jose/kaggle/cfis/lung_cancer_ds_bowl/data/sample_data'
 
 custom_dataset_path = wp + 'src/jc_dl/experiments/slice_classification/new_dataset/custom_dataset'
 try:
