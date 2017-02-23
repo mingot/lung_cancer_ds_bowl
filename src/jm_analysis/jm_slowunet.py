@@ -25,8 +25,8 @@ USE_EXISTING = False  # load previous model to continue training
 ## paths
 wp = os.environ['LUNG_PATH']
 model_path  = wp + 'models/'
-input_path = wp + 'data/preprocessed3_small' #/mnt/hd2/preprocessed2'
-#input_path = '/mnt/hd2/preprocessed4'
+# input_path = wp + 'data/preprocessed3_small' #/mnt/hd2/preprocessed2'
+input_path = '/mnt/hd2/preprocessed4'
 logs_path = wp + 'logs/%s' % str(int(time()))
 if not os.path.exists(logs_path):
     os.makedirs(logs_path)
