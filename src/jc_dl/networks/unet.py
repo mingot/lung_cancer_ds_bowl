@@ -48,7 +48,8 @@ class UNETArchitecture(object):
 
         conv10 = Convolution2D(1, 1, 1, activation='sigmoid')(conv9)
 
-        avpooling = AveragePooling2D(pool_size=(512, 512))(conv10)  # final average pooling
+        # TEMPORAL: test average pooling as suggested by OriolV
+        avpooling = AveragePooling2D(pool_size=(512, 512))(conv10)
         aa = Flatten(name="flatten")(avpooling)
         bb = Dense(1, activation='sigmoid', name='dense_3')(aa)
         #cc = Activation("softmax",name="softmax")(bb)
