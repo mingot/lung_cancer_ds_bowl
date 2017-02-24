@@ -8,8 +8,8 @@ Example usage:
 python 00_preprocess.py --input=/Users/mingot/Projectes/kaggle/ds_bowl_lung/data/luna/subset0 --output=/Users/mingot/Projectes/kaggle/ds_bowl_lung/data/preproc_luna --pipeline=luna --nodules=/Users/mingot/Projectes/kaggle/ds_bowl_lung/data/luna/annotations.csv
 python 00_preprocess.py --input=/Users/mingot/Projectes/kaggle/ds_bowl_lung/data/sample_images --output=/Users/mingot/Projectes/kaggle/ds_bowl_lung/data/preproc_dsb --pipeline=dsb
 
-python 00_preprocess.py --input=/home/shared/data/luna/images --output=/mnt/hd2/preprocessed4/ --pipeline=luna --nodules=/home/shared/data/luna/annotations.csv
-python 00_preprocess.py --input=/home/shared/data/stage1 --output=/mnt/hd2/preprocessed4/ --pipeline=dsb
+python 00_preprocess.py --input=/home/shared/data/luna/images --output=/mnt/hd2/preprocessed5/ --pipeline=luna --nodules=/home/shared/data/luna/annotations.csv
+python 00_preprocess.py --input=/home/shared/data/stage1 --output=/mnt/hd2/preprocessed5/ --pipeline=dsb
 """
 
 import os

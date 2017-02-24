@@ -19,7 +19,7 @@ K.set_image_dim_ordering('th')
 
 # PARAMETERS
 NUM_EPOCHS = 20
-BATCH_SIZE = 20
+BATCH_SIZE = 2
 TEST_SIZE = 15
 USE_EXISTING = False  # load previous model to continue training
 OUTPUT_MODEL = 'jm_slowunet_v5_p2_detect_image.hdf5'
