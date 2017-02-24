@@ -32,10 +32,10 @@ from time import time
 from keras.optimizers import Adam
 from keras import backend as K
 from networks.sample_cnn import Sample2DCNNNetworkArchitecture
-#from utils.tb_callback import TensorBoard
+from utils.tb_callback import TensorBoard
 from keras.callbacks import LearningRateScheduler
 
-K.set_image_dim_ordering('th')
+#K.set_image_dim_ordering('tf')
 
 # PARAMETERS
 NUM_EPOCHS = 20
@@ -48,13 +48,13 @@ wp = os.environ['LUNG_PATH']
 model_path  = wp + 'models/'
 #input_path = wp + 'data/preprocessed3_small' #/mnt/hd2/preprocessed2'
 input_path = '/mnt/hd2/preprocessed4'
-logs_path = wp + 'logs/%s' % str(int(time()))
+logs_path = '/home/jose/kaggle/testing/'
 if not os.path.exists(logs_path):
     os.makedirs(logs_path)
 
 
 # tensorboard logs
-#tb = TensorBoard(log_dir=logs_path, histogram_freq=1, write_graph=False, write_images=False)  # replace keras.callbacks.TensorBoard
+tb = TensorBoard(log_dir=logs_path, histogram_freq=1, write_graph=False, write_images=False)  # replace keras.callbacks.TensorBoard
 
 # learning rate schedule
 def step_decay(epoch):
@@ -69,7 +69,7 @@ arch = Sample2DCNNNetworkArchitecture((1,512,512),False)
 lrate = LearningRateScheduler(step_decay)
 model = arch.get_model()
 #model.compile(optimizer=Adam(lr=1.0e-2), loss='binary_crossentropy', metrics=['accuracy'])
-model.compile(optimizer='rmsprop', loss='binary_crossentropy', metrics=[])  # metric which will be used is defined here
+model.compile(optimizer='rmsprop', loss='binary_crossentropy', metrics=['accuracy'])  # metric which will be used is defined here
 
 if USE_EXISTING:
     print 'loading model...'
@@ -84,18 +84,21 @@ X_test = normalize(X_test, X_test.mean(), X_test.std())
 
 
 
-
+first = True
 print('Training...\n')
 # model_checkpoint = keras.callbacks.ModelCheckpoint(model_path + 'jm_slowunet_v3.hdf5', monitor='loss', save_best_only=True)
 for i in range(NUM_EPOCHS):
     random.shuffle(train_files)
     for file in train_files:
-        X_train, Y_train = get_data_from_file(file)
-        X_train = normalize(X_train, X_test.mean(), X_test.std())
-        model.fit(X_train, Y_train, verbose=1, nb_epoch=1, batch_size=20, validation_data=(X_test, Y_test), shuffle=True)#, callbacks=[tb])
+        if first:
+            X_train, Y_train = get_data_from_file(file)
+            X_train = normalize(X_train, X_test.mean(), X_test.std())
+            first = False
+        print("Ys labeled as 1s: " + str(Y_train.sum()))
+        model.fit(X_train, Y_train, verbose=1, nb_epoch=1, batch_size=20, validation_data=(X_test, Y_test), shuffle=True, callbacks=[tb])
         model.save(model_path + 'jc_samplecnn_v0.hdf5')
-        del X_train
-        del Y_train
+        #del X_train
+        #del Y_train
 
 #
 # tp, fp, fn = 0, 0, 0
