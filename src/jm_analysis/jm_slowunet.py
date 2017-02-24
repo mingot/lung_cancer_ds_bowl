@@ -7,7 +7,8 @@ import math
 from time import time
 from keras.optimizers import Adam
 from keras import backend as K
-from networks.unet import UNETArchitecture
+# from networks.unet import UNETArchitecture
+from networks.unet_simplified import UNETArchitecture
 from utils.tb_callback import TensorBoard
 from keras.callbacks import LearningRateScheduler
 from skimage import measure
@@ -18,17 +19,17 @@ K.set_image_dim_ordering('th')
 
 # PARAMETERS
 NUM_EPOCHS = 20
-BATCH_SIZE = 2
-TEST_SIZE = 3
+BATCH_SIZE = 20
+TEST_SIZE = 15
 USE_EXISTING = False  # load previous model to continue training
-OUTPUT_MODEL = 'jm_slowunet_v5_p1_detect_image.hdf5'
+OUTPUT_MODEL = 'jm_slowunet_v5_p2_detect_image.hdf5'
 
 
 ## paths
 wp = os.environ['LUNG_PATH']
 model_path  = wp + 'models/'
-input_path = wp + 'data/preprocessed3_small' #/mnt/hd2/preprocessed2'
-# input_path = '/mnt/hd2/preprocessed4'
+# input_path = wp + 'data/preprocessed3_small' #/mnt/hd2/preprocessed2'
+input_path = '/mnt/hd2/preprocessed4'
 logs_path = wp + 'logs/%s' % str(int(time()))
 if not os.path.exists(logs_path):
     os.makedirs(logs_path)
@@ -62,7 +63,7 @@ print 'creating model...'
 arch = UNETArchitecture((1,512,512),False)
 lrate = LearningRateScheduler(step_decay)
 model = arch.get_model()
-model.compile(optimizer=Adam(lr=1.0e-4), loss='binary_crossentropy', metrics=['binary_crossentropy'])
+model.compile(optimizer=Adam(lr=1.0e-5), loss='binary_crossentropy', metrics=['binary_crossentropy'])
 
 if USE_EXISTING:
     print 'loading model...'
