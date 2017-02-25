@@ -15,9 +15,9 @@ from keras.callbacks import LearningRateScheduler, ModelCheckpoint
 K.set_image_dim_ordering('th')
 
 # PARAMETERS
-NUM_EPOCHS = 200
+NUM_EPOCHS = 30
 BATCH_SIZE = 2
-TEST_SIZE = 3
+TEST_SIZE = 15
 USE_EXISTING = False  # load previous model to continue training
 OUTPUT_MODEL = 'jm_slowunet_v6_sigmoid.hdf5'
 
@@ -25,8 +25,8 @@ OUTPUT_MODEL = 'jm_slowunet_v6_sigmoid.hdf5'
 ## paths
 wp = os.environ['LUNG_PATH']
 model_path  = wp + 'models/'
-input_path = wp + 'data/preprocessed3_small' #/mnt/hd2/preprocessed2'
-# input_path = '/mnt/hd2/preprocessed5'
+# input_path = wp + 'data/preprocessed3_small' #/mnt/hd2/preprocessed2'
+input_path = '/mnt/hd2/preprocessed5'
 logs_path = wp + 'logs/%s' % str(int(time()))
 if not os.path.exists(logs_path):
     os.makedirs(logs_path)
