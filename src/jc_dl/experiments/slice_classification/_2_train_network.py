@@ -16,12 +16,13 @@ from keras import backend as K
 from networks.sample_cnn import Sample2DCNNNetworkArchitecture
 from utils.tb_callback import TensorBoard
 from keras.callbacks import LearningRateScheduler
+from keras.layers.normalization import BatchNormalization
 #K.set_image_dim_ordering('th')
 
 
 # PARAMETERS
 NUM_EPOCHS = 100
-BATCH_SIZE = 25
+BATCH_SIZE = 100
 USE_EXISTING = False  # load previous model to continue training
 
 
@@ -48,7 +49,7 @@ wp = os.environ['LUNG_PATH']
 model_path  = wp + 'models/'
 #input_path = wp + 'data/preprocessed3_small' #/mnt/hd2/preprocessed2'
 input_path = '/mnt/hd2/preprocessed4'
-logs_path = wp + 'logs/'
+logs_path = wp + 'logs/slice_%s' % str(int(time()))
 if not os.path.exists(logs_path):
     os.makedirs(logs_path)
 
@@ -89,7 +90,6 @@ for i in range(NUM_EPOCHS):
         X_train, Y_train = get_data_from_file(file)
         X_train = normalize(X_train, X_test.mean(), X_test.std())
         print("Ys labeled as 1s: " + str(Y_train.sum()))
-        model.fit(X_train, Y_train, verbose=1, nb_epoch=1, batch_size=BATCH_SIZE, validation_data=(X_test, Y_test), shuffle=True, callbacks=[tb])
-        model.save(model_path + 'jc_samplecnn_v0.hdf5')
+        model.fit(X_train, Y_train, class_weight = {0:1.,1:10.}, verbose=1, nb_epoch=1, batch_size=BATCH_SIZE, validation_data=(X_test, Y_test), shuffle=True, callbacks=[tb])        model.save(model_path + 'jc_samplecnn_v0.hdf5')
         del X_train
         del Y_train
