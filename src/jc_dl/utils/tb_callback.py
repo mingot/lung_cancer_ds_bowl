@@ -48,12 +48,12 @@ class TensorBoard(Callback):
         self.write_images = write_images
 
     def set_model(self, model):
-        print('[TB] Setting model...')
+        # print('[TB] Setting model...')
         self.model = model
         self.sess = K.get_session()
         if self.histogram_freq and self.merged is None:
             for layer in self.model.layers:
-                # print('[TB] Layer: %s ' % layer.name)
+                print('[TB] Layer: %s ' % layer.name)
 
                 # TODO: do not harcode the layer to plot
                 if layer.name=='convolution2d_19':
@@ -111,7 +111,7 @@ class TensorBoard(Callback):
                 feed_dict = dict(zip(tensors, val_data))
                 result = self.sess.run([self.merged], feed_dict=feed_dict)
                 #print('[TBD] Inside histogram_freq, result: %s' % str(result[0]))
-                print('[TBD] Inside histogram_freq, result: %s' % str(len(result)))
+                # print('[TBD] Inside histogram_freq, result: %s' % str(len(result)))
                 summary_str = result[0]
                 self.writer.add_summary(summary_str, epoch)
 
