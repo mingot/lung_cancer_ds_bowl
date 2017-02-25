@@ -13,6 +13,7 @@ from keras.layers import Dense, Dropout, Activation, Flatten
 from keras.layers import Convolution2D, MaxPooling2D
 from keras.utils import np_utils
 from keras import backend as K
+from keras.layers.advanced_activations import LeakyReLU
 
 
 class Sample2DCNNNetworkArchitecture(object):
@@ -20,7 +21,7 @@ class Sample2DCNNNetworkArchitecture(object):
     def load_model(self, inp_shape):
         model = Sequential()
         # number of convolutional filters to use
-        nb_filters = 20
+        nb_filters = 5
         # size of pooling area for max pooling
         pool_size = (2, 2)
         # convolution kernel size
@@ -28,19 +29,28 @@ class Sample2DCNNNetworkArchitecture(object):
 
         model.add(Convolution2D(nb_filters, kernel_size[0], kernel_size[1],
                                 border_mode='valid',
-                                input_shape=inp_shape))
-        model.add(Activation('relu'))
-        model.add(Convolution2D(nb_filters, kernel_size[0], kernel_size[1]))
-        model.add(Activation('relu'))
+                                input_shape=inp_shape, init = 'glorot_normal'))
+        model.add(MaxPooling2D(pool_size=pool_size))
+        model.add(Convolution2D(nb_filters, kernel_size[0], kernel_size[1], init = 'glorot_normal'))
+        model.add(MaxPooling2D(pool_size=pool_size))
+        model.add(Convolution2D(nb_filters, kernel_size[0], kernel_size[1], init = 'glorot_normal'))
+        model.add(MaxPooling2D(pool_size=pool_size))
+        model.add(Convolution2D(nb_filters, kernel_size[0], kernel_size[1], init = 'glorot_normal'))
         model.add(MaxPooling2D(pool_size=pool_size))
         model.add(Dropout(0.25))
 
         model.add(Flatten())
-        model.add(Dense(128))
-        model.add(Activation('relu'))
+
+        model.add(Dense(64, init = 'glorot_normal'))
+        model.add(LeakyReLU(alpha=0.01))
         model.add(Dropout(0.5))
+
+        model.add(Dense(32, init = 'glorot_normal'))
+        model.add(LeakyReLU(alpha=0.01))
+        model.add(Dropout(0.5))
+
         model.add(Dense(1))
-        model.add(Activation('tanh'))
+        model.add(Activation('sigmoid'))
         return model
 
     def __init__(self, inp_shape, use_pretrained = False):
