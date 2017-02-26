@@ -12,16 +12,16 @@ from multiprocessing import Pool
 
 import matplotlib.pyplot as plt
 
-DEBUG = False
+DEBUG = True
 SERVER = os.uname()[1] == 'ip-172-31-7-211'
 
 if SERVER:
     path = '/home/shared/data/stage1'
     preprocessed = '/mnt/hd2/preprocessed4'
-    output_file = '/home/shared/data/stage1_extra_features.csv'
+    output_file = '/home/shared/data/stage1_extra_features_better_segment.csv'
 else:
     path = '/home/carlos/DSB2017/dsb_sample'
-    output_file = '/home/carlos/lung_cancer_ds_bowl/data/stage1_extra_features.csv'
+    output_file = '/home/carlos/lung_cancer_ds_bowl/data/stage1_extra_features_better_segment.csv'
 
 patient_files = os.listdir(path)
 patient_files = sorted(patient_files)
@@ -30,15 +30,56 @@ patient_files = sorted(patient_files)
 
 common_spacing = [2., 0.6, 0.6]
 
-'''
+def __3d_sobel__(pix):
+    edges = np.array([ scipy.ndimage.filters.sobel(z_pix) for z_pix in pix ])
+    print edges.shape
+    scipy.ndimage.morphology.binary_closing(edges, iterations=5)
+    cube_show_slider(edges)
+    return edges
+    
+def __shift__(pix, dv, default=-3400.):
+	'''returns an image shifted by dv=(dz,dy,dx) pixels (can be + or -). Fills void with <default> value'''
+	# visualization with cube_show_slider breaks if we shift in z direction, although values seem ok...
+	non = lambda s: s if s < 0 else None
+	mom = lambda s: max(0,s)
+	
+	dz, dy, dx = dv
+	shifted = default*np.ones(pix.shape)
+	shifted[mom(dz):non(dz),mom(dy):non(dy),mom(dx):non(dx)] = pix[mom(-dz):non(-dz),mom(-dy):non(-dy), mom(-dx):non(-dx)]
+#	shifted[:,mom(dy):non(dy),mom(dx):non(dx)] = pix[:,mom(-dy):non(-dy), mom(-dx):non(-dx)]
+	return shifted
+	
+def __get_edges__(pix, axis, npix):
+	dv = tuple(npix* np.array(axis))
+	shifted = __shift__(pix, dv, -3400.)
+	return pix - shifted
+	
+def __remove_tube_mask__(pix):
+	'''removes tube that is found below the person's back'''
+	below_4_5_mask = [y > 4*pix.shape[1]/5 for y in range(pix.shape[1])]
+	edge_z = __get_edges__(pix, (1,0,0), 10)
+	tube_mask = 1 - np.einsum('ijk,j->ijk', edge_z < 900, below_4_5_mask)
+	print 'show_tube_mask'
+	cube_show_slider(tube_mask)
+	return pix * tube_mask
+	
+	
 def segment_bones(image):
+#    image = __remove_tube_mask__(image)
+    
+    lower_half = [y > image.shape[1]/2 for y in range(image.shape[1])]
+    middle = [ 2*image.shape[2]/5 < x < 3*image.shape[2]/5 for x in range(image.shape[2]) ]
+    mask = np.einsum('j,k->jk', lower_half, middle)
     bone = np.logical_and(image > 350, image < 2500)
-    bone = scipy.ndimage.morphology.binary_dilation(bone, iterations=2)
-    cube_show_slider(bone)
-    plt.imshow(sobel(bone[50,:,:]))
+    bone = np.einsum('ijk,jk->ijk', bone, mask)
+    bone = scipy.ndimage.morphology.binary_dilation(bone, iterations=3)
+    '''
+    plt.imshow(scipy.ndimage.filters.sobel(bone[50,:,:]))
     plt.show()
-    return 
-'''
+    '''
+    #__3d_sobel__(bone)
+    return bone 
+    
 
 def __get_weighted_var__(indices, y, f, avg):
     n = len(np.where(y[indices] != 0)[0])
@@ -52,13 +93,17 @@ def __get_lung_height__(lung_mask):
     return np.max(exists_mask) - np.min(exists_mask)
     
 
-def get_intercostal_dist(pix, new_spacing, lung_height):
+def get_intercostal_dist(pix, bone_mask, new_spacing, lung_height):
+    '''
     bone = np.logical_and(pix > 350, pix < 2500)
     lower_half = [y > pix.shape[1]/2 for y in range(pix.shape[1])]
     middle = [ pix.shape[2]/3 < x < 2*pix.shape[2]/3 for x in range(pix.shape[2]) ]
     mask = np.einsum('j,k->jk', lower_half, middle)
     bone2 = np.einsum('ijk,jk->ijk', bone, mask)
-    density_z = np.sum(binary_opening(bone2, iterations=1), axis=(1,2))
+    bone3 = binary_opening(bone2, iterations=1)
+    density_z = np.sum(bone3, axis=(1,2))
+    '''
+    density_z = np.sum(bone_mask[2*pix.shape[0]/5:4*pix.shape[0]/5, :, :], axis=(1,2))
     
     f, Y = periodogram(density_z, fs=1., detrend='linear')
     fcrit = 1./25
@@ -75,8 +120,8 @@ def get_intercostal_dist(pix, new_spacing, lung_height):
     n_perc_std = n_layers_std * 100. / lung_height
 
     if DEBUG:
-        cube_show_slider(pix_resampled*mask)
-        cube_show_slider(bone2)
+#        cube_show_slider(pix_resampled*mask)
+#        cube_show_slider(bone2)
         fig, ax = plt.subplots(2, 1)
         ax[0].plot(range(len(density_z)),density_z)
         ax[0].set_xlabel('Layer')
@@ -85,6 +130,7 @@ def get_intercostal_dist(pix, new_spacing, lung_height):
         ax[1].set_xlabel('#Layers')
         ax[1].set_ylabel('|Y(freq)|')
         plt.show()
+        cube_show_slider(bone_mask[2*pix.shape[0]/5:4*pix.shape[0]/5, :, :])
         
     return {'n_perc_avg': n_perc_avg, 'n_perc_mode': n_perc_mode, 'n_perc_std': n_perc_std }
     
@@ -98,7 +144,7 @@ def process_patient_file(patient_file):
     pix_resampled, new_spacing = resample(pix, spacing=original_spacing, new_spacing=common_spacing)
     
     features = {}
-    
+
     if SERVER:
         preprocessed_pix = np.load(os.path.join(preprocessed, patient_file))['arr_0']
         lung_mask = preprocessed_pix[1,:,:,:]
@@ -106,27 +152,37 @@ def process_patient_file(patient_file):
         lung_mask = segment_lungs(pix_resampled)
     
     lung_height = __get_lung_height__(lung_mask)
-    
-    features = dict(features, **get_intercostal_dist(pix_resampled, new_spacing, lung_height))
-
-#    bone_mask = segment_bones(pix_resampled)
+    bone_mask = segment_bones(pix_resampled)
+    features = dict(features, **get_intercostal_dist(pix_resampled, bone_mask, new_spacing, lung_height))
+  
 #    cube_show_slider(bone_mask)
-#    return
-#    bone_vol = np.sum(bone_mask)
-    return features    
+    bone_vol = np.sum(bone_mask)
+    true_bone = np.logical_and(pix_resampled > 350, pix_resampled < 2500)
+    bone_mass = np.sum(pix_resampled * bone_mask * true_bone )
     
+    print bone_vol, bone_mass, bone_mass * 1. / bone_vol
+    
+    features = dict({ 'bone_density': bone_mass * 1. / bone_vol }, **features) 
+    
+    print features
+    
+    return features
 
     
 if __name__ == "__main__":
     print 'server:', SERVER
     print 'debug:', DEBUG
-    p = Pool()
-    features = p.map(process_patient_file, patient_files[:5])
-#    for patient_file in patient_files:
-#        print 'ID:', patient_file
-#        process_patient_file(patient_file)
-    p.close()
-    p.join()
+    
+    if not DEBUG or SERVER:
+        p = Pool()
+        features = p.map(process_patient_file, patient_files)
+        p.close()
+        p.join()
+    elif DEBUG:
+        features = [] 
+        for patient_file in patient_files[:5]:
+            features.append(process_patient_file(patient_file))
+    
     if not DEBUG:
         with open(output_file,'w') as f:
             writer = csv.DictWriter(f, fieldnames=['patient_id'] + features[0].keys())
