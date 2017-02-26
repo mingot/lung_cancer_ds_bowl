@@ -11,21 +11,22 @@ from utils.tb_callback import TensorBoard
 from keras.callbacks import LearningRateScheduler, ModelCheckpoint
 # sys.path.remove('/Users/mingot/Projectes/kaggle/ds_bowl_lung/src')
 # sys.path.append('/Users/mingot/Projectes/kaggle/ds_bowl_lung/src/jc_dl/')
+# export PYTHONPATH=/Users/mingot/Projectes/kaggle/ds_bowl_lung/src/jc_dl/
 
 K.set_image_dim_ordering('th')
 
 # PARAMETERS
 NUM_EPOCHS = 30
 BATCH_SIZE = 2
-TEST_SIZE = 15
+TEST_SIZE = 10
 USE_EXISTING = False  # load previous model to continue training
-OUTPUT_MODEL = 'jm_slowunet_v6_sigmoid.hdf5'
+OUTPUT_MODEL = 'jm_slowunet_v7_sigmoid.hdf5'
 
 
 ## paths
 wp = os.environ['LUNG_PATH']
 model_path  = wp + 'models/'
-# input_path = wp + 'data/preprocessed3_small' #/mnt/hd2/preprocessed2'
+# input_path = wp + 'data/preprocessed5_sample' #/mnt/hd2/preprocessed2'
 input_path = '/mnt/hd2/preprocessed5'
 logs_path = wp + 'logs/%s' % str(int(time()))
 if not os.path.exists(logs_path):
@@ -48,11 +49,14 @@ def dice_coef_loss(y_true, y_pred):
     return -(2. * intersection + 1.0) / (K.sum(y_true_f) + K.sum(y_pred_f) + 1.0)  # -(2. * intersection + 1.0) / (np.sum(y_true_f) + np.sum(y_pred_f) + 1.0)
 
 
+from keras.layers.advanced_activations import LeakyReLU
+
 def get_model(inp_shape, activation='relu', init='glorot_normal'):
     inputs = Input(inp_shape)
 
     conv1 = Convolution2D(32, 3, 3, activation=activation, init=init, border_mode='same')(inputs)
     conv1 = Convolution2D(32, 3, 3, activation=activation, init=init, border_mode='same')(conv1)
+
     pool1 = MaxPooling2D(pool_size=(2, 2))(conv1)
 
     conv2 = Convolution2D(64, 3, 3, activation=activation, init=init, border_mode='same')(pool1)
@@ -96,9 +100,70 @@ def get_model(inp_shape, activation='relu', init='glorot_normal'):
 
     return Model(input=inputs, output=conv10)  # conv10
 
+def get_model_soft(inp_shape):
+    inputs = Input(inp_shape)
+    init = 'glorot_normal'
+
+    conv1 = Convolution2D(32, 3, 3, init=init, border_mode='same')(inputs)
+    conv1 = LeakyReLU(alpha=0.3)(conv1)
+    conv1 = Convolution2D(32, 3, 3, init=init, border_mode='same')(conv1)
+    conv1 = LeakyReLU(alpha=0.3)(conv1)
+
+    pool1 = MaxPooling2D(pool_size=(2, 2))(conv1)
+
+    conv2 = Convolution2D(64, 3, 3, init=init, border_mode='same')(pool1)
+    conv2 = LeakyReLU(alpha=0.3)(conv2)
+    conv2 = Convolution2D(64, 3, 3, init=init, border_mode='same')(conv2)
+    conv2 = LeakyReLU(alpha=0.3)(conv2)
+    pool2 = MaxPooling2D(pool_size=(2, 2))(conv2)
+
+    conv3 = Convolution2D(128, 3, 3, init=init, border_mode='same')(pool2)
+    conv3 = LeakyReLU(alpha=0.3)(conv3)
+    conv3 = Convolution2D(128, 3, 3, init=init, border_mode='same')(conv3)
+    conv3 = LeakyReLU(alpha=0.3)(conv3)
+    pool3 = MaxPooling2D(pool_size=(2, 2))(conv3)
+
+    conv4 = Convolution2D(256, 3, 3, init=init, border_mode='same')(pool3)
+    conv4 = LeakyReLU(alpha=0.3)(conv4)
+    conv4 = Convolution2D(256, 3, 3, init=init, border_mode='same')(conv4)
+    conv4 = LeakyReLU(alpha=0.3)(conv4)
+    pool4 = MaxPooling2D(pool_size=(2, 2))(conv4)
+
+    conv5 = Convolution2D(512, 3, 3, init=init, border_mode='same')(pool4)
+    conv5 = LeakyReLU(alpha=0.3)(conv5)
+    conv5 = Convolution2D(512, 3, 3, init=init, border_mode='same')(conv5)
+    conv5 = LeakyReLU(alpha=0.3)(conv5)
+
+    up6 = merge([UpSampling2D(size=(2, 2))(conv5), conv4], mode='concat', concat_axis=1)
+    conv6 = Convolution2D(256, 3, 3, init=init, border_mode='same')(up6)
+    conv6 = LeakyReLU(alpha=0.3)(conv6)
+    conv6 = Convolution2D(256, 3, 3, init=init, border_mode='same')(conv6)
+    conv6 = LeakyReLU(alpha=0.3)(conv6)
+
+    up7 = merge([UpSampling2D(size=(2, 2))(conv6), conv3], mode='concat', concat_axis=1)
+    conv7 = Convolution2D(128, 3, 3, init=init, border_mode='same')(up7)
+    conv7 = LeakyReLU(alpha=0.3)(conv7)
+    conv7 = Convolution2D(128, 3, 3, init=init, border_mode='same')(conv7)
+    conv7 = LeakyReLU(alpha=0.3)(conv7)
+
+    up8 = merge([UpSampling2D(size=(2, 2))(conv7), conv2], mode='concat', concat_axis=1)
+    conv8 = Convolution2D(64, 3, 3, init=init, border_mode='same')(up8)
+    conv8 = LeakyReLU(alpha=0.3)(conv8)
+    conv8 = Convolution2D(64, 3, 3, init=init, border_mode='same')(conv8)
+    conv8 = LeakyReLU(alpha=0.3)(conv8)
+
+    up9 = merge([UpSampling2D(size=(2, 2))(conv8), conv1], mode='concat', concat_axis=1)
+    conv9 = Convolution2D(32, 3, 3, init=init, border_mode='same')(up9)
+    conv9 = Convolution2D(32, 3, 3, init=init, border_mode='same')(conv9)
+
+    conv10 = Convolution2D(1, 1, 1, activation='sigmoid')(conv9)
+
+    return Model(input=inputs, output=conv10)
+
 print 'creating model...'
 #arch = UNETArchitecture((1,512,512),False)
-model = get_model(inp_shape=(1,512,512), activation='relu', init='glorot_normal')
+#model = get_model(inp_shape=(1,512,512), activation='relu', init='glorot_normal')
+model = get_model_soft(inp_shape=(1,512,512))
 model.compile(optimizer=Adam(lr=1.0e-5), loss=dice_coef_loss, metrics=[dice_coef_loss])
 model_checkpoint = ModelCheckpoint(model_path + OUTPUT_MODEL, monitor='loss', save_best_only=True)
 
@@ -231,9 +296,9 @@ random.shuffle(file_list)
 
 print 'Creating test set...'
 X_test, Y_test = load_patients(file_list[-TEST_SIZE:])
-print len(X_test), len(Y_test)
 file_list = file_list[:-TEST_SIZE]
 
+# print file_list
 
 # print('Training...\n')
 # for i in range(NUM_EPOCHS):
@@ -259,6 +324,14 @@ file_list = file_list[:-TEST_SIZE]
 #     reader.join()
 
 
+# print 'Training...'
+# for i in range(NUM_EPOCHS):
+#     random.shuffle(file_list)
+#     X_train, Y_train = load_patients(file_list)
+#     model.fit(X_train, Y_train, verbose=1, nb_epoch=1, batch_size=BATCH_SIZE,
+#                    shuffle=True, callbacks=[tb])  # validation_data=(X_test, Y_test),
+
+
 print('Training...\n')
 # model_checkpoint = keras.callbacks.ModelCheckpoint(model_path + 'jm_slowunet_v3.hdf5', monitor='loss', save_best_only=True)
 for i in range(NUM_EPOCHS):
@@ -266,7 +339,6 @@ for i in range(NUM_EPOCHS):
     for j in range(43):
         logging.info('Epoch: %d/%d, batch:%d' % (i, NUM_EPOCHS, j*20))
         X_train, Y_train = load_patients(file_list[j*20:(j+1)*20])
-        print X_train.shape, Y_train.shape
         model.fit(X_train, Y_train, verbose=1, nb_epoch=1, batch_size=BATCH_SIZE,
                   validation_data=(X_test, Y_test), shuffle=True, callbacks=[tb])
     model.save(model_path + OUTPUT_MODEL)
