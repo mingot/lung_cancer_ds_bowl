@@ -12,12 +12,12 @@ from multiprocessing import Pool
 
 import matplotlib.pyplot as plt
 
-DEBUG = True
+DEBUG = False
 SERVER = os.uname()[1] == 'ip-172-31-7-211'
 
 if SERVER:
     path = '/home/shared/data/stage1'
-    preprocessed = '/mnt/hd2/preprocessed4'
+    preprocessed = '/mnt/hd2/preprocessed5'
     output_file = '/home/shared/data/stage1_extra_features_better_segment.csv'
 else:
     path = '/home/carlos/DSB2017/dsb_sample'
@@ -36,33 +36,7 @@ def __3d_sobel__(pix):
     scipy.ndimage.morphology.binary_closing(edges, iterations=5)
     cube_show_slider(edges)
     return edges
-    
-def __shift__(pix, dv, default=-3400.):
-	'''returns an image shifted by dv=(dz,dy,dx) pixels (can be + or -). Fills void with <default> value'''
-	# visualization with cube_show_slider breaks if we shift in z direction, although values seem ok...
-	non = lambda s: s if s < 0 else None
-	mom = lambda s: max(0,s)
-	
-	dz, dy, dx = dv
-	shifted = default*np.ones(pix.shape)
-	shifted[mom(dz):non(dz),mom(dy):non(dy),mom(dx):non(dx)] = pix[mom(-dz):non(-dz),mom(-dy):non(-dy), mom(-dx):non(-dx)]
-#	shifted[:,mom(dy):non(dy),mom(dx):non(dx)] = pix[:,mom(-dy):non(-dy), mom(-dx):non(-dx)]
-	return shifted
-	
-def __get_edges__(pix, axis, npix):
-	dv = tuple(npix* np.array(axis))
-	shifted = __shift__(pix, dv, -3400.)
-	return pix - shifted
-	
-def __remove_tube_mask__(pix):
-	'''removes tube that is found below the person's back'''
-	below_4_5_mask = [y > 4*pix.shape[1]/5 for y in range(pix.shape[1])]
-	edge_z = __get_edges__(pix, (1,0,0), 10)
-	tube_mask = 1 - np.einsum('ijk,j->ijk', edge_z < 900, below_4_5_mask)
-	print 'show_tube_mask'
-	cube_show_slider(tube_mask)
-	return pix * tube_mask
-	
+
 	
 def segment_bones(image):
 #    image = __remove_tube_mask__(image)
@@ -135,7 +109,7 @@ def get_intercostal_dist(pix, bone_mask, new_spacing, lung_height):
     return {'n_perc_avg': n_perc_avg, 'n_perc_mode': n_perc_mode, 'n_perc_std': n_perc_std }
     
 def process_patient_file(patient_file):
-    print patient_file.split('/')[-1]
+#    print patient_file.split('/')[-1]
     patient = load_scan(os.path.join(path, patient_file))
     pix = get_pixels_hu(patient)  # From pixels to HU
     pix = np.flip(pix, axis=0)
@@ -146,7 +120,7 @@ def process_patient_file(patient_file):
     features = {}
 
     if SERVER:
-        preprocessed_pix = np.load(os.path.join(preprocessed, patient_file))['arr_0']
+        preprocessed_pix = np.load(os.path.join(preprocessed, 'dsb_'+patient_file+'.npz'))['arr_0']
         lung_mask = preprocessed_pix[1,:,:,:]
     else:
         lung_mask = segment_lungs(pix_resampled)
@@ -160,11 +134,7 @@ def process_patient_file(patient_file):
     true_bone = np.logical_and(pix_resampled > 350, pix_resampled < 2500)
     bone_mass = np.sum(pix_resampled * bone_mask * true_bone )
     
-    print bone_vol, bone_mass, bone_mass * 1. / bone_vol
-    
     features = dict({ 'bone_density': bone_mass * 1. / bone_vol }, **features) 
-    
-    print features
     
     return features
 
