@@ -48,6 +48,10 @@ def dice_coef_loss(y_true, y_pred):
     intersection = K.sum(y_true_f * y_pred_f)  # np.sum(y_true_f * y_pred_f)
     return -(2. * intersection + 1.0) / (K.sum(y_true_f) + K.sum(y_pred_f) + 1.0)  # -(2. * intersection + 1.0) / (np.sum(y_true_f) + np.sum(y_pred_f) + 1.0)
 
+def softmax_cost(y_true, y_pred):
+    y_true_f = K.flatten(y_true)
+    y_pred_f = K.flatten(y_pred)
+    return -K.mean(y_true_f*K.log(K.softmax(y_pred_f)))
 
 
 from keras.layers.advanced_activations import LeakyReLU
@@ -165,7 +169,7 @@ print 'creating model...'
 #arch = UNETArchitecture((1,512,512),False)
 model = get_model(inp_shape=(1,512,512), activation='relu', init='glorot_normal')
 #model = get_model_soft(inp_shape=(1,512,512))
-model.compile(optimizer=Adam(lr=1.0e-5), loss='binary_crossentropy', metrics=['binary_crossentropy'])
+model.compile(optimizer=Adam(lr=1.0e-5), loss=softmax_cost, metrics=[softmax_cost])
 model_checkpoint = ModelCheckpoint(model_path + OUTPUT_MODEL, monitor='loss', save_best_only=True)
 
 if USE_EXISTING:
