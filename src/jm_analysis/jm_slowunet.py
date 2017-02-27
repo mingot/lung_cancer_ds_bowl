@@ -18,9 +18,9 @@ K.set_image_dim_ordering('th')
 # PARAMETERS
 NUM_EPOCHS = 30
 BATCH_SIZE = 2
-TEST_SIZE = 10
+TEST_SIZE = 15
 USE_EXISTING = False  # load previous model to continue training
-OUTPUT_MODEL = 'jm_slowunet_v7_sigmoid.hdf5'
+OUTPUT_MODEL = 'jm_slowunet_v8_cross.hdf5'
 
 
 ## paths
@@ -47,6 +47,7 @@ def dice_coef_loss(y_true, y_pred):
     y_pred_f = K.flatten(y_pred)  # y_pred.flatten()
     intersection = K.sum(y_true_f * y_pred_f)  # np.sum(y_true_f * y_pred_f)
     return -(2. * intersection + 1.0) / (K.sum(y_true_f) + K.sum(y_pred_f) + 1.0)  # -(2. * intersection + 1.0) / (np.sum(y_true_f) + np.sum(y_pred_f) + 1.0)
+
 
 
 from keras.layers.advanced_activations import LeakyReLU
@@ -162,9 +163,9 @@ def get_model_soft(inp_shape):
 
 print 'creating model...'
 #arch = UNETArchitecture((1,512,512),False)
-#model = get_model(inp_shape=(1,512,512), activation='relu', init='glorot_normal')
-model = get_model_soft(inp_shape=(1,512,512))
-model.compile(optimizer=Adam(lr=1.0e-5), loss=dice_coef_loss, metrics=[dice_coef_loss])
+model = get_model(inp_shape=(1,512,512), activation='relu', init='glorot_normal')
+#model = get_model_soft(inp_shape=(1,512,512))
+model.compile(optimizer=Adam(lr=1.0e-5), loss='binary_crossentropy', metrics=['binary_crossentropy'])
 model_checkpoint = ModelCheckpoint(model_path + OUTPUT_MODEL, monitor='loss', save_best_only=True)
 
 if USE_EXISTING:
