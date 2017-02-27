@@ -20,7 +20,7 @@ NUM_EPOCHS = 30
 BATCH_SIZE = 2
 TEST_SIZE = 15
 USE_EXISTING = False  # load previous model to continue training
-OUTPUT_MODEL = 'jm_slowunet_v8_cross.hdf5'
+OUTPUT_MODEL = 'jm_slowunet_v9_cross.hdf5'
 
 
 ## paths
