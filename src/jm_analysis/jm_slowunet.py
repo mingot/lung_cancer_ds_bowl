@@ -20,7 +20,7 @@ NUM_EPOCHS = 30
 BATCH_SIZE = 2
 TEST_SIZE = 15
 USE_EXISTING = False  # load previous model to continue training
-OUTPUT_MODEL = 'jm_slowunet_v9_cross.hdf5'
+OUTPUT_MODEL = 'jm_slowunet_v10_cross.hdf5'
 
 
 ## paths
@@ -169,12 +169,12 @@ print 'creating model...'
 #arch = UNETArchitecture((1,512,512),False)
 model = get_model(inp_shape=(1,512,512), activation='relu', init='glorot_normal')
 #model = get_model_soft(inp_shape=(1,512,512))
-model.compile(optimizer=Adam(lr=1.0e-5), loss=softmax_cost, metrics=[softmax_cost])
+model.compile(optimizer=Adam(lr=1.0e-5), loss='binary_crossentropy', metrics=['binary_crossentropy'])
 model_checkpoint = ModelCheckpoint(model_path + OUTPUT_MODEL, monitor='loss', save_best_only=True)
 
 if USE_EXISTING:
     print 'loading model...'
-    model.load_weights(model_path + 'jm_slowunet_v4.hdf5')
+    model.load_weights(model_path + 'jm_slowunet_v8_cross.hdf5')
 
 
 
@@ -230,9 +230,9 @@ def load_patients(filelist):
             # if ok append
             last_slice = j
             slices.append(j)
-            lung_image[lung_mask==0]=-1000  # apply mask
+            #lung_image[lung_mask==0]=-1000  # apply mask
             X.append(normalize(lung_image))
-            Y.append(nodules_mask)
+            Y.append(lung_mask)  # nodules_mask
 
 
             if len(slices)>5:  # at most 6 slices per patient
@@ -297,13 +297,12 @@ import random
 mylist = os.listdir(input_path)
 file_list = [g for g in mylist if g.startswith('luna_')]
 random.shuffle(file_list)
-# file_list = file_list[0:3]
+#file_list = file_list[0:10]
 
 print 'Creating test set...'
 X_test, Y_test = load_patients(file_list[-TEST_SIZE:])
 file_list = file_list[:-TEST_SIZE]
 
-# print file_list
 
 # print('Training...\n')
 # for i in range(NUM_EPOCHS):
@@ -371,7 +370,7 @@ for i in range(NUM_EPOCHS):
 #     overlapArea = intersectionArea*1.0/unionArea # This should be greater than 0.5 to consider it as a valid detection.
 #     return overlapArea
 #
-
+#
 #
 # tp, fp, fn = 0, 0, 0
 # for j in range(20):
@@ -380,12 +379,18 @@ for i in range(NUM_EPOCHS):
 #     print 'Predicting... %d' % j
 #     pred = model.predict([X_test], verbose=0)
 #
-#     # # plots
-#     # idx = 1
-#     # plt.imshow(pred[idx,0])
-#     # plt.show()
-#     # plot_mask(X_test[idx,0], pred[idx,0])
-#     # plot_mask(X_test[idx,0], Y_test[idx,0])
+#     # plots
+#     idx = 3
+#     x = pred[3,0]
+#     x = (x-np.min(x))/(np.max(x)-np.min(x))
+#     plt.imshow(x)
+#     plt.show()
+#
+#
+#     plt.imshow(pred[idx,0])
+#     plt.show()
+#     plot_mask(X_test[idx,0], pred[idx,0])
+#     plot_mask(X_test[idx,0], Y_test[idx,0])
 #
 #     print 'Evaluating... %d' % j
 #     for i in range(pred.shape[0]):
