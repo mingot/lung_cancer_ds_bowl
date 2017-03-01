@@ -176,7 +176,7 @@ model_checkpoint = ModelCheckpoint(model_path + OUTPUT_MODEL, monitor='loss', sa
 
 if USE_EXISTING:
     print 'loading model...'
-    model.load_weights(model_path + 'jm_slowunet_v8_cross.hdf5')
+    model.load_weights(model_path + 'teixi_slowunet_weightloss.hdf5')  #   # jm_slowunet_v9_cross_lungs.hdf5
 
 
 
@@ -351,14 +351,17 @@ for i in range(NUM_EPOCHS):
 
 
 # TESTING NETWORK --------------------------------------------------
+from skimage import measure
 
-# def get_regions(nodule_mask):
-#     thr = np.where(nodule_mask < np.mean(nodule_mask), 0., 1.0)  # threshold detected regions
-#     label_image = measure.label(thr)  # label them
-#     labels = label_image.astype(int)
-#     regions = measure.regionprops(labels)
-#     return regions
-#
+
+def get_regions(nodule_mask):
+    thr = np.where(nodule_mask < np.mean(nodule_mask), 0., 1.0)  # threshold detected regions
+    thr = np.where(nodule_mask < 0.8*np.max(nodule_mask), 0., 1.0)  # threshold detected regions
+    label_image = measure.label(thr)  # label them
+    labels = label_image.astype(int)
+    regions = measure.regionprops(labels, nodule_mask)
+    return regions
+
 # def intersection_regions(r1, r2):
 #     h = min(r1.bbox[2], r2.bbox[2]) - max(r1.bbox[0], r2.bbox[0])
 #     w = min(r1.bbox[3], r2.bbox[3]) - max(r1.bbox[1], r2.bbox[1])
@@ -371,9 +374,38 @@ for i in range(NUM_EPOCHS):
 #     unionArea = area1 + area2 - intersectionArea
 #     overlapArea = intersectionArea*1.0/unionArea # This should be greater than 0.5 to consider it as a valid detection.
 #     return overlapArea
-#
-#
-#
+
+
+
+from time import time
+mylist = os.listdir(input_path)
+file_list_dsb = [g for g in mylist if g.startswith('dsb_')]
+
+
+for filename in file_list_dsb:
+
+    b = np.load(os.path.join(input_path, filename))['arr_0']
+    X = []
+
+    for nslice in range(b.shape[1]):
+        if nslice%3 in [0,1]:
+            continue
+        lung_image = b[0,nslice,:,:]
+        lung_mask = b[1,nslice,:,:]
+        lung_image[lung_mask==0]=-1000  # apply mask
+        X.append(normalize(lung_image))
+    X = np.expand_dims(np.asarray(X),axis=1)
+
+    pred = model.predict([X], verbose=0)
+    for nslice in range(pred.shape[0]):
+        regions_pred = get_regions(pred[nslice,0])
+        for r in regions_pred:
+            print '%s,%d,%d,%d,%.3f,%.3f,%.3f,%.3f' % (filename,nslice,r.centroid[0], r.centroid[1], r.equivalent_diameter,
+                                                       r.max_intensity, r.min_intensity, r.mean_intensity)
+
+
+
+
 # tp, fp, fn = 0, 0, 0
 # for j in range(20):
 #     X_test, Y_test = load_patients(file_list[j*10:(j+1)*10])
@@ -381,23 +413,23 @@ for i in range(NUM_EPOCHS):
 #     print 'Predicting... %d' % j
 #     pred = model.predict([X_test], verbose=0)
 #
-#     # plots
-#     idx = 3
-#     x = pred[3,0]
-#     x = (x-np.min(x))/(np.max(x)-np.min(x))
-#     plt.imshow(x)
-#     plt.show()
-#
-#
-#     plt.imshow(pred[idx,0])
-#     plt.show()
-#     plot_mask(X_test[idx,0], pred[idx,0])
-#     plot_mask(X_test[idx,0], Y_test[idx,0])
+#     # # plots
+#     # x = pred[3,0]*10000
+#     # x = (x-np.min(x))/(np.max(x)-np.min(x))
+#     # plt.imshow(x)
+#     # plt.show()
+#     #
+#     # idx = 4
+#     # plt.imshow(pred[idx,0])
+#     # plt.show()
+#     # plot_mask(X_test[idx,0], pred[idx,0])
+#     # plot_mask(X_test[idx,0], Y_test[idx,0])
 #
 #     print 'Evaluating... %d' % j
 #     for i in range(pred.shape[0]):
 #         regions_pred = get_regions(pred[i,0])
 #         regions_real = get_regions(Y_test[i,0])
+#
 #         for region_real in regions_real:
 #             detected = False
 #             for region_pred in regions_pred:

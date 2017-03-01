@@ -55,7 +55,8 @@ def plot_bb(img, regions):
 
 
 def plot_mask(img, mask):
-    thr = np.where(mask < np.mean(mask), 0., 1.0)  # threshold detected regions
+    #thr = np.where(mask < np.mean(mask), 0., 1.0)  # threshold detected regions
+    thr = np.where(mask < .8*np.max(mask), 0., 1.0)
     label_image = measure.label(thr)  # label them
     labels = label_image.astype(int)
     regions = measure.regionprops(labels)
