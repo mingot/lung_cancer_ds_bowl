@@ -20,7 +20,7 @@ NUM_EPOCHS = 30
 BATCH_SIZE = 2
 TEST_SIZE = 15
 USE_EXISTING = False  # load previous model to continue training
-OUTPUT_MODEL = 'jm_slowunet_v10_cross.hdf5'
+OUTPUT_MODEL = 'teixi_slowunet_weightloss.hdf5'
 
 
 ## paths
@@ -48,10 +48,12 @@ def dice_coef_loss(y_true, y_pred):
     intersection = K.sum(y_true_f * y_pred_f)  # np.sum(y_true_f * y_pred_f)
     return -(2. * intersection + 1.0) / (K.sum(y_true_f) + K.sum(y_pred_f) + 1.0)  # -(2. * intersection + 1.0) / (np.sum(y_true_f) + np.sum(y_pred_f) + 1.0)
 
-def softmax_cost(y_true, y_pred):
-    y_true_f = K.flatten(y_true)
-    y_pred_f = K.flatten(y_pred)
-    return -K.mean(y_true_f*K.log(K.softmax(y_pred_f)))
+
+def weighted_loss(y_true, y_pred, pos_weight=100):
+    #if this argument is greater than 1 we will penalize more the nodules not detected as nodules, we can set it up to 10 or 100?
+     y_true_f = K.flatten(y_true)  # y_true.flatten()
+     y_pred_f = K.flatten(y_pred)  # y_pred.flatten()
+     return K.mean(-(1-y_true_f)*K.log(1-y_pred_f)-y_true_f*K.log(y_pred_f)*pos_weight)
 
 
 from keras.layers.advanced_activations import LeakyReLU
@@ -169,7 +171,7 @@ print 'creating model...'
 #arch = UNETArchitecture((1,512,512),False)
 model = get_model(inp_shape=(1,512,512), activation='relu', init='glorot_normal')
 #model = get_model_soft(inp_shape=(1,512,512))
-model.compile(optimizer=Adam(lr=1.0e-5), loss='binary_crossentropy', metrics=['binary_crossentropy'])
+model.compile(optimizer=Adam(lr=1.0e-5), loss=weighted_loss, metrics=[weighted_loss])
 model_checkpoint = ModelCheckpoint(model_path + OUTPUT_MODEL, monitor='loss', save_best_only=True)
 
 if USE_EXISTING:
@@ -230,9 +232,9 @@ def load_patients(filelist):
             # if ok append
             last_slice = j
             slices.append(j)
-            #lung_image[lung_mask==0]=-1000  # apply mask
+            lung_image[lung_mask==0]=-1000  # apply mask
             X.append(normalize(lung_image))
-            Y.append(lung_mask)  # nodules_mask
+            Y.append(nodules_mask)  # nodules_mask
 
 
             if len(slices)>5:  # at most 6 slices per patient
