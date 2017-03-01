@@ -384,16 +384,16 @@ file_list_dsb = [g for g in mylist if g.startswith('dsb_')]
 with open(wp + 'models/output_model_teixi.csv', 'a') as file:
 
 
-    for filename in file_list_dsb:
+    for idx, filename in enumerate(file_list_dsb):
         tstart = time()
+
 
         b = np.load(os.path.join(input_path, filename))['arr_0']
         X = []
-
+        print 'Patient: %s (%d/%d)' % (filename, idx, len(file_list_dsb))
         for nslice in range(b.shape[1]):
             if nslice%3 in [0,1]:
                 continue
-            print 'Patient: %s, slice: %d' % (filename, nslice)
             X = []
             lung_image = b[0,nslice,:,:]
             lung_mask = b[1,nslice,:,:]
