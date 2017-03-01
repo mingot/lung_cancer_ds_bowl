@@ -393,7 +393,7 @@ with open(wp + 'models/output_model_teixi.csv', 'a') as file:
         for nslice in range(b.shape[1]):
             if nslice%3 in [0,1]:
                 continue
-            print 'Patient: %d, slice: %d' % (filename, nslice)
+            print 'Patient: %s, slice: %d' % (filename, nslice)
             X = []
             lung_image = b[0,nslice,:,:]
             lung_mask = b[1,nslice,:,:]
