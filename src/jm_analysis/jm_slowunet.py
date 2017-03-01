@@ -381,25 +381,36 @@ mylist = os.listdir(input_path)
 file_list_dsb = [g for g in mylist if g.startswith('dsb_')]
 
 
-for filename in file_list_dsb:
-    b = np.load(os.path.join(input_path, filename))['arr_0']
-    X = []
+with open(wp + 'models/output_model_teixi.csv', 'a') as file:
 
-    for nslice in range(b.shape[1]):
-        if nslice%3 in [0,1]:
-            continue
-        lung_image = b[0,nslice,:,:]
-        lung_mask = b[1,nslice,:,:]
-        lung_image[lung_mask==0]=-1000  # apply mask
-        X.append(normalize(lung_image))
-    X = np.expand_dims(np.asarray(X),axis=1)
 
-    pred = model.predict([X], verbose=0)
-    for nslice in range(pred.shape[0]):
-        regions_pred = get_regions(pred[nslice,0])
-        for r in regions_pred:
-            print '%s,%d,%d,%d,%.3f,%.3f,%.3f,%.3f' % (filename,nslice,r.centroid[0], r.centroid[1], r.equivalent_diameter,
-                                                       r.max_intensity, r.min_intensity, r.mean_intensity)
+    for filename in file_list_dsb:
+        tstart = time()
+
+        b = np.load(os.path.join(input_path, filename))['arr_0']
+        X = []
+
+        for nslice in range(b.shape[1]):
+            if nslice%3 in [0,1]:
+                continue
+            print 'Patient: %d, slice: %d' % (filename, nslice)
+            X = []
+            lung_image = b[0,nslice,:,:]
+            lung_mask = b[1,nslice,:,:]
+            lung_image[lung_mask==0]=-1000  # apply mask
+            X.append(normalize(lung_image))
+            X = np.expand_dims(np.asarray(X),axis=1)
+
+            pred = model.predict([X], verbose=0)
+
+            regions_pred = get_regions(pred[0,0])
+            for r in regions_pred:
+                # print '%s,%d,%d,%d,%.3f,%.3f,%.3f,%.3f' % (filename,nslice,r.centroid[0], r.centroid[1], r.equivalent_diameter,
+                #                                            r.max_intensity, r.min_intensity, r.mean_intensity)
+
+                file.write('%s,%d,%d,%d,%.3f,%.3f,%.3f,%.3f\n' % (filename,nslice,r.centroid[0], r.centroid[1], r.equivalent_diameter,
+                                                           r.max_intensity, r.min_intensity, r.mean_intensity))
+        print time()-tstart
 
 
 
