@@ -19,7 +19,7 @@ K.set_image_dim_ordering('th')
 NUM_EPOCHS = 30
 BATCH_SIZE = 2
 TEST_SIZE = 15
-USE_EXISTING = False  # load previous model to continue training
+USE_EXISTING = True  # load previous model to continue training
 OUTPUT_MODEL = 'teixi_slowunet_weightloss.hdf5'
 
 
@@ -293,61 +293,61 @@ def data_loader():
 
 
 
-# TRAINING NETWORK --------------------------------------------------
-
-import random
-mylist = os.listdir(input_path)
-file_list = [g for g in mylist if g.startswith('luna_')]
-random.shuffle(file_list)
-#file_list = file_list[0:10]
-
-print 'Creating test set...'
-X_test, Y_test = load_patients(file_list[-TEST_SIZE:])
-file_list = file_list[:-TEST_SIZE]
-
-
+# # TRAINING NETWORK --------------------------------------------------
+#
+# import random
+# mylist = os.listdir(input_path)
+# file_list = [g for g in mylist if g.startswith('luna_')]
+# random.shuffle(file_list)
+# #file_list = file_list[0:10]
+#
+# print 'Creating test set...'
+# X_test, Y_test = load_patients(file_list[-TEST_SIZE:])
+# file_list = file_list[:-TEST_SIZE]
+#
+#
+# # print('Training...\n')
+# # for i in range(NUM_EPOCHS):
+# #     #random.shuffle(file_list)
+# #
+# #     reader = IOReader(2, # number of items to be stored on the buffer
+# #         data_loader) #function that reads the input and returns a generator
+# #     reader.start() # start reader on background and fill the buffer
+# #
+# #     print 'file list length: %d' % len(file_list)
+# #     while True:
+# #         try:
+# #             logging.info('Epoch: %d/%d' % (i, NUM_EPOCHS))
+# #             X_train, Y_train = reader.get()
+# #             logging.info('trainer: Got data from IOReader')
+# #             logging.info('size: %s %s' % (str(X_train.shape), str(Y_train.shape)))
+# #             model.fit(X_train, Y_train, verbose=1, nb_epoch=1, batch_size=BATCH_SIZE, shuffle=True) #, callbacks=[tb])
+# #         except StopIteration:
+# #             break
+# #
+# #     model.save(model_path + OUTPUT_MODEL)
+# #     logging.info("Ending processing one epoch" )
+# #     reader.join()
+#
+#
+# # print 'Training...'
+# # for i in range(NUM_EPOCHS):
+# #     random.shuffle(file_list)
+# #     X_train, Y_train = load_patients(file_list)
+# #     model.fit(X_train, Y_train, verbose=1, nb_epoch=1, batch_size=BATCH_SIZE,
+# #                    shuffle=True, callbacks=[tb])  # validation_data=(X_test, Y_test),
+#
+#
 # print('Training...\n')
-# for i in range(NUM_EPOCHS):
-#     #random.shuffle(file_list)
-#
-#     reader = IOReader(2, # number of items to be stored on the buffer
-#         data_loader) #function that reads the input and returns a generator
-#     reader.start() # start reader on background and fill the buffer
-#
-#     print 'file list length: %d' % len(file_list)
-#     while True:
-#         try:
-#             logging.info('Epoch: %d/%d' % (i, NUM_EPOCHS))
-#             X_train, Y_train = reader.get()
-#             logging.info('trainer: Got data from IOReader')
-#             logging.info('size: %s %s' % (str(X_train.shape), str(Y_train.shape)))
-#             model.fit(X_train, Y_train, verbose=1, nb_epoch=1, batch_size=BATCH_SIZE, shuffle=True) #, callbacks=[tb])
-#         except StopIteration:
-#             break
-#
-#     model.save(model_path + OUTPUT_MODEL)
-#     logging.info("Ending processing one epoch" )
-#     reader.join()
-
-
-# print 'Training...'
+# # model_checkpoint = keras.callbacks.ModelCheckpoint(model_path + 'jm_slowunet_v3.hdf5', monitor='loss', save_best_only=True)
 # for i in range(NUM_EPOCHS):
 #     random.shuffle(file_list)
-#     X_train, Y_train = load_patients(file_list)
-#     model.fit(X_train, Y_train, verbose=1, nb_epoch=1, batch_size=BATCH_SIZE,
-#                    shuffle=True, callbacks=[tb])  # validation_data=(X_test, Y_test),
-
-
-print('Training...\n')
-# model_checkpoint = keras.callbacks.ModelCheckpoint(model_path + 'jm_slowunet_v3.hdf5', monitor='loss', save_best_only=True)
-for i in range(NUM_EPOCHS):
-    random.shuffle(file_list)
-    for j in range(43):
-        logging.info('Epoch: %d/%d, batch:%d' % (i, NUM_EPOCHS, j*20))
-        X_train, Y_train = load_patients(file_list[j*20:(j+1)*20])
-        model.fit(X_train, Y_train, verbose=1, nb_epoch=1, batch_size=BATCH_SIZE,
-                  validation_data=(X_test, Y_test), shuffle=True, callbacks=[tb])
-    model.save(model_path + OUTPUT_MODEL)
+#     for j in range(43):
+#         logging.info('Epoch: %d/%d, batch:%d' % (i, NUM_EPOCHS, j*20))
+#         X_train, Y_train = load_patients(file_list[j*20:(j+1)*20])
+#         model.fit(X_train, Y_train, verbose=1, nb_epoch=1, batch_size=BATCH_SIZE,
+#                   validation_data=(X_test, Y_test), shuffle=True, callbacks=[tb])
+#     model.save(model_path + OUTPUT_MODEL)
 
 
 # TESTING NETWORK --------------------------------------------------
@@ -376,14 +376,12 @@ def get_regions(nodule_mask):
 #     return overlapArea
 
 
-
 from time import time
 mylist = os.listdir(input_path)
 file_list_dsb = [g for g in mylist if g.startswith('dsb_')]
 
 
 for filename in file_list_dsb:
-
     b = np.load(os.path.join(input_path, filename))['arr_0']
     X = []
 
