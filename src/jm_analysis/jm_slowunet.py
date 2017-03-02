@@ -378,10 +378,10 @@ def get_regions(nodule_mask):
 
 from time import time
 mylist = os.listdir(input_path)
-file_list_dsb = [g for g in mylist if g.startswith('dsb_')]
+file_list_dsb = [g for g in mylist if g.startswith('luna_')]
 
 
-with open(wp + 'models/output_model_teixi.csv', 'a') as file:
+with open(wp + 'models/output_model_teixi_luna.csv', 'a') as file:
 
 
     for idx, filename in enumerate(file_list_dsb):
