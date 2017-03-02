@@ -112,8 +112,9 @@ def load_patients(filelist):
     X, Y = [], []
     for filename in filelist:
         b = np.load(os.path.join(input_path, filename))['arr_0']
-        if b.shape[0]!=3:
-            continue
+        if b.shape[0]!=3: # si falta la nodule_mask asumim 0's
+            x = b.shape[1:]
+            b=np.concatenate(([b[0,:,:,:]],[b[1,:,:,:]],[np.zeros(x)]),axis=0)
 
         last_slice = -1e3  # big initialization
         slices = []
@@ -186,14 +187,15 @@ class IOReader(multiprocessing.Process):
             raise StopIteration('Finished IO DATA')
         return data
 
-    def data_generator(max_iters=1e5):
+    def data_generator(self,max_iters=1e5):
         i=1
         while True:
             try:
                 yield self.get()
                 i = i+1
                 if i > max_iters:
-                    yield StopIteration()
+                    self.terminate()
+                    raise StopIteration()
             except StopIteration:
                 break
 
@@ -201,7 +203,9 @@ class IOReader(multiprocessing.Process):
 # helper
 def data_loader(file_list=[]):
     for file in file_list:
-        yield load_patients([file])
+        X,Y = load_patients([file])
+        if len(X.shape)==4:  # xapussa per evitar casos raros com luna_243094273518213382155770295147.npz que li passa a aquest???
+            yield X,Y
 
 
 
@@ -218,6 +222,7 @@ print 'Creating test set...'
 X_test, Y_test = load_patients(file_list[-TEST_SIZE:])
 file_list = file_list[:-TEST_SIZE]
 
+NUM_EPOCHS=1
 
 print('Training...\n')
 for i in range(NUM_EPOCHS):
@@ -227,7 +232,7 @@ for i in range(NUM_EPOCHS):
         data_loader,file_list=file_list) #function that reads the input and returns a generator
     reader.start() # start reader on background and fill the buffer
 
-    for X_train, Y_train in reader.data_generator(3):
+    for X_train, Y_train in reader.data_generator(1):
             logging.info('Epoch: %d/%d' % (i, NUM_EPOCHS))
             logging.info('size: %s %s' % (str(X_train.shape), str(Y_train.shape)))
             model.fit(X_train, Y_train, verbose=1, nb_epoch=1, batch_size=BATCH_SIZE, 
