@@ -14,7 +14,7 @@ from skimage import measure
 from skimage.morphology import disk, square
 from skimage.feature import hog
 from math import ceil
-from utils import plotting
+# from utils import plotting
 
 
 ## PATHS
@@ -197,6 +197,7 @@ def visualize_csv(img, node_df):
 #                 slices.append(nslice)
 #         print "patient %s slices: %s" % (filename, str(slices))
 
+tp, fp, fn = 0, 0, 0
 with open(OUTPUT_FILE, 'w') as file:
     for idx, filename in enumerate(file_list):  # to extract form .csv
         #filename = "luna_126631670596873065041988320084.npz"
@@ -206,6 +207,11 @@ with open(OUTPUT_FILE, 'w') as file:
 
         if patient.shape[0]!=3:  # skip labels without groundtruth
             continue
+
+        slices = []
+        for nslice in range(patient.shape[1]):
+            if patient[2,nslice].any()!=0:
+                slices.append(nslice)
 
         for idx, row in df_node[df_node['filename']==filename].iterrows():
             #row = df_node[df_node['filename']==filename].iloc[0]
@@ -228,6 +234,15 @@ with open(OUTPUT_FILE, 'w') as file:
                 print 'Patient: %s has more than 1 region at slice %d' % (filename, row['nslice'])
             a = AuxRegion([cx - r, cy - r, cx + r + 1, cy + r + 1])  # x1, y1, x2, y2
             score = intersection_regions(a,regions[0])
+            if score>0.3:
+                tp+=1
+                if z in slices:
+                    slices.remove(z)
+            else:
+                fp+=1
 
             file.write("%.4f,%s,%d,%d,%d,%s\n" % (score, filename, z, cx, cy, ",".join(ff)))
+
+        fn += len(slices)
+        print "Results TP:%d FP:%d FN:%d of %d candidates" % (tp,fp,fn,len(df_node[df_node['filename']==filename].index))
 
