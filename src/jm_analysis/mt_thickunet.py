@@ -4,7 +4,7 @@ from time import time
 import numpy as np
 from keras.optimizers import Adam
 from keras import backend as K
-from networks.unet import UNETArchitecture
+#from networks.unet import UNETArchitecture
 # from networks.unet_simplified import UNETArchitecture
 from utils.tb_callback import TensorBoard
 from keras.callbacks import LearningRateScheduler, ModelCheckpoint
@@ -16,7 +16,7 @@ NUM_EPOCHS = 30
 BATCH_SIZE = 2
 TEST_SIZE = 15
 USE_EXISTING = True  # load previous model to continue training
-OUTPUT_MODEL = 'teixi_slowunet_weightloss.hdf5'
+OUTPUT_MODEL = 'teixi_thickunet_weightloss.hdf5'
 
 
 ## paths
@@ -108,7 +108,7 @@ def normalize(image):
     return image
 
 
-def load_patients(filelist):
+def load_patients(filelist,thickness=5):
     X, Y = [], []
     for filename in filelist:
         b = np.load(os.path.join(input_path, filename))['arr_0']
@@ -118,11 +118,14 @@ def load_patients(filelist):
 
         last_slice = -1e3  # big initialization
         slices = []
-        for j in range(b.shape[1]):
+        max_slice=b.shape[1]
+        d = (thickness-1)/2
 
-            lung_image = b[0,j,:,:]
-            lung_mask = b[1,j,:,:]
-            nodules_mask = b[2,j,:,:]
+        for j in range(d,max_slice-d,thickness):
+
+            lung_image = b[0,(j-d):(j+d+1),:,:]
+            lung_mask = b[1,(j-d):(j+d+1),:,:]
+            nodules_mask = b[2,(j-d):(j+d+1),:,:]
 
             # Discard if no nodules
             #if nodules_mask.sum() == 0:
@@ -130,7 +133,7 @@ def load_patients(filelist):
 
             # Discard if bad segmentation
             voxel_volume_l = 2*0.7*0.7/(1000000.0)
-            lung_volume_l = np.sum(lung_mask)*voxel_volume_l
+            lung_volume_l = np.sum(lung_mask)/thickness*voxel_volume_l
             if lung_volume_l < 0.02 or lung_volume_l > 0.1:
                 continue  # skip slices with bad lung segmentation
 
@@ -143,15 +146,15 @@ def load_patients(filelist):
             slices.append(j)
             lung_image[lung_mask==0]=-1000  # apply mask
             X.append(normalize(lung_image))
-            Y.append(nodules_mask)  # nodules_mask
+            Y.append(np.max(nodules_mask,axis=0))  # nodules_mask
             #if len(slices)>5:  # at most 6 slices per patient
             #    break
         logging.info('patient %s added %d slices: %s' % (filename, len(slices), str(slices)))
 
-    X = np.expand_dims(np.asarray(X),axis=1)
+    #X = np.expand_dims(np.asarray(X),axis=1)
+    X = np.asarray(X)
     Y = np.expand_dims(np.asarray(Y),axis=1)
     return X, Y
-
 
 # Async data loader (this should be improved and go to a separate file)
 import multiprocessing
@@ -222,7 +225,7 @@ print 'Creating test set...'
 X_test, Y_test = load_patients(file_list[-TEST_SIZE:])
 file_list = file_list[:-TEST_SIZE]
 
-NUM_EPOCHS=1
+NUM_EPOCHS=30
 
 print('Training...\n')
 for i in range(NUM_EPOCHS):
@@ -232,7 +235,7 @@ for i in range(NUM_EPOCHS):
         data_loader,file_list=file_list) #function that reads the input and returns a generator
     reader.start() # start reader on background and fill the buffer
 
-    for X_train, Y_train in reader.data_generator(1):
+    for X_train, Y_train in reader.data_generator(): #(3): for testing purposes
             logging.info('Epoch: %d/%d' % (i, NUM_EPOCHS))
             logging.info('size: %s %s' % (str(X_train.shape), str(Y_train.shape)))
             model.fit(X_train, Y_train, verbose=1, nb_epoch=1, batch_size=BATCH_SIZE, 
