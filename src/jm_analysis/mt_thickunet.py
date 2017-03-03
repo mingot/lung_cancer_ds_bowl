@@ -46,7 +46,7 @@ def weighted_loss(y_true, y_pred, pos_weight=100):
 
 from keras.layers.advanced_activations import LeakyReLU
 
-def get_model(inp_shape, activation='relu', init='glorot_normal', first_depth=32):
+def get_model(inp_shape, activation='relu', init='glorot_normal', first_depth=32, dropout=False):
     inputs = Input(inp_shape)
 
     conv1 = Convolution2D(first_depth, 3, 3, activation=activation, init=init, border_mode='same')(inputs)
@@ -64,10 +64,14 @@ def get_model(inp_shape, activation='relu', init='glorot_normal', first_depth=32
 
     conv4 = Convolution2D(first_depth*8, 3, 3, activation=activation, init=init, border_mode='same')(pool3)
     conv4 = Convolution2D(first_depth*8, 3, 3, activation=activation, init=init, border_mode='same')(conv4)
+    if dropout:
+        conv4 = Dropout(conv4,0.5) #using same dropout as in the paper
     pool4 = MaxPooling2D(pool_size=(2, 2))(conv4)
 
     conv5 = Convolution2D(first_depth*16, 3, 3, activation=activation, init=init, border_mode='same')(pool4)
     conv5 = Convolution2D(first_depth*16, 3, 3, activation=activation, init=init, border_mode='same')(conv5)
+    if dropout:
+        conv5 = Dropout(conv5,0.5) #using same dropout as in the paper
 
     up6 = merge([UpSampling2D(size=(2, 2))(conv5), conv4], mode='concat', concat_axis=1)
     conv6 = Convolution2D(first_depth*8, 3, 3, activation=activation, init=init, border_mode='same')(up6)
