@@ -20,9 +20,9 @@ from math import ceil
 ## PATHS
 wp = os.environ['LUNG_PATH']
 NODULES_FILE = wp + 'data/final_model/output_model_teixi_luna.csv'
-DATA_PATH = wp + 'data/preprocessed5_sample/'
-DATA_PATH = '/mnt/hd2/prep'
-OUTPUT_FILE = wp + 'data/final_model/hog_v1.csv'
+# DATA_PATH = wp + 'data/preprocessed5_sample/'
+DATA_PATH = '/mnt/hd2/preprocessed5/'
+OUTPUT_FILE = wp + 'data/final_model/hog_v2_total.csv'
 
 ## Load nodules from DL
 df_node = pd.read_csv(NODULES_FILE)
