@@ -8,12 +8,15 @@ from keras import backend as K
 from numpy.random import binomial
 import random
 import os
+import sys
 import numpy as np
 import math
 from time import time
 from keras.optimizers import Adam
 from keras import backend as K
+sys.path.append(os.path.dirname(__file__) + "../../")
 from networks.sample_cnn import Sample2DCNNNetworkArchitecture
+from networks.sample_resnet import ResnetBuilder
 from utils.tb_callback import TensorBoard
 from keras.callbacks import LearningRateScheduler
 from keras.layers.normalization import BatchNormalization
@@ -59,8 +62,9 @@ tb = TensorBoard(log_dir=logs_path, histogram_freq=1, write_graph=False, write_i
 
 
 print 'creating model...'
-arch = Sample2DCNNNetworkArchitecture((1,512,512),False)
-model = arch.get_model()
+#arch = Sample2DCNNNetworkArchitecture((1,512,512),False)
+#model = arch.get_model()
+model = ResnetBuilder().build_resnet_18((1,512,512),1)
 model.compile(optimizer=Adam(lr=.5e-2), loss='binary_crossentropy', metrics=['accuracy','fmeasure'])
 #model.compile(optimizer='rmsprop', loss='binary_crossentropy', metrics=['accuracy'])  # metric which will be used is defined here
 
@@ -90,6 +94,7 @@ for i in range(NUM_EPOCHS):
         X_train, Y_train = get_data_from_file(file)
         X_train = normalize(X_train, X_test.mean(), X_test.std())
         print("Ys labeled as 1s: " + str(Y_train.sum()))
-        model.fit(X_train, Y_train, class_weight = {0:1.,1:10.}, verbose=1, nb_epoch=1, batch_size=BATCH_SIZE, validation_data=(X_test, Y_test), shuffle=True, callbacks=[tb])        model.save(model_path + 'jc_samplecnn_v0.hdf5')
+        model.fit(X_train, Y_train, class_weight = {0:1.,1:10.}, verbose=1, nb_epoch=1, batch_size=BATCH_SIZE, validation_data=(X_test, Y_test), shuffle=True, callbacks=[tb])
+        model.save(model_path + 'jc_samplecnn_v0.hdf5')
         del X_train
         del Y_train

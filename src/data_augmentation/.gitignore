@@ -1,0 +1,5 @@
+sample_images/
+sample_images/*
+staging_deformed_images/
+staging_deformed_images/*
+*.pyc
