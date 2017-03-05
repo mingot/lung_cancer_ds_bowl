@@ -356,7 +356,7 @@ from skimage import measure
 
 def get_regions(nodule_mask):
     # thr = np.where(nodule_mask < np.mean(nodule_mask), 0., 1.0)  # threshold detected regions
-    thr = np.where(nodule_mask < 0.8*np.max(nodule_mask), 0., 1.0)  # threshold detected regions
+    thr = np.where(nodule_mask < 0.6*np.max(nodule_mask), 0., 1.0)  # threshold detected regions
     label_image = measure.label(thr)  # label them
     labels = label_image.astype(int)
     regions = measure.regionprops(labels, nodule_mask)
@@ -377,20 +377,20 @@ def get_regions(nodule_mask):
 
 
 from time import time
-mylist = os.listdir(input_path)
-file_list_dsb = [g for g in mylist if g.startswith('luna_')]
+file_list = os.listdir(input_path)
+# file_list = [g for g in file_list if g.startswith('luna_')]
 
 
-with open(wp + 'models/output_model_teixi_luna.csv', 'a') as file:
+with open(wp + 'models/output_model_teixi_total_v2.csv', 'a') as file:
 
 
-    for idx, filename in enumerate(file_list_dsb):
+    for idx, filename in enumerate(file_list):
         tstart = time()
 
 
         b = np.load(os.path.join(input_path, filename))['arr_0']
         X = []
-        print 'Patient: %s (%d/%d)' % (filename, idx, len(file_list_dsb))
+        print 'Patient: %s (%d/%d)' % (filename, idx, len(file_list))
         for nslice in range(b.shape[1]):
             if nslice%3 in [0,1]:
                 continue
