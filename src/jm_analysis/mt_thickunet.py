@@ -34,7 +34,7 @@ tb = TensorBoard(log_dir=logs_path, histogram_freq=1, write_graph=False, write_i
 
 # MODEL LOADING -----------------------------------------------------------------
 from keras.models import Model
-from keras.layers import Input, merge, Convolution2D, MaxPooling2D, UpSampling2D, AveragePooling2D, Flatten, Dense, Activation
+from keras.layers import Input, merge, Convolution2D, MaxPooling2D, UpSampling2D, AveragePooling2D, Flatten, Dense, Activation, ZeroPadding2D, Dropout, Cropping2D
 
 
 def weighted_loss(y_true, y_pred, pos_weight=100):
@@ -46,7 +46,8 @@ def weighted_loss(y_true, y_pred, pos_weight=100):
 
 from keras.layers.advanced_activations import LeakyReLU
 
-def get_model(inp_shape, activation='relu', init='glorot_normal', first_depth=32):
+
+def get_model(inp_shape, activation='relu', init='glorot_normal', first_depth=32, dropout=False):
     inputs = Input(inp_shape)
 
     conv1 = Convolution2D(first_depth, 3, 3, activation=activation, init=init, border_mode='same')(inputs)
@@ -64,10 +65,14 @@ def get_model(inp_shape, activation='relu', init='glorot_normal', first_depth=32
 
     conv4 = Convolution2D(first_depth*8, 3, 3, activation=activation, init=init, border_mode='same')(pool3)
     conv4 = Convolution2D(first_depth*8, 3, 3, activation=activation, init=init, border_mode='same')(conv4)
+    if dropout:
+        conv4 = Dropout(0.5)(conv4) #using valid dropout as in the paper
     pool4 = MaxPooling2D(pool_size=(2, 2))(conv4)
 
     conv5 = Convolution2D(first_depth*16, 3, 3, activation=activation, init=init, border_mode='same')(pool4)
     conv5 = Convolution2D(first_depth*16, 3, 3, activation=activation, init=init, border_mode='same')(conv5)
+    if dropout:
+        conv5 = Dropout(0.5)(conv5) #using valid dropout as in the paper
 
     up6 = merge([UpSampling2D(size=(2, 2))(conv5), conv4], mode='concat', concat_axis=1)
     conv6 = Convolution2D(first_depth*8, 3, 3, activation=activation, init=init, border_mode='same')(up6)
@@ -89,9 +94,81 @@ def get_model(inp_shape, activation='relu', init='glorot_normal', first_depth=32
 
     return Model(input=inputs, output=conv10)  # conv10
 
+def get_model_new(inp_shape, activation='relu', init='glorot_normal', first_depth=32, dropout=False):
+    inputs = Input(inp_shape)
+    if inp_shape[1]!=512:
+        raise Exception("This code is still not parametric ...")
+    inputs_z = ZeroPadding2D((30,30))(inputs)
+
+    print(inputs.get_shape())
+
+    conv1 = Convolution2D(first_depth, 3, 3, activation=activation, init=init, border_mode='valid')(inputs_z)
+    conv1 = Convolution2D(first_depth, 3, 3, activation=activation, init=init, border_mode='valid')(conv1)
+    print(conv1.get_shape())
+
+
+    pool1 = MaxPooling2D(pool_size=(2, 2))(conv1)
+
+    conv2 = Convolution2D(first_depth*2, 3, 3, activation=activation, init=init, border_mode='valid')(pool1)
+    conv2 = Convolution2D(first_depth*2, 3, 3, activation=activation, init=init, border_mode='valid')(conv2)
+    pool2 = MaxPooling2D(pool_size=(2, 2))(conv2)
+    print(conv2.get_shape())
+
+
+    conv3 = Convolution2D(first_depth*4, 3, 3, activation=activation, init=init, border_mode='valid')(pool2)
+    conv3 = Convolution2D(first_depth*4, 3, 3, activation=activation, init=init, border_mode='valid')(conv3)
+    pool3 = MaxPooling2D(pool_size=(2, 2))(conv3)
+    print(conv3.get_shape())
+
+
+    conv4 = Convolution2D(first_depth*8, 3, 3, activation=activation, init=init, border_mode='valid')(pool3)
+    conv4 = Convolution2D(first_depth*8, 3, 3, activation=activation, init=init, border_mode='valid')(conv4)
+    if dropout:
+        conv4 = Dropout(0.5)(conv4) #using valid dropout as in the paper
+    pool4 = MaxPooling2D(pool_size=(2, 2))(conv4)
+    print(conv4.get_shape())
+
+
+    conv5 = Convolution2D(first_depth*16, 3, 3, activation=activation, init=init, border_mode='valid')(pool4)
+    conv5 = Convolution2D(first_depth*16, 3, 3, activation=activation, init=init, border_mode='valid')(conv5)
+    if dropout:
+        conv5 = Dropout(0.5)(conv5) #using valid dropout as in the paper
+    print(conv5.get_shape())
+
+    up6 = UpSampling2D(size=(2,2))(conv5)
+    a = int((conv4.get_shape()[2]-up6.get_shape()[2])/2)
+    up6 = merge([up6, Cropping2D(((a,a),(a,a)))(conv4)], mode='concat', concat_axis=1)
+    conv6 = Convolution2D(first_depth*8, 3, 3, activation=activation, init=init, border_mode='valid')(up6)
+    conv6 = Convolution2D(first_depth*8, 3, 3, activation=activation, init=init, border_mode='valid')(conv6)
+
+    up7 = UpSampling2D(size=(2, 2))(conv6)
+    a = int(conv3.get_shape()[2]-up7.get_shape()[2])/2
+    print(conv3.get_shape()[2])
+    print(up7.get_shape()[2])
+    up7 = merge([up7, Cropping2D(((a,a),(a,a)))(conv3)], mode='concat', concat_axis=1)
+    conv7 = Convolution2D(first_depth*4, 3, 3, activation=activation, init=init, border_mode='valid')(up7)
+    conv7 = Convolution2D(first_depth*4, 3, 3, activation=activation, init=init, border_mode='valid')(conv7)
+
+    up8 = UpSampling2D(size=(2, 2))(conv7)
+    a = int(conv2.get_shape()[2]-up8.get_shape()[2])/2
+    up8 = merge([up8, Cropping2D(((a,a),(a,a)))(conv2)], mode='concat', concat_axis=1)
+    conv8 = Convolution2D(first_depth*2, 3, 3, activation=activation, init=init, border_mode='valid')(up8)
+    conv8 = Convolution2D(first_depth*2, 3, 3, activation=activation, init=init, border_mode='valid')(conv8)
+
+    up9 = UpSampling2D(size=(2, 2))(conv8)
+    a = int(conv1.get_shape()[2]-up9.get_shape()[2])/2
+    up9 = merge([UpSampling2D(size=(2, 2))(conv8), Cropping2D(((a,a),(a,a)))(conv1)], mode='concat', concat_axis=1)
+    conv9 = Convolution2D(first_depth, 3, 3, activation=activation, init=init, border_mode='valid')(up9)
+    conv9 = Convolution2D(first_depth, 3, 3, activation=activation, init=init, border_mode='valid')(conv9)
+
+    conv10 = Convolution2D(1, 1, 1, activation='sigmoid')(conv9)
+    #print(ZeroPadding2D((62,62))(conv10))
+    return Model(input=inputs, output=ZeroPadding2D((62,62))(conv10))
+
+
 print 'creating model...'
 #arch = UNETArchitecture((1,512,512),False)
-model = get_model(inp_shape=(5,512,512), activation='relu', init='glorot_normal', first_depth=8)
+model = get_model(inp_shape=(5,512,512), activation='relu', init='glorot_normal', first_depth=16, dropout=True)
 model.compile(optimizer=Adam(lr=1.0e-5), loss=weighted_loss, metrics=[weighted_loss])
 model_checkpoint = ModelCheckpoint(model_path + OUTPUT_MODEL, monitor='loss', save_best_only=True)
 
@@ -204,9 +281,10 @@ class IOReader(multiprocessing.Process):
 
 
 # helper
-def data_loader(file_list=[]):
-    for file in file_list:
-        X,Y = load_patients([file])
+def data_loader(file_list=[], n_patients=10):
+    chunks = [file_list[x:x+n_patients] for x in xrange(0, len(file_list), n_patients)]
+    for chunk in chunks:
+        X,Y = load_patients(chunk)
         if len(X.shape)==4:  # xapussa per evitar casos raros com luna_243094273518213382155770295147.npz que li passa a aquest???
             yield X,Y
 
@@ -225,21 +303,33 @@ print 'Creating test set...'
 X_test, Y_test = load_patients(file_list[-TEST_SIZE:])
 file_list = file_list[:-TEST_SIZE]
 
-NUM_EPOCHS=30
+NUM_EPOCHS=5
+BATCH_SIZE=10
 
+counter = 1
 print('Training...\n')
 for i in range(NUM_EPOCHS):
     #random.shuffle(file_list)
 
     reader = IOReader(2, # number of items to be stored on the buffer
-        data_loader,file_list=file_list) #function that reads the input and returns a generator
+        data_loader,file_list=file_list,n_patients=3) #function that reads the input and returns a generator
     reader.start() # start reader on background and fill the buffer
 
     for X_train, Y_train in reader.data_generator(): #(3): for testing purposes
             logging.info('Epoch: %d/%d' % (i, NUM_EPOCHS))
             logging.info('size: %s %s' % (str(X_train.shape), str(Y_train.shape)))
             model.fit(X_train, Y_train, verbose=1, nb_epoch=1, batch_size=BATCH_SIZE, 
-                shuffle=True, callbacks=[tb])
+                    shuffle=True, callbacks=[tb])
+
+            if counter % 30 != 1:
+                pass
+                #model.fit(X_train, Y_train, verbose=1, nb_epoch=1, batch_size=BATCH_SIZE, 
+                #    shuffle=True, callbacks=[tb])
+            else:
+            #    model.fit(X_train, Y_train, verbose=1, nb_epoch=1, batch_size=BATCH_SIZE, 
+            #        shuffle=True, callbacks=[tb], validation_data=(X_test, Y_test)) # we make validation only each 10 steps
+                model.save(model_path + OUTPUT_MODEL)
+            counter = counter+1
 
     model.save(model_path + OUTPUT_MODEL)
     logging.info("Ending processing one epoch" )
