@@ -1,3 +1,6 @@
+# Read .csv containing detected nodules on LUNA, augment them with their
+#   score (overlaping area with groundtruth) and image features
+
 import pandas as pd
 import numpy as np
 import os
@@ -19,10 +22,13 @@ from math import ceil
 
 ## PATHS
 wp = os.environ['LUNG_PATH']
-NODULES_FILE = wp + 'models/output_model_teixi_total_v2.csv'
+# NODULES_FILE = wp + 'models/output_model_teixi_total_v2.csv'
 # DATA_PATH = wp + 'data/preprocessed5_sample/'
+# OUTPUT_FILE = wp + 'data/final_model/hog_v3_total.csv'
 DATA_PATH = '/mnt/hd2/preprocessed5/'
-OUTPUT_FILE = wp + 'data/final_model/hog_v3_total.csv'
+NODULES_FILE = wp + 'nodules_unet/noduls_unet_v02.csv'
+OUTPUT_FILE = wp + 'nodules_unet/noduls_unet_v02_extended.csv'
+
 
 ## Load nodules from DL
 df_node = pd.read_csv(NODULES_FILE)
