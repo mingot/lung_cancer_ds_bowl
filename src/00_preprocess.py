@@ -231,6 +231,9 @@ for patient_file in patient_files:
     #     pass
     
     # store output (processed lung and lung mask)
+    if nodule_mask is None and PIPELINE=='luna':
+        nodule_mask = np.zeros(pix.shape, dtype=np.int)
+
     if nodule_mask is None:
         output = np.stack((pix, lung_mask))
     else:
