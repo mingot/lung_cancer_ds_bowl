@@ -3,13 +3,18 @@ import random
 from networks.thickunet import ThickUNET
 
 # PARAMETERS -----------------------------------
+import os
+import random
+from networks.thickunet import ThickUNET
+
+# PARAMETERS -----------------------------------
 input_path = '/mnt/hd2/preprocessed5'
 logs_path = '/home/mteixido/logs'
 modeloutput_file = '/home/mteixido/thickmodel.hdf5'
 TEST_SIZE = 1 # in number of patients
-NUM_EPOCHS = 2
-SAMPLES_PER_EPOCH = 2 # number of thick slices to train per epoch
-BATCH_SIZE = 4  # batch size should not be too long to avoid memory crash on GPU
+NUM_EPOCHS = 4
+SAMPLES_PER_EPOCH = 200 # number of thick slices to train per epoch, it should be high enough so that we are not spending more doing validation than training
+BATCH_SIZE = 10  # batch size should not be too long to avoid memory crash on GPU
 
 
 # DATASET CREATION --------------------------------
@@ -18,12 +23,13 @@ file_list = [os.path.join(input_path, f) for f in file_list] # better save the a
 random.shuffle(file_list)
 
 test_patients = file_list[-TEST_SIZE:] # select some patients for validation
+print test_patients # for reference!
 train_patients = file_list[:-TEST_SIZE] #all files except validation ones
 
 
 # NETWORK LOADING ---------------------------------
 model = ThickUNET(dropout=True, initialdepth=16, input_shape=(5,512,512), 
-                  saved_file='/home/mteixido/thickunet16.hdf5') # load a file to continue a training (optional)
+                  saved_file='/home/mteixido/models/teixi_thickunet_weightloss.hdf5') # load a file to continue a training (optional)
 
 # NETWORK TRAINING --------------------------------
 model.train(nb_epochs=NUM_EPOCHS,  #number of epochs to train
