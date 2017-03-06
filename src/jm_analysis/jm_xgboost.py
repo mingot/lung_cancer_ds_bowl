@@ -19,10 +19,10 @@ from math import ceil
 
 ## PATHS
 wp = os.environ['LUNG_PATH']
-NODULES_FILE = wp + 'data/final_model/output_model_teixi_luna.csv'
+NODULES_FILE = wp + 'models/output_model_teixi_total_v2.csv'
 # DATA_PATH = wp + 'data/preprocessed5_sample/'
 DATA_PATH = '/mnt/hd2/preprocessed5/'
-OUTPUT_FILE = wp + 'data/final_model/hog_v2_total.csv'
+OUTPUT_FILE = wp + 'data/final_model/hog_v3_total.csv'
 
 ## Load nodules from DL
 df_node = pd.read_csv(NODULES_FILE)
@@ -130,8 +130,6 @@ def process_img(img):
     return ans_max
     # return ans, ans_prop
 
-
-
 class AuxRegion():
     def __init__(self, dim):
         self.bbox = dim
@@ -201,11 +199,15 @@ tp, fp, fn = 0, 0, 0
 with open(OUTPUT_FILE, 'w') as file:
     for idx, filename in enumerate(file_list):  # to extract form .csv
         #filename = "luna_126631670596873065041988320084.npz"
+
+        if filename[0:5]!="luna_":
+            continue
+
         patient = np.load(DATA_PATH + filename)['arr_0']
 
         print "Patient %s (%d/%d)" % (filename, idx, len(file_list))
 
-        if patient.shape[0]!=3:  # skip labels without groundtruth
+        if patient.shape[0]!=3:  # skip labels without ground truth
             continue
 
         slices = []
