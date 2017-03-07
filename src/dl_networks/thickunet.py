@@ -5,7 +5,7 @@ from keras.optimizers import Adam
 from keras import backend as K
 import numpy as np
 import os
-from utils.tb_callback import TensorBoard
+from dl_utils.tb_callback import TensorBoard
 K.set_image_dim_ordering('th')
 
 import logging
