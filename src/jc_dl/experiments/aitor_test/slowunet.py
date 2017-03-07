@@ -13,12 +13,12 @@ K.set_image_dim_ordering('th')
 
 # PARAMETERS
 num_epoch   = 1
-num_patient = 1 # RAM  limited
-batch_size  = 1 # VRAM limited
+num_patient = 10 # RAM  limited
+batch_size  = 1  # VRAM limited
 
 # PATHS
-input_path  = '/home/aiorla/Projects/Lung/test/input'
-model_path  = '/home/aiorla/Projects/Lung/test/model'
+input_path  = '/mnt/hd2/preprocessed3'
+model_path  = '/home/aitor/lung_cancer_ds_bowl/models'
 
 # I/O METHOD
 def load_patients(index,num_patients,filelist):
@@ -26,8 +26,13 @@ def load_patients(index,num_patients,filelist):
     for i in range(num_patients):
        b = np.load(os.path.join(input_path,filelist[min(index+i,len(filelist)-1)]))['arr_0']
        for j in range(b.shape[1]):
-           X.append(b[0,j,:,:])
-           Y.append(b[2,j,:,:])
+           #print str(j) + " " +filelist[index+i]
+           #print b.shape
+	   X.append(b[0,j,:,:])
+           if b.shape[0] == 2:
+              	Y.append(np.zeros((512,512)))
+	   else:
+               	Y.append(b[2,j,:,:])
     X = np.expand_dims(np.asarray(X),axis=1)
     Y = np.expand_dims(np.asarray(Y),axis=1)
     return X, Y

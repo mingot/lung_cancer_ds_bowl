@@ -23,3 +23,5 @@ events.out.tfevents.*
 
 src/logs/
 nohup.out
+
+logs/
