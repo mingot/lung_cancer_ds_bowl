@@ -26,8 +26,8 @@ wp = os.environ['LUNG_PATH']
 # DATA_PATH = wp + 'data/preprocessed5_sample/'
 # OUTPUT_FILE = wp + 'data/final_model/hog_v3_total.csv'
 DATA_PATH = '/mnt/hd2/preprocessed5/'
-NODULES_FILE = wp + 'nodules_unet/noduls_unet_v02.csv'
-OUTPUT_FILE = wp + 'nodules_unet/noduls_unet_v02_extended.csv'
+NODULES_FILE = wp + 'output/noduls_unet_v02.csv'
+OUTPUT_FILE = wp + 'output/noduls_unet_v02_extended.csv'
 
 
 ## Load nodules from DL
@@ -223,9 +223,9 @@ with open(OUTPUT_FILE, 'w') as file:
 
         for idx, row in df_node[df_node['filename']==filename].iterrows():
             #row = df_node[df_node['filename']==filename].iloc[0]
-            cx = row['x']  # row
-            cy = row['y']  # column
-            z = row['nslice']
+            cx = int(row['x'])  # row
+            cy = int(row['y'])  # column
+            z = int(row['nslice'])
             r = int(ceil(row['diameter']/2.))
 
             # extract hog features
@@ -237,9 +237,9 @@ with open(OUTPUT_FILE, 'w') as file:
             ff = [str(f) for f in features_hog]
 
             # Get the score of the region (ground truth)
-            regions = get_regions(patient[2,row['nslice']])
+            regions = get_regions(patient[2,z])
             if len(regions)>1:
-                print 'Patient: %s has more than 1 region at slice %d' % (filename, row['nslice'])
+                print 'Patient: %s has more than 1 region at slice %d' % (filename, z)
             a = AuxRegion([cx - r, cy - r, cx + r + 1, cy + r + 1])  # x1, y1, x2, y2
             score = intersection_regions(a,regions[0])
             if score>0.3:

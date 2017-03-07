@@ -191,7 +191,7 @@ def normalize(image):
     return image
 
 
-def load_patients(filelist):
+def load_patients(filelist, full=False, shuffle=False):
 
     X, Y = [], []
     for filename in filelist:
@@ -215,7 +215,7 @@ def load_patients(filelist):
             # Discard if bad segmentation
             voxel_volume_l = 2*0.7*0.7/(1000000.0)
             lung_volume_l = np.sum(lung_mask)*voxel_volume_l
-            if lung_volume_l < 0.02 or lung_volume_l > 0.1:
+            if lung_volume_l < 0.02 or lung_volume_l > 0.1 and full is not False:
                 continue  # skip slices with bad lung segmentation
 
             # discard if consecutive slices
@@ -243,44 +243,40 @@ def load_patients(filelist):
 
         # print len(X), len(Y)
 
-        # p = np.random.permutation(len(X)) # generate permutation of slices
-        # X = (np.asarray(X)[p,:,:])[0:2,:,:] #apply permutation
-        # Y = (np.asarray(Y)[p,:,:])[0:2,:,:] #apply permutation
+
     X = np.expand_dims(np.asarray(X),axis=1)
     Y = np.expand_dims(np.asarray(Y),axis=1)
+
+    if shuffle:  # TO review!!
+        p = np.random.permutation(len(X)) # generate permutation of slices
+        X = (np.asarray(X)[p,:,:])[0:2,:,:] #apply permutation
+        Y = (np.asarray(Y)[p,:,:])[0:2,:,:] #apply permutation
+
     return X, Y
 
 
-# Async IO reader class
-class IOReader(multiprocessing.Process):
-    def __init__(self, max_buffer_size, f):
-        super(IOReader, self).__init__()
-        self.queue = multiprocessing.Queue(max_buffer_size)
-        self.f = f
+##
 
-    def run(self):
-        # logging.info('IOReader started')
-        for x in self.f():  # TODO modify the constructor to allow pass more arguments to f
-           # logging.info('IOReader: readed new data')
-           self.queue.put(x)
-        self.queue.put('end')
-        # logging.info('ending IO reader')
-        return
+def chunks(file_list=[], batch_size=5, infinite=True, full=False):
 
-    def get(self):
-        # TODO improve this function to check that the process has not died?
-        data = self.queue.get()
-        if type(data)==str and data=='end':
-            raise StopIteration('Finished IO DATA')
-        return data
+    CONCURRENT_PATIENTS = 2  # limitation by memory
+    while True:
+        # for filename in file_list:
+        for j in range(0, len(file_list), CONCURRENT_PATIENTS):
+            filenames = file_list[j:j+CONCURRENT_PATIENTS]
+            a, b = load_patients(filenames,full=False,shuffle=True)
+            if len(a.shape) != 4: # xapussa per evitar casos raros com luna_243094273518213382155770295147.npz que li passa a aquest???
+                continue
 
+            size = a.shape[0]
+            num_batches = int(np.ceil(size / float(batch_size)))
+            for i in range(num_batches):
+                start = i * batch_size
+                end = (i + 1) * batch_size  # min(size, (i + 1) * batch_size)
+                yield a[start:end], b[start:end]
 
-# helper
-def data_loader():
-    for x in load_patients([file_list[0]]):
-        yield x
-
-
+        if infinite is False:
+            break
 
 # # TRAINING NETWORK --------------------------------------------------
 #
@@ -339,6 +335,17 @@ def data_loader():
 #     model.save(model_path + OUTPUT_MODEL)
 
 
+model_checkpoint = keras.callbacks.ModelCheckpoint(model_path + 'jm_slowunet_v3.hdf5', monitor='loss', save_best_only=True)
+model.fit_generator(generator=chunks(file_list_train,BATCH_SIZE,infinite=True),
+    samples_per_epoch=samples_per_epoch,
+    nb_epoch=???,
+    verbose=1,
+    callbacks=[tb, model_checkpoint],
+    validation_data=chunks(file_list_test,BATCH_SIZE,infinite=True),
+    nb_val_samples=10,  # TO REVIEW
+    max_q_size=10,
+    nb_worker=2)
+
 # TESTING NETWORK --------------------------------------------------
 from skimage import measure
 
@@ -372,6 +379,8 @@ file_list = os.listdir(INPUT_PATH)
 
 with open(OUTPUT_CSV) as file:
 
+    # write the header
+    file.write('filename,nslice,x,y,diameter,max_intensity,min_intensity,mean_intensity\n')
 
     for idx, filename in enumerate(file_list):
         tstart = time()
@@ -394,9 +403,6 @@ with open(OUTPUT_CSV) as file:
 
             regions_pred = get_regions(pred[0,0])
             for r in regions_pred:
-                # print '%s,%d,%d,%d,%.3f,%.3f,%.3f,%.3f' % (filename,nslice,r.centroid[0], r.centroid[1], r.equivalent_diameter,
-                #                                            r.max_intensity, r.min_intensity, r.mean_intensity)
-
                 file.write('%s,%d,%d,%d,%.3f,%.3f,%.3f,%.3f\n' % (filename,nslice,r.centroid[0], r.centroid[1], r.equivalent_diameter,
                                                            r.max_intensity, r.min_intensity, r.mean_intensity))
         print time()-tstart

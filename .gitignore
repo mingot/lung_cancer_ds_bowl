@@ -20,3 +20,8 @@ events.out.tfevents.*
 
 # models
 *.hdf5
+
+src/logs/
+nohup.out
+
+logs/
