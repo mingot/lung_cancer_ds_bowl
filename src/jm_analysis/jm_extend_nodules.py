@@ -229,6 +229,8 @@ with open(OUTPUT_FILE, 'w') as file:
             r = int(ceil(row['diameter']/2.))
 
             # extract hog features
+            print range((cx-r),(cx+r+1))
+            print range((cy-r),(cy+r+1))
             img_hu = patient[0,z,(cx-r):(cx+r+1),(cy-r):(cy+r+1)]
             img_hu = 255.0*(img_hu - np.min(img_hu))/(np.max(img_hu) - np.min(img_hu))
             img_hu = img_hu.astype(np.int, copy=False)
