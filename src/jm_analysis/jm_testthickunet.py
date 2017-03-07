@@ -39,7 +39,7 @@ model = ThickUNET(dropout=True, initialdepth=16, input_shape=(5,512,512), saved_
 
 
 
-with open(OUTPUT_CSV) as file:
+with open(OUTPUT_CSV, 'w') as file:
 
     # write the header
     file.write('filename,nslice,x,y,diameter,max_intensity,min_intensity,mean_intensity\n')
