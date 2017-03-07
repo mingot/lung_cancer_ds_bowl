@@ -225,7 +225,7 @@ with open(OUTPUT_FILE, 'w') as file:
             #row = df_node[df_node['filename']==filename].iloc[0]
             cx = int(row['x'])  # row
             cy = int(row['y'])  # column
-            z = row['nslice']
+            z = int(row['nslice'])
             r = int(ceil(row['diameter']/2.))
 
             # extract hog features
