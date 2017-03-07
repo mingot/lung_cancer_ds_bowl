@@ -22,3 +22,4 @@ events.out.tfevents.*
 *.hdf5
 
 src/logs/
+nohup.out
