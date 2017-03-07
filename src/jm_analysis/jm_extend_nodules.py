@@ -26,8 +26,8 @@ wp = os.environ['LUNG_PATH']
 # DATA_PATH = wp + 'data/preprocessed5_sample/'
 # OUTPUT_FILE = wp + 'data/final_model/hog_v3_total.csv'
 DATA_PATH = '/mnt/hd2/preprocessed5/'
-NODULES_FILE = wp + 'nodules_unet/noduls_unet_v02.csv'
-OUTPUT_FILE = wp + 'nodules_unet/noduls_unet_v02_extended.csv'
+NODULES_FILE = wp + 'output/noduls_unet_v02.csv'
+OUTPUT_FILE = wp + 'output/noduls_unet_v02_extended.csv'
 
 
 ## Load nodules from DL
