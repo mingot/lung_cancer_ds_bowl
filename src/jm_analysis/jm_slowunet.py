@@ -379,6 +379,8 @@ file_list = os.listdir(INPUT_PATH)
 
 with open(OUTPUT_CSV) as file:
 
+    # write the header
+    file.write('filename,nslice,x,y,diameter,max_intensity,min_intensity,mean_intensity\n')
 
     for idx, filename in enumerate(file_list):
         tstart = time()
@@ -401,9 +403,6 @@ with open(OUTPUT_CSV) as file:
 
             regions_pred = get_regions(pred[0,0])
             for r in regions_pred:
-                # print '%s,%d,%d,%d,%.3f,%.3f,%.3f,%.3f' % (filename,nslice,r.centroid[0], r.centroid[1], r.equivalent_diameter,
-                #                                            r.max_intensity, r.min_intensity, r.mean_intensity)
-
                 file.write('%s,%d,%d,%d,%.3f,%.3f,%.3f,%.3f\n' % (filename,nslice,r.centroid[0], r.centroid[1], r.equivalent_diameter,
                                                            r.max_intensity, r.min_intensity, r.mean_intensity))
         print time()-tstart
