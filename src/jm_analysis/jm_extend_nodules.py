@@ -223,8 +223,8 @@ with open(OUTPUT_FILE, 'w') as file:
 
         for idx, row in df_node[df_node['filename']==filename].iterrows():
             #row = df_node[df_node['filename']==filename].iloc[0]
-            cx = row['x']  # row
-            cy = row['y']  # column
+            cx = int(row['x'])  # row
+            cy = int(row['y'])  # column
             z = row['nslice']
             r = int(ceil(row['diameter']/2.))
 
