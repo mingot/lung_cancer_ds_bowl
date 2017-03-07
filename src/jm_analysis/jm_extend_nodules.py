@@ -239,9 +239,9 @@ with open(OUTPUT_FILE, 'w') as file:
             ff = [str(f) for f in features_hog]
 
             # Get the score of the region (ground truth)
-            regions = get_regions(patient[2,row['nslice']])
+            regions = get_regions(patient[2,z])
             if len(regions)>1:
-                print 'Patient: %s has more than 1 region at slice %d' % (filename, row['nslice'])
+                print 'Patient: %s has more than 1 region at slice %d' % (filename, z)
             a = AuxRegion([cx - r, cy - r, cx + r + 1, cy + r + 1])  # x1, y1, x2, y2
             score = intersection_regions(a,regions[0])
             if score>0.3:
