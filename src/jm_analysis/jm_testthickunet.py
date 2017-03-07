@@ -9,11 +9,12 @@ from dl_utils.heatmap import extract_regions_from_heatmap
 
 
 wp = os.environ['LUNG_PATH']
-INPUT_PATH = wp + 'data/preprocessed5_sample/'
+INPUT_PATH = '/mnt/hd2/preprocessed5/'  # wp + 'data/preprocessed5_sample/'
 MODEL_FILE = wp + 'models/thickunet16.hdf5'
 OUTPUT_CSV = wp + 'output/noduls_thickunet_v01.csv'
 
 file_list = os.listdir(INPUT_PATH)
+file_list = [g for g in file_list if g.startswith('luna_')]
 model = ThickUNET(dropout=True, initialdepth=16, input_shape=(5,512,512), saved_file=MODEL_FILE)
 
 
