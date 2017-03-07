@@ -5,42 +5,44 @@ from time import time
 import numpy as np
 from keras.optimizers import Adam
 from keras import backend as K
-from networks.unet import UNETArchitecture
-# from networks.unet_simplified import UNETArchitecture
 from utils.tb_callback import TensorBoard
 from keras.callbacks import LearningRateScheduler, ModelCheckpoint
+import multiprocessing
+import logging
 # sys.path.remove('/Users/mingot/Projectes/kaggle/ds_bowl_lung/src')
 # sys.path.append('/Users/mingot/Projectes/kaggle/ds_bowl_lung/src/jc_dl/')
 # export PYTHONPATH=/Users/mingot/Projectes/kaggle/ds_bowl_lung/src/jc_dl/
 
-K.set_image_dim_ordering('th')
 
 # PARAMETERS
 NUM_EPOCHS = 30
 BATCH_SIZE = 2
 TEST_SIZE = 15
 USE_EXISTING = True  # load previous model to continue training
-OUTPUT_MODEL = 'teixi_slowunet_weightloss.hdf5'
 
 
-## paths
+# PATHS
 wp = os.environ['LUNG_PATH']
-model_path  = wp + 'models/'
-# input_path = wp + 'data/preprocessed5_sample' #/mnt/hd2/preprocessed2'
-input_path = '/mnt/hd2/preprocessed5'
-logs_path = wp + 'logs/%s' % str(int(time()))
-if not os.path.exists(logs_path):
-    os.makedirs(logs_path)
+INPUT_PATH = '/mnt/hd2/preprocessed5'  # wp + 'data/preprocessed5_sample'
+OUTPUT_MODEL = wp + 'models/teixi_slowunet_weightloss.hdf5'
+OUTPUT_CSV = wp + 'output/nodules_unet/noduls_unet_v02.csv'
+LOGS_PATH = wp + 'logs/%s' % str(int(time()))
+if not os.path.exists(LOGS_PATH):
+    os.makedirs(LOGS_PATH)
 
-# tensorboard logs
-tb = TensorBoard(log_dir=logs_path, histogram_freq=1, write_graph=False, write_images=False)  # replace keras.callbacks.TensorBoard
 
+# OTHER INITIALIZATIONS: tensorboard and logging
+tb = TensorBoard(log_dir=LOGS_PATH, histogram_freq=1, write_graph=False, write_images=False)  # replace keras.callbacks.TensorBoard
+K.set_image_dim_ordering('th')
+logging.basicConfig(level=logging.INFO,
+                    format='%(asctime)s  %(levelname)-8s %(message)s',
+                    datefmt='%m-%d %H:%M:%S')
 
 
 # MODEL LOADING -----------------------------------------------------------------
 from keras.models import Model
 from keras.layers import Input, merge, Convolution2D, MaxPooling2D, UpSampling2D, AveragePooling2D, Flatten, Dense, Activation
-
+from keras.layers.advanced_activations import LeakyReLU
 
 def dice_coef_loss(y_true, y_pred):
     y_true_f = K.flatten(y_true)  # y_true.flatten()
@@ -48,15 +50,11 @@ def dice_coef_loss(y_true, y_pred):
     intersection = K.sum(y_true_f * y_pred_f)  # np.sum(y_true_f * y_pred_f)
     return -(2. * intersection + 1.0) / (K.sum(y_true_f) + K.sum(y_pred_f) + 1.0)  # -(2. * intersection + 1.0) / (np.sum(y_true_f) + np.sum(y_pred_f) + 1.0)
 
-
 def weighted_loss(y_true, y_pred, pos_weight=100):
     #if this argument is greater than 1 we will penalize more the nodules not detected as nodules, we can set it up to 10 or 100?
      y_true_f = K.flatten(y_true)  # y_true.flatten()
      y_pred_f = K.flatten(y_pred)  # y_pred.flatten()
      return K.mean(-(1-y_true_f)*K.log(1-y_pred_f)-y_true_f*K.log(y_pred_f)*pos_weight)
-
-
-from keras.layers.advanced_activations import LeakyReLU
 
 def get_model(inp_shape, activation='relu', init='glorot_normal'):
     inputs = Input(inp_shape)
@@ -172,11 +170,11 @@ print 'creating model...'
 model = get_model(inp_shape=(1,512,512), activation='relu', init='glorot_normal')
 #model = get_model_soft(inp_shape=(1,512,512))
 model.compile(optimizer=Adam(lr=1.0e-5), loss=weighted_loss, metrics=[weighted_loss])
-model_checkpoint = ModelCheckpoint(model_path + OUTPUT_MODEL, monitor='loss', save_best_only=True)
+model_checkpoint = ModelCheckpoint(OUTPUT_MODEL, monitor='loss', save_best_only=True)
 
 if USE_EXISTING:
     print 'loading model...'
-    model.load_weights(model_path + 'teixi_slowunet_weightloss.hdf5')  #   # jm_slowunet_v9_cross_lungs.hdf5
+    model.load_weights(OUTPUT_MODEL)
 
 
 
@@ -193,12 +191,12 @@ def normalize(image):
     return image
 
 
-def load_patients(filelist):
+def load_patients(filelist, full=False, shuffle=False):
 
     X, Y = [], []
     for filename in filelist:
 
-        b = np.load(os.path.join(input_path, filename))['arr_0']
+        b = np.load(os.path.join(INPUT_PATH, filename))['arr_0']
         if b.shape[0]!=3:
             continue
 
@@ -217,7 +215,7 @@ def load_patients(filelist):
             # Discard if bad segmentation
             voxel_volume_l = 2*0.7*0.7/(1000000.0)
             lung_volume_l = np.sum(lung_mask)*voxel_volume_l
-            if lung_volume_l < 0.02 or lung_volume_l > 0.1:
+            if lung_volume_l < 0.02 or lung_volume_l > 0.1 and full is not False:
                 continue  # skip slices with bad lung segmentation
 
             # discard if consecutive slices
@@ -245,58 +243,45 @@ def load_patients(filelist):
 
         # print len(X), len(Y)
 
-        # p = np.random.permutation(len(X)) # generate permutation of slices
-        # X = (np.asarray(X)[p,:,:])[0:2,:,:] #apply permutation
-        # Y = (np.asarray(Y)[p,:,:])[0:2,:,:] #apply permutation
+
     X = np.expand_dims(np.asarray(X),axis=1)
     Y = np.expand_dims(np.asarray(Y),axis=1)
+
+    if shuffle:  # TO review!!
+        p = np.random.permutation(len(X)) # generate permutation of slices
+        X = (np.asarray(X)[p,:,:])[0:2,:,:] #apply permutation
+        Y = (np.asarray(Y)[p,:,:])[0:2,:,:] #apply permutation
+
     return X, Y
 
 
-# Async data loader (this should be improved and go to a separate file)
-import multiprocessing
-import time
-import logging
-logging.basicConfig(level=logging.INFO,
-                    format='%(asctime)s  %(levelname)-8s %(message)s',
-                    datefmt='%m-%d %H:%M:%S')
+##
 
+def chunks(file_list=[], batch_size=5, infinite=True, full=False):
 
-# Async IO reader class
-class IOReader(multiprocessing.Process):
-    def __init__(self, max_buffer_size, f):
-        super(IOReader, self).__init__()
-        self.queue = multiprocessing.Queue(max_buffer_size)
-        self.f = f
+    CONCURRENT_PATIENTS = 2  # limitation by memory
+    while True:
+        # for filename in file_list:
+        for j in range(0, len(file_list), CONCURRENT_PATIENTS):
+            filenames = file_list[j:j+CONCURRENT_PATIENTS]
+            a, b = load_patients(filenames,full=False,shuffle=True)
+            if len(a.shape) != 4: # xapussa per evitar casos raros com luna_243094273518213382155770295147.npz que li passa a aquest???
+                continue
 
-    def run(self):
-        # logging.info('IOReader started')
-        for x in self.f():  # TODO modify the constructor to allow pass more arguments to f
-           # logging.info('IOReader: readed new data')
-           self.queue.put(x)
-        self.queue.put('end')
-        # logging.info('ending IO reader')
-        return
+            size = a.shape[0]
+            num_batches = int(np.ceil(size / float(batch_size)))
+            for i in range(num_batches):
+                start = i * batch_size
+                end = (i + 1) * batch_size  # min(size, (i + 1) * batch_size)
+                yield a[start:end], b[start:end]
 
-    def get(self):
-        # TODO improve this function to check that the process has not died?
-        data = self.queue.get()
-        if type(data)==str and data=='end':
-            raise StopIteration('Finished IO DATA')
-        return data
-
-
-# helper
-def data_loader():
-    for x in load_patients([file_list[0]]):
-        yield x
-
-
+        if infinite is False:
+            break
 
 # # TRAINING NETWORK --------------------------------------------------
 #
 # import random
-# mylist = os.listdir(input_path)
+# mylist = os.listdir(INPUT_PATH)
 # file_list = [g for g in mylist if g.startswith('luna_')]
 # random.shuffle(file_list)
 # #file_list = file_list[0:10]
@@ -350,6 +335,17 @@ def data_loader():
 #     model.save(model_path + OUTPUT_MODEL)
 
 
+model_checkpoint = keras.callbacks.ModelCheckpoint(model_path + 'jm_slowunet_v3.hdf5', monitor='loss', save_best_only=True)
+model.fit_generator(generator=chunks(file_list_train,BATCH_SIZE,infinite=True),
+    samples_per_epoch=samples_per_epoch,
+    nb_epoch=???,
+    verbose=1,
+    callbacks=[tb, model_checkpoint],
+    validation_data=chunks(file_list_test,BATCH_SIZE,infinite=True),
+    nb_val_samples=10,  # TO REVIEW
+    max_q_size=10,
+    nb_worker=2)
+
 # TESTING NETWORK --------------------------------------------------
 from skimage import measure
 
@@ -377,18 +373,18 @@ def get_regions(nodule_mask):
 
 
 from time import time
-file_list = os.listdir(input_path)
+file_list = os.listdir(INPUT_PATH)
 # file_list = [g for g in file_list if g.startswith('luna_')]
 
 
-with open(wp + 'models/output_model_teixi_total_v2.csv', 'a') as file:
+with open(OUTPUT_CSV) as file:
 
 
     for idx, filename in enumerate(file_list):
         tstart = time()
 
 
-        b = np.load(os.path.join(input_path, filename))['arr_0']
+        b = np.load(os.path.join(INPUT_PATH, filename))['arr_0']
         X = []
         print 'Patient: %s (%d/%d)' % (filename, idx, len(file_list))
         for nslice in range(b.shape[1]):
