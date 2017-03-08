@@ -30,14 +30,13 @@ USE_EXISTING = False  # load previous model to continue training
 
 
 ## paths
-wp = os.environ['LUNG_PATH']
-model_path  = wp + 'models/'
+model_path  = '/mnt/hd2/models'
+custom_dataset_path = '/mnt/hd2/custom_dataset_jc'
+logs_path = '/mnt/hd2/logs/slice_%s' % str(int(time()))
 
 def get_data_from_file(filename):
     aux = np.load(filename)
     return np.expand_dims(np.asarray(aux['X']),axis=1), aux['Y']
-
-custom_dataset_path = wp + 'src/jc_dl/experiments/slice_classification/new_dataset/'
 
 test_files = [custom_dataset_path + x for x in os.listdir(custom_dataset_path) if 'custom_dataset_test_subsample_' in x]
 X_test, Y_test = get_data_from_file(test_files[0])
@@ -46,31 +45,21 @@ train_files = [custom_dataset_path + x for x in os.listdir(custom_dataset_path) 
 print(train_files)
 
 
-
-## paths
-wp = os.environ['LUNG_PATH']
-model_path  = wp + 'models/'
-#input_path = wp + 'data/preprocessed3_small' #/mnt/hd2/preprocessed2'
-input_path = '/mnt/hd2/preprocessed4'
-logs_path = wp + 'logs/slice_%s' % str(int(time()))
 if not os.path.exists(logs_path):
     os.makedirs(logs_path)
-
 
 # tensorboard logs
 tb = TensorBoard(log_dir=logs_path, histogram_freq=1, write_graph=False, write_images=False)  # replace keras.callbacks.TensorBoard
 
 
 print 'creating model...'
-#arch = Sample2DCNNNetworkArchitecture((1,512,512),False)
-#model = arch.get_model()
 model = ResnetBuilder().build_resnet_18((1,512,512),1)
 model.compile(optimizer=Adam(lr=.5e-2), loss='binary_crossentropy', metrics=['accuracy','fmeasure'])
 #model.compile(optimizer='rmsprop', loss='binary_crossentropy', metrics=['accuracy'])  # metric which will be used is defined here
 
 if USE_EXISTING:
     print 'loading model...'
-    model.load_weights(model_path + 'jc_samplecnn_v0.hdf5')
+    model.load_weights(model_path + 'fg_sampleresnet18_v0.hdf5')
 
 
 ## Load LUNA dataset
@@ -95,6 +84,6 @@ for i in range(NUM_EPOCHS):
         X_train = normalize(X_train, X_test.mean(), X_test.std())
         print("Ys labeled as 1s: " + str(Y_train.sum()))
         model.fit(X_train, Y_train, class_weight = {0:1.,1:10.}, verbose=1, nb_epoch=1, batch_size=BATCH_SIZE, validation_data=(X_test, Y_test), shuffle=True, callbacks=[tb])
-        model.save(model_path + 'jc_samplecnn_v0.hdf5')
+        model.save(model_path + 'fg_sampleresnet18_v0.hdf5')
         del X_train
         del Y_train
