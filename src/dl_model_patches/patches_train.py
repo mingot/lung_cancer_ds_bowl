@@ -310,6 +310,8 @@ def chunks(file_list=[], batch_size=32, augmentation_times=4):
             i = 0
             for X_batch, y_batch in datagen.flow(a, b, batch_size=batch_size):
                 i += 1
+                if X_batch.shape[0]!=batch_size:
+                    continue
                 if i>len(a)*augmentation_times:
                     break
                 yield X_batch, y_batch
@@ -357,7 +359,11 @@ random.shuffle(file_list)
 file_list_test = file_list[-TEST_SIZE:]
 file_list_train = file_list[:-TEST_SIZE]
 
-
+# i=0
+# for X_batch, y_batch in chunks(file_list_train,batch_size=32):
+#     i+=1
+#     print i, X_batch.shape
+#
 # X_batch, y_batch  = chunks(file_list_train,batch_size=32).next()
 # X_batch.shape
 # y_batch.shape
