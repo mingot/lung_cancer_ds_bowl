@@ -381,8 +381,8 @@ model.compile(optimizer=Adam(lr=.5e-2), loss='binary_crossentropy', metrics=['ac
 
 model_checkpoint = ModelCheckpoint(OUTPUT_MODEL, monitor='loss', save_best_only=True)
 model.fit_generator(generator=chunks(file_list_train,batch_size=32),
-                    samples_per_epoch=640, # make it small to update TB and CHECKPOINT frequently
-                    nb_epoch=100,
+                    samples_per_epoch=1280, # make it small to update TB and CHECKPOINT frequently
+                    nb_epoch=500,
                     verbose=1,
                     callbacks=[tb, model_checkpoint],
                     validation_data=chunks(file_list_test,batch_size=32),
