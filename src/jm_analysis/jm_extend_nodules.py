@@ -17,7 +17,8 @@ from skimage import measure
 from skimage.morphology import disk, square
 from skimage.feature import hog
 from math import ceil
-# from utils import plotting
+from utils import plotting
+from dl_utils.heatmap import extract_regions_from_heatmap
 
 
 ## PATHS
@@ -26,7 +27,8 @@ wp = os.environ['LUNG_PATH']
 # DATA_PATH = wp + 'data/preprocessed5_sample/'
 # OUTPUT_FILE = wp + 'data/final_model/hog_v3_total.csv'
 DATA_PATH = '/mnt/hd2/preprocessed5/'
-NODULES_FILE = wp + 'output/noduls_unet_v02.csv'
+#NODULES_FILE = wp + 'output/noduls_unet_v02.csv'
+NODULES_FILE = wp + 'output/noduls_thickunet_v01.csv'
 OUTPUT_FILE = wp + 'output/noduls_unet_v02_extended.csv'
 
 
@@ -39,12 +41,6 @@ file_list = [g for g in os.listdir(DATA_PATH) if g.startswith('luna_')]
 
 
 
-def get_regions(mask):
-    # thr = np.where(nodule_mask < np.mean(nodule_mask), 0., 1.0)  # threshold detected regions
-    thr = np.where(mask < np.mean(mask), 0., 1.0)  # threshold detected regions
-    labels = measure.label(thr)  # label them
-    regions = measure.regionprops(labels)
-    return regions
 
 def process_img(img):
     """
@@ -167,40 +163,43 @@ def visualize_csv(img, node_df):
     plt.show()
 
 
-# ## Checks for specific patient
-# filename = "luna_126631670596873065041988320084.npz"
-# patient = np.load(DATA_PATH + filename)['arr_0']
-# for nslice in range(patient.shape[1]):
-#     if patient[2,nslice].any()!=0:
-#         print nslice
-# nslice = 47
-# visualize_csv(patient[0,nslice], df_node[(df_node['filename']==filename) & (df_node['nslice']==nslice)])
-# plt.imshow(patient[1,nslice])
-# plt.show()
-# plotting.plot_mask(patient[0,nslice], patient[2,nslice])
-#
-# df_node[(df_node['filename']==filename)]
-#
-# plt.imshow(patient[2,54])
-# plt.show()
-#
-# plotting.cube_show_slider(patient[0])
+# INDIVIDUAL CHECKS -----------------------------------------------------------------
 
-# # check afected slices per patient
-# for filename in file_list:
-#         patient = np.load(DATA_PATH + filename)['arr_0']
-#         patient.shape
-#
-#         if patient.shape[0]!=3:  # skip labels without groundtruth
-#             print 'patient %s no nodules' % filename
-#             continue
-#
-#         slices = []
-#         for nslice in range(patient.shape[1]):
-#             if patient[2,nslice].any()!=0:
-#                 slices.append(nslice)
-#         print "patient %s slices: %s" % (filename, str(slices))
+## Checks for specific patient
+filename = "luna_126631670596873065041988320084.npz"
+patient = np.load(DATA_PATH + filename)['arr_0']
+for nslice in range(patient.shape[1]):
+    if patient[2,nslice].any()!=0:
+        print nslice
+nslice = 85
+visualize_csv(patient[0,nslice], df_node[(df_node['filename']==filename) & (df_node['nslice']==nslice)])
+plotting.plot_mask(patient[0,nslice], patient[2,nslice])
+plt.imshow(patient[1,nslice])
+plt.show()
 
+plotting.cube_show_slider(patient[0])
+
+# check afected slices per patient
+for filename in file_list:
+        patient = np.load(DATA_PATH + filename)['arr_0']
+        patient.shape
+
+        if patient.shape[0]!=3:  # skip labels without groundtruth
+            print 'patient %s no nodules' % filename
+            continue
+
+        slices = []
+        for nslice in range(patient.shape[1]):
+            if patient[2,nslice].any()!=0:
+                slices.append(nslice)
+        print "patient %s slices: %s" % (filename, str(slices))
+
+
+
+
+# FINAL CSV LOADING -----------------------------------------------------------------
+
+## Generate features, score for each BB and store them
 tp, fp, fn = 0, 0, 0
 with open(OUTPUT_FILE, 'w') as file:
     for idx, filename in enumerate(file_list):  # to extract form .csv
@@ -222,7 +221,7 @@ with open(OUTPUT_FILE, 'w') as file:
                 slices.append(nslice)
 
         for idx, row in df_node[df_node['filename']==filename].iterrows():
-            #row = df_node[df_node['filename']==filename].iloc[0]
+            # row = df_node[(df_node['filename']==filename)].iloc[300]
             cx = int(row['x'])  # row
             cy = int(row['y'])  # column
             z = int(row['nslice'])
@@ -233,11 +232,16 @@ with open(OUTPUT_FILE, 'w') as file:
             img_hu = 255.0*(img_hu - np.min(img_hu))/(np.max(img_hu) - np.min(img_hu))
             img_hu = img_hu.astype(np.int, copy=False)
             resc_hu = spm.imresize(img_hu, (20,20))
-            features_hog = hog(resc_hu, pixels_per_cell=(10,10),  cells_per_block=(2,2))
+            features_hog, img  = hog(resc_hu, pixels_per_cell=(10,10),  cells_per_block=(2,2), visualise=True)
             ff = [str(f) for f in features_hog]
 
+            plt.imshow(img_hu)
+            plt.show()
+
+            pp = process_img(img_hu)
+
             # Get the score of the region (ground truth)
-            regions = get_regions(patient[2,z])
+            regions = extract_regions_from_heatmap(patient[2,z])
             if len(regions)>1:
                 print 'Patient: %s has more than 1 region at slice %d' % (filename, z)
             a = AuxRegion([cx - r, cy - r, cx + r + 1, cy + r + 1])  # x1, y1, x2, y2
