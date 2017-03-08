@@ -289,9 +289,9 @@ def load_patients(filelist, shuffle=False):
 
 
 
-def chunks(file_list=[], batch_size=32, infinite=True, augmentation_times=4):
+def chunks(file_list=[], batch_size=32, augmentation_times=4):
 
-    CONCURRENT_PATIENTS = 5  # limitation by memory
+    CONCURRENT_PATIENTS = 10  # limitation by memory
     while True:
         for j in range(0, len(file_list), CONCURRENT_PATIENTS):
             filenames = file_list[j:j+CONCURRENT_PATIENTS]
@@ -358,7 +358,7 @@ file_list_test = file_list[-TEST_SIZE:]
 file_list_train = file_list[:-TEST_SIZE]
 
 
-# X_batch, y_batch  = chunks(file_list_train,batch_size=32,infinite=True).next()
+# X_batch, y_batch  = chunks(file_list_train,batch_size=32).next()
 # X_batch.shape
 # y_batch.shape
 # for i in range(32):
@@ -374,12 +374,12 @@ model.compile(optimizer=Adam(lr=.5e-2), loss='binary_crossentropy', metrics=['ac
 
 
 model_checkpoint = ModelCheckpoint(OUTPUT_MODEL, monitor='loss', save_best_only=True)
-model.fit_generator(generator=chunks(file_list_train,batch_size=32,infinite=True),
+model.fit_generator(generator=chunks(file_list_train,batch_size=32),
                     samples_per_epoch=640, # make it small to update TB and CHECKPOINT frequently
                     nb_epoch=100,
                     verbose=1,
                     callbacks=[tb, model_checkpoint],
-                    validation_data=chunks(file_list_test,batch_size=32,infinite=True),
+                    validation_data=chunks(file_list_test,batch_size=32),
                     nb_val_samples=64,  # TO REVIEW
                     max_q_size=10,
                     nb_worker=1)  # a locker is needed if increased the number of parallel workers
