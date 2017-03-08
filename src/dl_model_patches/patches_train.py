@@ -334,7 +334,7 @@ USE_EXISTING = False  # load previous model to continue training or test
 
 # PATHS
 wp = os.environ['LUNG_PATH']
-INPUT_PATH = '/mnt/hd2/preprocessed5'  # wp + 'data/preprocessed5_sample' 
+INPUT_PATH = '/mnt/hd2/preprocessed5'  # wp + 'data/preprocessed5_sample'
 OUTPUT_MODEL = wp + 'models/jm_patches_train.hdf5'
 OUTPUT_CSV = wp + 'output/AUX_noduls_unet_v03.csv'
 LOGS_PATH = wp + 'logs/%s' % str(int(time()))
@@ -375,11 +375,11 @@ model.compile(optimizer=Adam(lr=.5e-2), loss='binary_crossentropy', metrics=['ac
 
 model_checkpoint = ModelCheckpoint(OUTPUT_MODEL, monitor='loss', save_best_only=True)
 model.fit_generator(generator=chunks(file_list_train,batch_size=32,infinite=True),
-                    samples_per_epoch=300, # make it small to update TB and CHECKPOINT frequently
+                    samples_per_epoch=640, # make it small to update TB and CHECKPOINT frequently
                     nb_epoch=100,
                     verbose=1,
                     callbacks=[tb, model_checkpoint],
                     validation_data=chunks(file_list_test,batch_size=32,infinite=True),
-                    nb_val_samples=20,  # TO REVIEW
+                    nb_val_samples=64,  # TO REVIEW
                     max_q_size=10,
                     nb_worker=1)  # a locker is needed if increased the number of parallel workers
