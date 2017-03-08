@@ -375,7 +375,7 @@ file_list_train = file_list[:-TEST_SIZE]
 # plt.show()
 
 
-model = ResnetBuilder().build_resnet_18((1,40,40),1)
+model = ResnetBuilder().build_resnet_50((1,40,40),1)
 model.compile(optimizer=Adam(lr=.5e-2), loss='binary_crossentropy', metrics=['accuracy','fmeasure'])
 
 
