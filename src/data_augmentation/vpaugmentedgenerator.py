@@ -69,7 +69,7 @@ class VpAugmentedGenerator(object):
     
     def generate_transformations(self):
         affine_transforms = [Transformations.generate_affine_transform(self.shape, tp['affine']['alpha']) for tp in self.transformations_params]
-        displacement_fields = [Transformations.generate_displacement_field(shape, tp['displacement_field']['alpha'], tp['displacement_field']['sigma']) for tip in self.transformations_params]
+        displacement_fields = [Transformations.generate_displacement_field(self.shape, tp['displacement_field']['alpha'], tp['displacement_field']['sigma']) for tip in self.transformations_params]
         transformations = [None for k in xrange(len(zip(affine_transforms, displacement_fields)))]
         for k, (at, dp) in enumerate(zip(affine_transforms, displacement_fields)):
             transformations[k] = lambda input_pixels: Transformations.elastic_transform(input_pixels, at, dp)

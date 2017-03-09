@@ -6,7 +6,7 @@ from skimage import measure, morphology
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
 
-def multiplot(imgs):
+def multiplot(imgs, labels=None):
     """Plot multiple imags in a grid."""
     nimg = len(imgs)
     num_rows = int(math.sqrt(nimg)) + 1
@@ -14,6 +14,8 @@ def multiplot(imgs):
     for i in range(nimg):
         plots[i // num_rows, i % num_rows].axis('off')
         plots[i // num_rows, i % num_rows].imshow(imgs[i])
+        if labels and labels[i]==1:
+            plots[i // num_rows, i % num_rows].set_title('TARGET')
     plt.show()
 
 

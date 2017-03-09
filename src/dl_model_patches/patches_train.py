@@ -12,11 +12,8 @@ from keras.preprocessing.image import ImageDataGenerator
 
 
 
-# hard coded normalization as in https://www.kaggle.com/gzuidhof/data-science-bowl-2017/full-preprocessing-tutorial
-MIN_BOUND = -1000.0
-MAX_BOUND = 400.0
-
-def normalize(image):
+def normalize(image, MIN_BOUND=-1000.0, MAX_BOUND=400.0):
+    # hard coded normalization as in https://www.kaggle.com/gzuidhof/data-science-bowl-2017/full-preprocessing-tutorial
     image = (image - MIN_BOUND) / (MAX_BOUND - MIN_BOUND)
     image[image>1] = 1.
     image[image<0] = 0.
@@ -66,16 +63,17 @@ def augment_bbox(r, margin=5):
     return r
 
 
-def extract_rois_from_lungs(lung_img, lung_mask):
+def extract_rois_from_lungs(lung_image, lung_mask):
     """
         Given a lung image,  generate ROIs based on HU filtering.
         Reduce the candidates by discarding smalls and very rectangular regions.
     """
-    mask = lung_img.copy()
+    mask = lung_image.copy()
     mask[lung_mask!=1] = -2000
     mask[mask<-500] = -2000  # based on LUNA examination ()
 
     regions_pred = get_regions(mask, threshold=np.mean(mask))
+    # plotting.plot_bb(mask, regions_pred)
 
     # discard small regions or long connected regions
     for region in regions_pred[:]:
@@ -115,7 +113,9 @@ def extract_crops_from_regions(img, regions, output_size=(40,40)):
 def get_labels_from_regions(regions_real, regions_pred):
     """Extract labels (0/1) from regions."""
     labels = [0]*len(regions_pred)
+    stats = {'fn': 0, 'tp': 0, 'fp': 0}
     for region_real in regions_real:
+        is_detected = False
         for idx,region_pred in enumerate(regions_pred):
             # discard regions that occupy everything
             if region_real.bbox[0]==0 or region_pred.bbox[0]==0:
@@ -123,112 +123,17 @@ def get_labels_from_regions(regions_real, regions_pred):
             score = intersection_regions(r1=region_pred, r2=region_real)
             if score>.1:
                 labels[idx] = 1
-    return labels
+                is_detected = True
+        if not is_detected:
+            stats['fn'] += 1
 
+    stats['tp'] = np.sum(labels)
+    stats['fp'] = len(labels) - np.sum(labels)
+    return labels, stats
 
-
-### DEBUGGING -----------------------------------------------------------------
-
-# tp,fp,fn = 0,0,0
-# for filename in file_list:
-#
-#     # filename = 'luna_120842785645314664964010792308.npz'
-#     # j = 60
-#     b = np.load(os.path.join(INPUT_PATH, filename))['arr_0']
-#     b.shape
-#
-#     if b.shape[0]!=3:
-#         continue
-#
-#     for j in range(b.shape[1]):
-#         if np.sum(b[2,j])!=0:
-#             print '%s slice:%d' % (filename, j)
-#
-#             lung_image = b[0,j]
-#             lung_mask = b[1,j]
-#             nodules_mask = b[2,j]
-#
-#             regions_real = get_regions(nodules_mask, threshold=np.mean(nodules_mask))
-#
-#             # Filter ROIs to discard small and connected
-#             mask = lung_image.copy()
-#             mask[lung_mask!=1] = -2000
-#             mask[mask<-500] = -2000  # based on LUNA examination ()
-#
-#             regions_pred = get_regions(mask, threshold=np.mean(mask))
-#
-#             # discard small regions or long connected regions
-#             for region in regions_pred[:]:
-#                 if calc_area(region)<3*3:
-#                     regions_pred.remove(region)
-#                 elif calc_ratio(region)>3 or calc_ratio(region)<1.0/3:
-#                     regions_pred.remove(region)
-#
-#             # increase the padding of the regions by 5px
-#             regions_pred_augmented = []
-#             for region in regions_pred:
-#                 region = AuxRegion(region.bbox)
-#                 region = augment_bbox(region, margin=5)
-#                 regions_pred_augmented.append(region)
-#
-#             regions_pred = regions_pred_augmented
-#
-#             # Extract cropped images
-#             cropped_images = extract_crops_from_regions(lung_image, regions_pred)
-#
-#             # for idx,region in enumerate(regions_pred):
-#             #     print idx, calc_area(region)
-#
-#             # calc_area(regions_pred[43])
-#             # calc_ratio(regions_pred[43])
-#             # regions_pred[43].bbox
-#
-#             # plt.imshow(mask)
-#             # plt.show()
-#             # plotting.plot_mask(mask, nodules_mask)
-#             # plotting.plot_mask(lung_image, nodules_mask)
-#             # plotting.plot_bb(mask, regions_pred)
-#             # plotting.plot_bb(mask, regions_pred2)
-#             # plotting.plot_bb(mask, [regions_pred[43]])
-#             # calc_ratio(regions_pred[2])
-#             # calc_area(regions_pred[1])
-#             # intersection_regions(r1=regions_pred[2], r2=regions_real[0])
-#
-#             print '%d nodules, %d candidates' % (len(regions_real), len(regions_pred))
-#
-#             labels = [0]*len(regions_pred)
-#             for region_real in regions_real:
-#                 detected = False
-#                 for idx,region_pred in enumerate(regions_pred):
-#                     # discard regions that occupy everything
-#                     if region_real.bbox[0]==0 or region_pred.bbox[0]==0:
-#                         continue
-#                     score = intersection_regions(r1=region_pred, r2=region_real)
-#                     if score>0.0:
-#                         print score
-#                     if score>.1:
-#                         tp+=1
-#                         detected = True
-#                         labels[idx] = 1
-#                     else:
-#                         fp+=1
-#                 if not detected:
-#                     fn += 1
-#             print 'TP:%d, FP:%d, FN:%d' % (tp,fp,fn)
 
 
 ### LOADING DATA -----------------------------------------------------------------
-
-
-datagen = ImageDataGenerator(
-    rotation_range=.06,
-    width_shift_range=0.02,
-    height_shift_range=0.02,
-    shear_range=0.0002,
-    zoom_range=0.0002,
-    dim_ordering="th",
-    horizontal_flip=True
-    )
 
 
 
@@ -236,7 +141,11 @@ def load_patients(filelist, shuffle=False):
 
     X, Y = [], []
     for filename in filelist:
+        logging.info('Loading patient %s' % filename)
 
+        # filename = 'luna_122914038048856168343065566972.npz'
+        # j = 46
+        t_start = time()
         b = np.load(os.path.join(INPUT_PATH, filename))['arr_0']
         if b.shape[0]!=3:
             continue
@@ -265,11 +174,16 @@ def load_patients(filelist, shuffle=False):
             regions_pred = extract_rois_from_lungs(lung_image, lung_mask)
             regions_real = get_regions(nodules_mask, threshold=np.mean(nodules_mask))
 
+            ## visualize regions
+            # plotting.plot_bb(lung_image, regions_real)
+            # plotting.plot_bb(lung_image, regions_pred)
+
             # Extract cropped images
             cropped_images = extract_crops_from_regions(lung_image, regions_pred)
 
             # Generate labels
-            labels = get_labels_from_regions(regions_real, regions_pred)
+            labels, stats = get_labels_from_regions(regions_real, regions_pred)
+            logging.info('ROIs stats for slice %d: %s' % (j, str(stats)))
 
             # if ok append
             last_slice = j
@@ -278,7 +192,7 @@ def load_patients(filelist, shuffle=False):
             X.extend(cropped_images)
             Y.extend(labels)  # nodules_mask
 
-        logging.info('patient %s added %d slices: %s' % (filename, len(slices), str(slices)))
+        logging.info('Finished in %.2f s! Added %d slices: %s' % (time()-t_start, len(slices), str(slices)))
 
     if shuffle and len(X)>0:
         aux = list(zip(X, Y))
@@ -287,6 +201,17 @@ def load_patients(filelist, shuffle=False):
 
     return X, Y
 
+
+# Data augmentation generator
+datagen = ImageDataGenerator(
+    rotation_range=.06,
+    width_shift_range=0.02,
+    height_shift_range=0.02,
+    shear_range=0.0002,
+    zoom_range=0.0002,
+    dim_ordering="th",
+    horizontal_flip=True
+    )
 
 
 def chunks(file_list=[], batch_size=32, augmentation_times=4):
@@ -301,7 +226,7 @@ def chunks(file_list=[], batch_size=32, augmentation_times=4):
             selected_samples  = [i for i in range(len(b)) if b[i]==1 or random.randint(0,9)==0]
             a = [a[i] for i in selected_samples]
             b = [b[i] for i in selected_samples]
-            logging.info("TP:%d, FP:%d" % (sum(b), len(b)-sum(b)))
+            logging.info("Final downsampled dataset stats: TP:%d, FP:%d" % (sum(b), len(b)-sum(b)))
 
             # convert to np array and add extra axis (needed for keras)
             a = np.expand_dims(np.asarray(a),axis=1)
@@ -336,7 +261,7 @@ USE_EXISTING = False  # load previous model to continue training or test
 
 # PATHS
 wp = os.environ['LUNG_PATH']
-INPUT_PATH = '/mnt/hd2/preprocessed5'  # wp + 'data/preprocessed5_sample'
+INPUT_PATH = '/mnt/hd2/preprocessed5'  # INPUT_PATH = wp + 'data/preprocessed5_sample'
 OUTPUT_MODEL = wp + 'models/jm_patches_train.hdf5'
 OUTPUT_CSV = wp + 'output/AUX_noduls_unet_v03.csv'
 LOGS_PATH = wp + 'logs/%s' % str(int(time()))
@@ -344,8 +269,9 @@ if not os.path.exists(LOGS_PATH):
     os.makedirs(LOGS_PATH)
 
 
-# OTHER INITIALIZATIONS: tensorboard and logging
+# OTHER INITIALIZATIONS: tensorboard, model checkpoint and logging
 tb = TensorBoard(log_dir=LOGS_PATH, histogram_freq=1, write_graph=False, write_images=False)  # replace keras.callbacks.TensorBoard
+model_checkpoint = ModelCheckpoint(OUTPUT_MODEL, monitor='loss', save_best_only=True)
 K.set_image_dim_ordering('th')
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s  %(levelname)-8s %(message)s',
@@ -359,28 +285,17 @@ random.shuffle(file_list)
 file_list_test = file_list[-TEST_SIZE:]
 file_list_train = file_list[:-TEST_SIZE]
 
-# i=0
-# for X_batch, y_batch in chunks(file_list_train,batch_size=32):
-#     i+=1
-#     print i, X_batch.shape
-#
-# X_batch, y_batch  = chunks(file_list_train,batch_size=32).next()
-# X_batch.shape
-# y_batch.shape
-# for i in range(32):
-#     if y_batch[i,0]==1:
-#         print i
-# np.sum(y_batch)
-# plt.imshow(X_batch[23,0])
-# plt.show()
+
+# # Visualize a batch
+# X_batch, y_batch  = chunks(file_list_train, batch_size=32).next()
+# plotting.multiplot([X_batch[i,0] for i in range(X_batch.shape[0])],
+#                    [y_batch[i,0] for i in range(y_batch.shape[0])])
 
 
+# TRAIN
 model = ResnetBuilder().build_resnet_50((1,40,40),1)
-model.compile(optimizer=Adam(lr=.5e-2), loss='binary_crossentropy', metrics=['accuracy','fmeasure'])
-
-
-model_checkpoint = ModelCheckpoint(OUTPUT_MODEL, monitor='loss', save_best_only=True)
-model.fit_generator(generator=chunks(file_list_train,batch_size=32),
+model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['accuracy','fmeasure'])
+model.fit_generator(generator=chunks(file_list_train[0:10],batch_size=32),
                     samples_per_epoch=1280, # make it small to update TB and CHECKPOINT frequently
                     nb_epoch=500,
                     verbose=1,
