@@ -262,7 +262,7 @@ USE_EXISTING = False  # load previous model to continue training or test
 # PATHS
 wp = os.environ['LUNG_PATH']
 INPUT_PATH = '/mnt/hd2/preprocessed5'  # INPUT_PATH = wp + 'data/preprocessed5_sample'
-OUTPUT_MODEL = wp + 'models/jm_patches_train.hdf5'
+OUTPUT_MODEL = wp + 'models/jm_patches_train_v2.hdf5'
 OUTPUT_CSV = wp + 'output/AUX_noduls_unet_v03.csv'
 LOGS_PATH = wp + 'logs/%s' % str(int(time()))
 if not os.path.exists(LOGS_PATH):
@@ -295,12 +295,12 @@ file_list_train = file_list[:-TEST_SIZE]
 # TRAIN
 model = ResnetBuilder().build_resnet_50((1,40,40),1)
 model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['accuracy','fmeasure'])
-model.fit_generator(generator=chunks(file_list_train[0:10],batch_size=32),
+model.fit_generator(generator=chunks(file_list_train,batch_size=32),
                     samples_per_epoch=1280, # make it small to update TB and CHECKPOINT frequently
                     nb_epoch=500,
                     verbose=1,
                     callbacks=[tb, model_checkpoint],
                     validation_data=chunks(file_list_test,batch_size=32),
-                    nb_val_samples=64,  # TO REVIEW
+                    nb_val_samples=128,  # TO REVIEW
                     max_q_size=10,
                     nb_worker=1)  # a locker is needed if increased the number of parallel workers
