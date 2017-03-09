@@ -26,7 +26,7 @@ from keras.layers.normalization import BatchNormalization
 
 # PARAMETERS
 NUM_EPOCHS = 100
-BATCH_SIZE = 100
+BATCH_SIZE = 20
 USE_EXISTING = True  # load previous model to continue training
 
 
@@ -42,7 +42,7 @@ def get_data_from_file(filename):
 test_files = [custom_dataset_path + x for x in os.listdir(custom_dataset_path) if 'custom_dataset_test_subsample_' in x]
 X_test, Y_test = get_data_from_file(test_files[0])
 
-train_files = [custom_dataset_path + x for x in os.listdir(custom_dataset_path) if 'custom_dataset_train_subsample_' in x][:2]
+train_files = [custom_dataset_path + x for x in os.listdir(custom_dataset_path) if 'custom_dataset_train_subsample_' in x]
 print(train_files)
 
 
@@ -50,7 +50,7 @@ if not os.path.exists(logs_path):
     os.makedirs(logs_path)
 
 # tensorboard logs
-tb = TensorBoard(log_dir=logs_path, histogram_freq=1, write_graph=True, write_images=False) # replace keras.callbacks.TensorBoard
+tb = TensorBoard(log_dir=logs_path, histogram_freq=1, write_graph=False, write_images=False) # replace keras.callbacks.TensorBoard
 
 
 print 'creating model...'
@@ -66,7 +66,9 @@ if USE_EXISTING:
 ## Load LUNA dataset
 # Load dataset
 normalize = lambda x, mean_, std_: (x - mean_) / std_
-X_test = normalize(X_test, X_test.mean(), X_test.std())
+true_x_test_mean = X_test.mean()
+true_x_test_std = X_test.std()
+X_test = normalize(X_test,true_x_test_mean, true_x_test_std)
 
 '''
 X_train, Y_train = get_data_from_file(train_files[0])
@@ -83,7 +85,7 @@ for i in range(NUM_EPOCHS):
     for j,file in enumerate(train_files):
 	print "epoch number " + str(i) + " file number " + str(j)
 	X_train, Y_train = get_data_from_file(file)
-        X_train = normalize(X_train, X_test.mean(), X_test.std())
+        X_train = normalize(X_train, true_x_test_mean, true_x_test_std)
 	#print "X_train shape" + str(X_train.shape)
         #print "Ys labeled as 1s: " + str(Y_train.sum())
         model.fit(X_train, Y_train, class_weight = {0:1.,1:10.}, verbose=1, nb_epoch=1, batch_size=BATCH_SIZE, validation_data=(X_test, Y_test), shuffle=True, callbacks=[tb])
