@@ -301,6 +301,6 @@ model.fit_generator(generator=chunks(file_list_train,batch_size=32),
                     verbose=1,
                     callbacks=[tb, model_checkpoint],
                     validation_data=chunks(file_list_test,batch_size=32),
-                    nb_val_samples=128,  # TO REVIEW
+                    nb_val_samples=64,  # TO REVIEW
                     max_q_size=10,
                     nb_worker=1)  # a locker is needed if increased the number of parallel workers
