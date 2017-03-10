@@ -256,7 +256,7 @@ NUM_EPOCHS = 30
 BATCH_SIZE = 32
 TEST_SIZE = 15  # number of patients to test on
 TRAIN = True  # should the model be trained
-USE_EXISTING = False  # load previous model to continue training or test
+USE_EXISTING = True  # load previous model to continue training or test
 
 
 # PATHS
@@ -295,6 +295,9 @@ file_list_train = file_list[:-TEST_SIZE]
 # TRAIN
 model = ResnetBuilder().build_resnet_50((1,40,40),1)
 model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['accuracy','fmeasure'])
+if USE_EXISTING:
+    print 'Loading exiting model...'
+    model.load_weights(OUTPUT_MODEL)
 model.fit_generator(generator=chunks(file_list_train,batch_size=32),
                     samples_per_epoch=1280, # make it small to update TB and CHECKPOINT frequently
                     nb_epoch=500,
