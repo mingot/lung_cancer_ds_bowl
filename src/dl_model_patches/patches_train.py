@@ -137,7 +137,7 @@ def get_labels_from_regions(regions_real, regions_pred):
 
 
 
-def load_patients(filelist, shuffle=False):
+def load_patients(filelist, shuffle=False, discard_no_nodules=True):
 
     X, Y = [], []
     for filename in filelist:
@@ -147,7 +147,7 @@ def load_patients(filelist, shuffle=False):
         # j = 46
         t_start = time()
         b = np.load(os.path.join(INPUT_PATH, filename))['arr_0']
-        if b.shape[0]!=3:
+        if b.shape[0]!=3 and discard_no_nodules:
             continue
 
         last_slice = -1e3  # big initialization
@@ -157,7 +157,7 @@ def load_patients(filelist, shuffle=False):
             lung_image, lung_mask, nodules_mask = b[0,j,:,:], b[1,j,:,:], b[2,j,:,:]
 
             # Discard if no nodules
-            if nodules_mask.sum() == 0:
+            if nodules_mask.sum() == 0 and discard_no_nodules:
                 continue
 
             # Discard if bad segmentation
@@ -297,7 +297,7 @@ model = ResnetBuilder().build_resnet_50((1,40,40),1)
 model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['accuracy','fmeasure'])
 if USE_EXISTING:
     print 'Loading exiting model...'
-    model.load_weights(OUTPUT_MODEL)
+    model.load_weights(wp + 'models/jm_patches_train_v2.hdf5')
 model.fit_generator(generator=chunks(file_list_train,batch_size=32),
                     samples_per_epoch=1280, # make it small to update TB and CHECKPOINT frequently
                     nb_epoch=500,
@@ -307,3 +307,4 @@ model.fit_generator(generator=chunks(file_list_train,batch_size=32),
                     nb_val_samples=64,  # TO REVIEW
                     max_q_size=10,
                     nb_worker=1)  # a locker is needed if increased the number of parallel workers
+
