@@ -13,7 +13,7 @@ from multiprocessing import Pool
 
 import matplotlib.pyplot as plt
 
-DEBUG = True
+DEBUG = False
 SERVER = os.uname()[1] == 'ip-172-31-7-211'
 
 if SERVER:
@@ -23,12 +23,12 @@ if SERVER:
 else:
     path = '/home/carlos/DSB2017/dsb_sample'
     preprocessed = '/home/carlos/DSB2017/dsb_preprocessed'
-    output_file = '/home/carlos/lung_cancer_ds_bowl/data/stage1_extra_features_sex_predictors.csv'
+    output_file = '/home/carlos/lung_cancer_ds_bowl/data/stage1_extra_features_sex_predictors_prueba.csv'
 
 patient_files = os.listdir(path)
 patient_files = sorted(patient_files)
 
-patient_files = ['91d0606b85ab7dbc7bab718c1312f2df']
+#patient_files = ['91d0606b85ab7dbc7bab718c1312f2df']
 
 common_spacing = [2., 0.6, 0.6]
 
@@ -200,7 +200,6 @@ def process_patient_file(patient_file):
     lung_mask = preprocessed_pix[1,:,:,:]
     pix_resampled = resize_image(pix_resampled, size=(pix_resampled.shape[1]-pix_resampled.shape[1]%2))
     lung_mask = __center_lungs__(lung_mask, pix_resampled.shape)
-    cube_show_slider(np.where(lung_mask, 10000, -3400))
     
     lung_height = __get_lung_height__(lung_mask)
 
@@ -231,11 +230,15 @@ if __name__ == "__main__":
     print 'server:', SERVER
     print 'debug:', DEBUG
     
-    if SERVER or not DEBUG:
+    if SERVER and not DEBUG:
         p = Pool()
         features = p.map(process_patient_file, patient_files)
         p.close()
         p.join()
+    elif not DEBUG:
+        features = []
+        for patient_file in patient_files:
+            features.append(process_patient_file(patient_file))
     else:
         features = [] 
         for patient_file in patient_files[:10]:
