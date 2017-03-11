@@ -320,6 +320,7 @@ file_list_train = file_list[:-PATIENTS_VALIDATION]
 while True:
     X, Y = chunks(file_list_train, batch_size=32)
     if X is None:
+        print "Error!! NONE FOUND!!"
         break
 
 
