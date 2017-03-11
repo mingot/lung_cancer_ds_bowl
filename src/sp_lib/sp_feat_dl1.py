@@ -18,20 +18,21 @@ import scipy.misc as spm
 
 # PATH_DSB = "/media/sergi/Seagate Expansion Drive/preprocessed5/"
 PATH_DSB = "/home/sergi/all/devel/big/lung_cancer_ds_bowl/preprocessed5/"
-PATH_SRC = os.environ.get('LUNG_PATH') + "src"
+PATH_LUNG = os.environ.get('LUNG_PATH')
+PATH_SRC = PATH_LUNG + "/src"
 os.chdir(PATH_SRC)
-PATH_OUT = os.environ.get('LUNG_PATH') + "data/sp_data/dl/"
-PATH_DL = os.environ.get('LUNG_PATH') + "/data/output_dl.csv"
+PATH_OUT = PATH_LUNG + "/data/sp_data/dl/"
+PATH_DL = PATH_LUNG + "/data/output_dl_example.csv"
 
 # load and filter DL results
 # removed last row (was half written)
 df_dl = pd.read_csv(PATH_DL)
-df_dl_filter = df_dl[df_dl['centroidx'].between(1, 510) & 
-    df_dl['centroidy'].between(1, 510) & 
+df_dl_filter = df_dl[df_dl['x'].between(1, 510) & 
+    df_dl['y'].between(1, 510) & 
     df_dl['diameter'].between(3.5, 28)]
 
 # explore data
-df_grouped = df_dl_filter.groupby("patientid")
+df_grouped = df_dl_filter.groupby("filename")
 df_grouped.sum()
 
 
@@ -46,13 +47,16 @@ import sp_lib.model as splm
 
 # Example code for a given patient 
 test_pat = 'dsb_00edff4f51a893d80dae2d42a7f45ad1.npz'
+#test_pat = 'luna_286647622786041008124419915089.npz'
 
 # (1) Extract patchs from data frame and one patient
 p_patch, p_df = splm.extract_patch(
     df_dl_filter, 
     patient_id=test_pat, 
     patient_path=PATH_DSB, 
-    swap_xy=False)
+    patient_colname='filename',
+    swap_xy=False, 
+    verbose=False)
 # Images for this patient: original patch, rescaled patch, 
 #   original lung mask, rescaled lung mask
 # We will use the rescaled patches (hu units)
