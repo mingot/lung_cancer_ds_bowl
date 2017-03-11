@@ -319,7 +319,7 @@ file_list_train = file_list[:-PATIENTS_VALIDATION]
 
 while True:
     try:
-        a = chunks(file_list_train, batch_size=32)
+        a = chunks(file_list_train, batch_size=32).next()
         X, Y = a
     except:
         print "Error!! try catch"
