@@ -13,13 +13,13 @@ from multiprocessing import Pool
 
 import matplotlib.pyplot as plt
 
-DEBUG = False
+DEBUG = True
 SERVER = os.uname()[1] == 'ip-172-31-7-211'
 
 if SERVER:
     path = '/home/shared/data/stage1'
     preprocessed = '/mnt/hd2/preprocessed5'
-    output_file = '/home/shared/data/stage1_extra_features_better_segment.csv'
+    output_file = '/home/shared/data/stage1_extra_features_sex_predictors.csv'
 else:
     path = '/home/carlos/DSB2017/dsb_sample'
     preprocessed = '/home/carlos/DSB2017/dsb_preprocessed'
@@ -28,7 +28,7 @@ else:
 patient_files = os.listdir(path)
 patient_files = sorted(patient_files)
 
-#patient_files = ['2b861ff187c8ff2977d988f3d8b08d87']
+patient_files = ['91d0606b85ab7dbc7bab718c1312f2df']
 
 common_spacing = [2., 0.6, 0.6]
 
@@ -73,7 +73,10 @@ def __get_weighted_var__(indices, y, f, avg):
 
 def __get_lung_height__(lung_mask):
     exists_mask = np.where(np.sum(lung_mask, axis=(1,2)) > 0)
-    return np.max(exists_mask) - np.min(exists_mask)
+    if exists_mask[0].size == 0:
+        return 0
+    else: 
+        return np.max(exists_mask) - np.min(exists_mask)
   
 def __delete_base__(pix):
     return  
@@ -197,10 +200,12 @@ def process_patient_file(patient_file):
     lung_mask = preprocessed_pix[1,:,:,:]
     pix_resampled = resize_image(pix_resampled, size=(pix_resampled.shape[1]-pix_resampled.shape[1]%2))
     lung_mask = __center_lungs__(lung_mask, pix_resampled.shape)
-    
+    cube_show_slider(np.where(lung_mask, 10000, -3400))
     
     lung_height = __get_lung_height__(lung_mask)
 
+    if lung_height == 0:
+        return {}
     
     '''
     bone_mask = segment_bones(pix_resampled)
