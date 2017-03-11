@@ -14,10 +14,11 @@ logging.basicConfig(level=logging.INFO,
                     datefmt='%m-%d %H:%M:%S')
 
 
-def weighted_loss(y_true, y_pred, pos_weight=100):
+def weighted_loss(y_true, y_pred, pos_weight=100, epsilon=1e-9):
     #if this argument is greater than 1 we will penalize more the nodules not detected as nodules, we can set it up to 10 or 100?
     y_true_f = K.flatten(y_true)  # y_true.flatten()
     y_pred_f = K.flatten(y_pred)  # y_pred.flatten()
+    y_pred_f = K.clip(y_pred_f, epsilon, 1-epsilon) #clipping away from 0 and 1 to avoid NAN in loss computation
     return K.mean(-(1-y_true_f)*K.log(1-y_pred_f)-y_true_f*K.log(y_pred_f)*pos_weight)
 
 class ThickUNET(object):
