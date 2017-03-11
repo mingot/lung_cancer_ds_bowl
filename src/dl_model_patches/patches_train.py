@@ -318,7 +318,12 @@ file_list_train = file_list[:-PATIENTS_VALIDATION]
 #                     nb_worker=1)  # a locker is needed if increased the number of parallel workers
 
 while True:
-    X, Y = chunks(file_list_train, batch_size=32)
+    try:
+        a = chunks(file_list_train, batch_size=32)
+        X, Y = a
+    except:
+        print "Error!! try catch"
+        print a
     if X is None:
         print "Error!! NONE FOUND!!"
         break
