@@ -6,6 +6,7 @@ def extract_patch(
     df, 
     patient_id, 
     patient_path, 
+    patient_colname='patientid', 
     out_size=(25, 25), 
     swap_xy=False, 
     C=-500, 
@@ -30,13 +31,13 @@ def extract_patch(
     """
     # data frame for the patient and preprocessd file
     np_pat = np.load(patient_path + '/' + patient_id)['arr_0']
-    df_pat = df[df['patientid'] == patient_id]
+    df_pat = df[df[patient_colname] == patient_id]
     
     patches = []
     for ind, row in df_pat.iterrows(): 
         z = int(row['nslice'])
-        cx = int(row['centroidx'])
-        cy = int(row['centroidy'])
+        cx = int(row['x'])
+        cy = int(row['y'])
         r = int(ceil(row['diameter']/2.))
         
         if verbose: 
