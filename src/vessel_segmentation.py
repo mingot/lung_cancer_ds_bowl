@@ -1,9 +1,11 @@
 import itk
+import os
 import SimpleITK as sitk
 import numpy as np
 import utils.plotting
 
-data = np.load('../luna_100225287222365663678666836860.npz')['arr_0']
+wp = os.environ['LUNG_PATH']
+data = np.load(wp + 'data/preprocessed5_sample/luna_124663713663969377020085460568.npz')['arr_0']
 
 InputPixelType = itk.F
 OutputPixelType = itk.UC
