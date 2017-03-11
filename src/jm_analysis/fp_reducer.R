@@ -1,5 +1,5 @@
 library(data.table)
-
+library(pROC)
 
 luna_data = data.table(read.csv('/Users/mingot/Projectes/kaggle/ds_bowl_lung/data/final_model/output_model_teixi_luna.csv'))
 luna_data = luna_data[x!=0 & x!=511 & y!=0 & y!=511] 
