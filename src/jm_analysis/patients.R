@@ -83,11 +83,16 @@ final_df = data[,.(total_nodules=sum(!is.na(nslice)),
                    num_slices=uniqueN(nslice[!is.na(nslice)]), 
                    nodules_per_slice=sum(!is.na(nslice))/uniqueN(nslice),
                    max_intensity=max(max_intensity, na.rm=T), 
-                   max_mean_intensity=max(mean_intensity, na.rm=T)),
+                   max_mean_intensity=max(mean_intensity, na.rm=T)
+                   #max_score=max(nodule_pred, na.rm=T),
+                   #mean_score=mean(nodule_pred, na.rm=T)
+                   ),
           by=.(patientid,cancer)]
 
-final_df[max_intensity==-Inf, max_intensity:=0]
-final_df[max_mean_intensity==-Inf, max_mean_intensity:=0]
+final_df[!is.finite(max_intensity), max_intensity:=0]
+final_df[!is.finite(max_mean_intensity), max_mean_intensity:=0]
+final_df[!is.finite(max_score), max_score:=0]
+final_df[!is.finite(mean_score), mean_score:=0]
 
 arcvi_descriptivos(final_df$N, final_df$cancer, equidistributed=F)
 arcvi_descriptivos(final_df[max_mean_intensity>0.853]$max_mean_intensity, 
@@ -110,6 +115,14 @@ k = 4 #Folds
 final_df$id = sample(1:k, nrow(final_df), replace = TRUE)
 list = 1:k
 
+
+MultiLogLoss <- function(act, pred){
+  eps <- 1e-15
+  pred <- pmin(pmax(pred, eps), 1 - eps)
+  sum(act * log(pred) + (1 - act) * log(1 - pred)) * -1/NROW(act)
+}
+
+
 for (i in 1:k){
   trainingset = subset(final_df, id %in% list[-i])
   testset = subset(final_df, id %in% c(i))
@@ -124,5 +137,6 @@ for (i in 1:k){
   real = testset$cancer
 
 cat(auc(real,pred),"\n")
+cat(MultiLogLoss(real,pred), "\n")
 }
 

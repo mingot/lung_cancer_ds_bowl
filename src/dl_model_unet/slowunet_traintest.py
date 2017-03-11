@@ -190,7 +190,6 @@ def load_patients(filelist, full=False, shuffle=False):
     return X, Y
 
 
-
 def chunks(file_list=[], batch_size=5, infinite=True, full=False):
 
     CONCURRENT_PATIENTS = 2  # limitation by memory
