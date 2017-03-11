@@ -262,7 +262,7 @@ def chunks(file_list=[], batch_size=32, augmentation_times=4):
 
 # PARAMETERS
 PATIENTS_VALIDATION = 20  # number of patients to validate the model on
-USE_EXISTING = False  # load previous model to continue training or test
+USE_EXISTING = True  # load previous model to continue training or test
 
 
 # PATHS
@@ -294,7 +294,8 @@ model = ResnetBuilder().build_resnet_50((1,40,40),1)
 model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['accuracy','fmeasure'])
 if USE_EXISTING:
     print 'Loading exiting model...'
-    model.load_weights(wp + 'models/jm_patches_train_v3.hdf5')
+    model.load_weights(OUTPUT_MODEL)
+    #model.load_weights(wp + 'models/jm_patches_train_v3.hdf5')
 
 
 ### TRAINING -----------------------------------------------------------------
@@ -307,26 +308,26 @@ file_list_test = file_list[-PATIENTS_VALIDATION:]
 file_list_train = file_list[:-PATIENTS_VALIDATION]
 
 
-# model.fit_generator(generator=chunks(file_list_train, batch_size=32),
-#                     samples_per_epoch=1280,  # make it small to update TB and CHECKPOINT frequently
-#                     nb_epoch=500,
-#                     verbose=1,
-#                     callbacks=[tb, model_checkpoint],
-#                     validation_data=chunks(file_list_test, batch_size=32),
-#                     nb_val_samples=32*20,
-#                     max_q_size=64,
-#                     nb_worker=1)  # a locker is needed if increased the number of parallel workers
+model.fit_generator(generator=chunks(file_list_train, batch_size=32),
+                    samples_per_epoch=1280,  # make it small to update TB and CHECKPOINT frequently
+                    nb_epoch=500,
+                    verbose=1,
+                    callbacks=[tb, model_checkpoint],
+                    validation_data=chunks(file_list_test, batch_size=32),
+                    nb_val_samples=32*20,
+                    max_q_size=64,
+                    nb_worker=1)  # a locker is needed if increased the number of parallel workers
 
-while True:
-    try:
-        a = chunks(file_list_train, batch_size=32).next()
-        X, Y = a
-    except:
-        print "Error!! try catch"
-        print a
-    if X is None:
-        print "Error!! NONE FOUND!!"
-        break
+# while True:
+#     try:
+#         a = chunks(file_list_train, batch_size=32).next()
+#         X, Y = a
+#     except:
+#         print "Error!! try catch"
+#         print a
+#     if X is None:
+#         print "Error!! NONE FOUND!!"
+#         break
 
 
 ### TESTING -----------------------------------------------------------------
