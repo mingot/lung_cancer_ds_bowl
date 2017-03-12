@@ -27,7 +27,7 @@ if 'DL_ENV' in os.environ:
 else:
     wp = os.environ['LUNG_PATH']
     model_path  = wp + 'models/'
-    input_path = '/mnt/hd2/preprocessed4'
+    input_path = '/mnt/hd2/preprocessed5'
 
 
 def normalize(image, MIN_BOUND=-1000.0, MAX_BOUND=400.0):
