@@ -58,7 +58,7 @@ tb = TensorBoard(log_dir=logs_path, histogram_freq=1, write_graph=False, write_i
 
 
 print 'creating model...'
-model = ResnetBuilder().build_resnet_18((512,1,512),1)
+model = ResnetBuilder().build_resnet_50((512,1,512),1)
 model.compile(optimizer=Adam(lr=1e-3), loss='binary_crossentropy', metrics=['accuracy','fmeasure'])
 
 #if USE_EXISTING:
