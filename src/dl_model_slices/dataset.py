@@ -84,18 +84,19 @@ def get_slices_patient( filelist,
                     Y.append(0)
             # othewise I take it
             else:
-                # Discard if bad segmentation
-                voxel_volume_l = 2*0.7*0.7/(1000000.0)
-                lung_volume_l = np.sum(lung_mask)*voxel_volume_l
-                if lung_volume_l < 0.02 or lung_volume_l > 0.1:
-                    print("bad lung segmentation")
-                    continue  # skip slices with bad lung segmentation
-
-
-                # A AFEGIR: nodules out of lungs
-                if np.any(np.logical_and(nodules_mask, 0 == lung_mask)):
-                    print 'nodules out of lungs for %s at %d' % (filename, j)
-                    continue
+                ## Discard if bad segmentation
+                #voxel_volume_l = 2*0.7*0.7/(1000000.0)
+                #lung_volume_l = np.sum(lung_mask)*voxel_volume_l
+                #if lung_volume_l < 0.02 or lung_volume_l > 0.1:
+                #    print("bad lung segmentation")
+                #    continue  # skip slices with bad lung segmentation
+                #
+                #
+                ## A AFEGIR: nodules out of lungs
+                #if np.any(np.logical_and(nodules_mask, 0 == lung_mask)):
+                #    print 'nodules out of lungs for %s at %d' % (filename, j)
+                #    continue
+                ##
 
                 #nodule_slices.append(j)
                 last_slice = j
