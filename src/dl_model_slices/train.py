@@ -59,7 +59,7 @@ tb = TensorBoard(log_dir=logs_path, histogram_freq=1, write_graph=False, write_i
 
 print 'creating model...'
 model = ResnetBuilder().build_resnet_50((512,1,512),1)
-model.compile(optimizer=Adam(lr=1e-3), loss='binary_crossentropy', metrics=['accuracy','fmeasure'])
+model.compile(optimizer=Adam(lr=1e-2), loss='binary_crossentropy', metrics=['accuracy','fmeasure'])
 
 if USE_EXISTING:
     print 'loading model...'
@@ -71,5 +71,5 @@ train_gen, X_valid, Y_valid = dataset.get_dataset()
 #print('Training...\n')
 # model_checkpoint = keras.callbacks.ModelCheckpoint(model_path + 'jm_slowunet_v3.hdf5', monitor='loss', save_best_only=True)
 for i in range(NUM_EPOCHS):
-    model.fit_generator(train_gen, 100, verbose=1, nb_epoch=1, validation_data=(X_valid, Y_valid), callbacks=[tb], class_weight={0:1.,1:10.}, nb_worker=1)
+    model.fit_generator(train_gen, 100, verbose=1, nb_epoch=1, validation_data=(X_valid, Y_valid), callbacks=[tb], class_weight={0:1.,1:5.}, nb_worker=1)
     model.save(model_path + 'jc_sampleresnet18_v0.hdf5')
