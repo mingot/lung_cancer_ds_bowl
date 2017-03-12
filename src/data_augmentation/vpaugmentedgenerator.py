@@ -51,53 +51,52 @@ class Transformations(object):
 
 
 class VpAugmentedGenerator(object):
-    def __init__(self, shape, transformations_params, seed):
+    def __init__(self, augmentation_factor, shape, transformations_params, seed):
+        self.augmentation_factor = augmentation_factor
         self.shape = shape
         self.transformations_params = transformations_params
         self.seed = seed
-        self._total_batches_seen = 0
     
     @staticmethod
-    def patient_augmenter(p, transformations):
+    def transform_patient(p, transformation):
         types, slices, _, _ = p.shape
-        for transformation in transformations:
-            trans_p = np.copy(p)
-            for type, slice in itertools.product(xrange(types), xrange(slices)):
-                trans_p[type, slice] = transformation(trans_p[type, slice])
-            
-            yield trans_p
-    
-    def generate_transformations(self):
-        affine_transforms = [Transformations.generate_affine_transform(self.shape, tp['affine']['alpha']) for tp in self.transformations_params]
-        displacement_fields = [Transformations.generate_displacement_field(self.shape, tp['displacement_field']['alpha'], tp['displacement_field']['sigma']) for tip in self.transformations_params]
-        transformations = [None for k in xrange(len(zip(affine_transforms, displacement_fields)))]
-        for k, (at, dp) in enumerate(zip(affine_transforms, displacement_fields)):
-            transformations[k] = lambda input_pixels: Transformations.elastic_transform(input_pixels, at, dp)
+        trans_p = np.copy(p)
+        for type, slice in itertools.product(xrange(types), xrange(slices)):
+            trans_p[type, slice] = transformation(trans_p[type, slice])
         
-        return transformations
+        return trans_p
     
-    def flow(self, X, batch_size = 8):
-        for _, batch in itertools.groupby(enumerate(X), key = lambda elem: elem[0] // batch_size):
-            np.random.seed(self.seed + self._total_batches_seen)
-            augmented_patients = collections.deque()
-            for _, p in batch:
-                transformations = self.generate_transformations()
-                
-                for ap in self.patient_augmenter(p, transformations):
-                    augmented_patients.append(ap)
-                
-            self._total_batches_seen += 1
-            yield list(augmented_patients)
+    def generate_transformation(self):
+        # Decide if the transformation is the identity
+        if np.random.random_sample(1)[0] < 1.0 / self.augmentation_factor:
+            return lambda input_pixels: input_pixels
+        
+        # Generate a random transformation
+        tp = np.random.choice(self.transformations_params, size = 1)[0]
+        at = Transformations.generate_affine_transform(self.shape, tp['affine']['alpha'])
+        dp = Transformations.generate_displacement_field(self.shape, tp['displacement_field']['alpha'], tp['displacement_field']['sigma'])
+        return lambda input_pixels: Transformations.elastic_transform(input_pixels, at, dp)
     
-    def flow_from_directory(self, directory, batch_size = 8):
-        for _, batch in itertools.groupby(enumerate(os.listdir(directory)), key = lambda elem: elem[0] // batch_size):
-            np.random.seed(self.seed + self._total_batches_seen)
-            augmented_patients = collections.deque()
-            for _, filename in batch:
-                transformations = self.generate_transformations()
-                
-                for ap in self.patient_augmenter(np.load(os.path.join(directory, filename))['arr_0'], transformations):
-                    augmented_patients.append(ap)
-            
-            self._total_batches_seen += 1
-            yield list(augmented_patients)
+    def flow(self, X, batch_size = 16, allow_smaller_batch_size = False):
+        batch = collections.deque()
+        for augmentation_step in xrange(self.augmentation_factor):
+            for k in np.random.permutation(len(X)):
+                transformation = self.generate_transformation()
+                transformed_patient = self.transform_patient(X[k], transformation)
+                _, slices, _, _ = transformed_patient.shape
+                start = len(batch)
+                while start < slices:
+                    delta = batch_size - len(batch)
+                    for index in xrange(start, min(start + delta, slices)):
+                        batch.append(transformed_patient[:, index, :, :])
+                    
+                    if len(batch) == batch_size:
+                        yield list(batch)
+                        batch = collections.deque()
+                    
+                    start += delta
+        
+        if len(batch) > 0:
+            if (len(batch) < batch_size) and allow_smaller_batch_size:
+                yield list(batch)
+
