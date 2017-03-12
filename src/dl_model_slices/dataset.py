@@ -103,7 +103,7 @@ def get_slices_patient( filelist,
                 X.append(np.array(lung_image))
                 Y.append(1)
 
-        print(len(X))
+        #print(len(X))
         if len(X) >= CASES_PER_META_BATCH:
             inds = range(len(X))
             np.random.shuffle(inds)
@@ -113,7 +113,6 @@ def get_slices_patient( filelist,
             yield normalize(dts.reshape([dts.shape[0], 1, dts.shape[1], dts.shape[2]])), np.array(Y[:CASES_PER_BATCH])
 
             X, Y = list(X[CASES_PER_BATCH:]), list(Y[CASES_PER_BATCH:])
-            print("After cut " + str(len(X)))
         del b
         #yield X, Y
 
