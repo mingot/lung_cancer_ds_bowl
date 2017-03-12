@@ -4,7 +4,7 @@
 VpAugmentedGenerator class comes with two methods, `flow` and `flow_from_directory`, to construct generators to provide an augmented dataset based on elastic random deformations.
 
 ## Methods
-### \_\_init\_\_(shape, transformations\_params, seed)
+### \_\_init\_\_(augmentation\_factor, shape, transformations\_params, seed)
 Args:
 
 - `augmentation_factor`: number of times the data will be augmented
@@ -18,7 +18,7 @@ Args:
 ### generate\_transformation()
 For internal use. Generates a random transformation to be applied to a patient. It generates the identity transformation with probability `1 / augmentation_factor`, and a random elastic deformation otherwise.
 
-### flow(X, batch\_size)
+### flow(X, batch\_size=16, allow\_smaller\_batch\_size=False)
 Takes a set of patients and returns a generator to provide augmented data.
 
 Args:
