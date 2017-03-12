@@ -14,15 +14,13 @@ import random
 ## paths
 TEST_CASES = 20
 CASES_PER_META_BATCH = 500
-CASES_PER_BATCH = 32
-VALIDATION_SAMPLES = 100
+CASES_PER_BATCH = 100
+VALIDATION_SAMPLES = 320
 
 if 'DL_ENV' in os.environ:
     if os.environ['DL_ENV'] == 'jose_local':
         model_path = '../models/'
         input_path = '../data/sample_data/'
-
-
         logs_path = '../logs/slice_%s' % str(int(time()))
     else:
         raise 'No environment found'
@@ -32,6 +30,12 @@ else:
     input_path = '/mnt/hd2/preprocessed4'
 
 
+def normalize(image, MIN_BOUND=-1000.0, MAX_BOUND=400.0):
+    # hard coded normalization as in https://www.kaggle.com/gzuidhof/data-science-bowl-2017/full-preprocessing-tutorial
+    image = (image - MIN_BOUND) / (MAX_BOUND - MIN_BOUND)
+    image[image>1] = 1.
+    image[image<0] = 0.
+    return image
 
 
 def get_slices_patient( filelist,
@@ -104,7 +108,7 @@ def get_slices_patient( filelist,
             X = np.array(X)[inds]
             Y = np.array(Y)[inds]
             dts = np.array(X[:CASES_PER_BATCH])
-            yield dts.reshape([dts.shape[0], 1, dts.shape[1], dts.shape[2]]), np.array(Y[:CASES_PER_BATCH])
+            yield normalize(dts.reshape([dts.shape[0], 1, dts.shape[1], dts.shape[2]])), np.array(Y[:CASES_PER_BATCH])
 
             X, Y = list(X[CASES_PER_BATCH:]), list(Y[CASES_PER_BATCH:])
         del b
@@ -122,7 +126,7 @@ def get_dataset():
         X_valid.append(train_dataset_slices[0])
         Y_valid.append(train_dataset_slices[1])
         if len(X_valid) * CASES_PER_BATCH >= VALIDATION_SAMPLES:
-            X_valid = np.concatenate(X_valid)
+            X_valid = normalize(np.concatenate(X_valid))
             Y_valid = np.concatenate(Y_valid)
             break
 
