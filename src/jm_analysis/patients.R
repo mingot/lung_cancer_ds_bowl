@@ -162,7 +162,7 @@ summary(lls)
 # final model (all data)
 final_model = glm(cancer ~ 1 + max_intensity + max_mean_intensity, family=binomial(link='logit'), 
                   data=final_df[,!names(testset)%in%'patientid',with=F])
-
+summary(final_model)
 
 
 # submission --------------------------------------------------------------
@@ -171,4 +171,5 @@ final_model = glm(cancer ~ 1 + max_intensity + max_mean_intensity, family=binomi
 preds = predict(final_model, final_df[,!names(testset)%in%'patientid',with=F], type="response")
 
 submission = data.table(id=final_df$patientid, cancer=preds)
+write.csv(submission, '/Users/mingot/Projectes/kaggle/ds_bowl_lung/data/submissions/00_submission.csv', quote=F, row.names=F)
 
