@@ -357,8 +357,8 @@ with open(OUTPUT_CSV, 'w') as file:
         for i in range(len(preds)):
             #if preds[i]>PREDICTION_THRESHOLD:
             nslice, r = rois[i]
-            print '%s,%d,%d,%d,%.3f\n' % (filename,nslice,r.centroid[0], r.centroid[1], r.equivalent_diameter)
-                #file.write('%s,%d,%d,%d,%.3f\n' % (filename,nslice,r.centroid[0], r.centroid[1], r.equivalent_diameter))
+            #print '%s,%d,%d,%d,%.3f\n' % (filename,nslice,r.centroid[0], r.centroid[1], r.equivalent_diameter)
+            file.write('%s,%d,%d,%d,%.3f\n' % (filename,nslice,r.centroid[0], r.centroid[1], r.equivalent_diameter))
 
         np.mean(preds)
 
