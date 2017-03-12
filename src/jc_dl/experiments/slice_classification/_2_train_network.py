@@ -14,6 +14,7 @@ import math
 from time import time
 from keras.optimizers import Adam
 from keras import backend as K
+from sklearn.metrics import roc_auc_score
 sys.path.append("/home/felix/lung_cancer_ds_bowl/src/")
 sys.path.append("/home/felix/lung_cancer_ds_bowl/src/jc_dl/")
 #from networks.sample_cnn import Sample2DCNNNetworkArchitecture
@@ -89,10 +90,14 @@ for i in range(NUM_EPOCHS):
     for j,file in enumerate(train_files):
         print "epoch number " + str(i) + " file number " + str(j)
         X_train, Y_train = get_data_from_file(file)
+        y_pred = model.predict(X_test)
+        print("auc : " + str(roc_auc_score(Y_test, y_pred)))
+
         #X_train = normalize(X_train, true_x_test_mean, true_x_test_std)
         #print "X_train shape" + str(X_train.shape)
         #print "Ys labeled as 1s: " + str(Y_train.sum())
         model.fit(X_train, Y_train, class_weight = {0:1.,1:10.}, verbose=1, nb_epoch=1, batch_size=BATCH_SIZE, validation_data=(X_test, Y_test), shuffle=True, callbacks=[tb])
+
         model.save(model_path + 'jc_sampleresnet18_v0.hdf5')
         del X_train
         del Y_train
