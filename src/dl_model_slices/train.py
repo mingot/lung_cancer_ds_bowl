@@ -61,9 +61,9 @@ print 'creating model...'
 model = ResnetBuilder().build_resnet_50((512,1,512),1)
 model.compile(optimizer=Adam(lr=1e-3), loss='binary_crossentropy', metrics=['accuracy','fmeasure'])
 
-#if USE_EXISTING:
-#    print 'loading model...'
-#    model.load_weights(model_path + 'fg_sampleresnet18_v0.hdf5')
+if USE_EXISTING:
+    print 'loading model...'
+    model.load_weights(model_path + 'jc_sampleresnet18_v0.hdf5')
 
 
 train_gen, X_valid, Y_valid = dataset.get_dataset()

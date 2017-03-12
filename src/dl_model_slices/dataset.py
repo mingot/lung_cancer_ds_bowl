@@ -12,10 +12,14 @@ import random
 #K.set_image_dim_ordering('th')
 
 ## paths
+#TEST_CASES = 20
+#CASES_PER_META_BATCH = 500
+#CASES_PER_BATCH = 100
+#VALIDATION_SAMPLES = 320
 TEST_CASES = 20
-CASES_PER_META_BATCH = 500
-CASES_PER_BATCH = 100
-VALIDATION_SAMPLES = 320
+CASES_PER_META_BATCH = 20
+CASES_PER_BATCH = 10
+VALIDATION_SAMPLES = 5
 
 if 'DL_ENV' in os.environ:
     if os.environ['DL_ENV'] == 'jose_local':
@@ -82,23 +86,7 @@ def get_slices_patient( filelist,
                     last_slice = j
                     X.append(np.array(lung_image))
                     Y.append(0)
-            # othewise I take it
             else:
-                ## Discard if bad segmentation
-                #voxel_volume_l = 2*0.7*0.7/(1000000.0)
-                #lung_volume_l = np.sum(lung_mask)*voxel_volume_l
-                #if lung_volume_l < 0.02 or lung_volume_l > 0.1:
-                #    print("bad lung segmentation")
-                #    continue  # skip slices with bad lung segmentation
-                #
-                #
-                ## A AFEGIR: nodules out of lungs
-                #if np.any(np.logical_and(nodules_mask, 0 == lung_mask)):
-                #    print 'nodules out of lungs for %s at %d' % (filename, j)
-                #    continue
-                ##
-
-                #nodule_slices.append(j)
                 last_slice = j
                 X.append(np.array(lung_image))
                 Y.append(1)
@@ -128,7 +116,7 @@ def get_dataset():
         X_valid.append(train_dataset_slices[0])
         Y_valid.append(train_dataset_slices[1])
         if len(X_valid) * CASES_PER_BATCH >= VALIDATION_SAMPLES:
-            X_valid = normalize(np.concatenate(X_valid))
+            X_valid = np.concatenate(X_valid)
             Y_valid = np.concatenate(Y_valid)
             break
 
@@ -139,3 +127,5 @@ def get_dataset():
 if __name__ == '__main__':
     train_gen, X_valid, Y_valid = get_dataset()
     print("Done")
+    for X_train, Y_train in train_gen:
+        break
