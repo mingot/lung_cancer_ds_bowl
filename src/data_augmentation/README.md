@@ -13,10 +13,10 @@ Args:
 
 - `seed`
 
-### generate\_transformations
+### generate\_transformations()
 For internal use. Generates a set of random transformations to be applied to a patient.
 
-### flow
+### flow(X, batch\_size)
 Takes a set of patients and returns a generator to provide augmented data.
 
 Args:
@@ -25,7 +25,7 @@ Args:
 
 - `batch_size`: number of *input* images to be processed in each iteration. The size of the output batches will be `batch_size` multiplied by the number of transformations. Defaults to `8`.
 
-### flow\_from\_directory
+### flow\_from\_directory(directory, batch\_size)
 Args:
 
 - `directory`: a directory containing pre-processed images
