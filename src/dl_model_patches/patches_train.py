@@ -342,7 +342,7 @@ file_list = os.listdir(INPUT_PATH)
 with open(OUTPUT_CSV, 'w') as file:
 
     # write the header
-    file.write('filename,nslice,x,y,diameter\n')
+    file.write('filename,nslice,x,y,diameter,score\n')
 
     for idx, filename in enumerate(file_list):
         logging.info("Patient %s (%d/%d)" % (filename, idx, len(file_list)))
@@ -358,7 +358,7 @@ with open(OUTPUT_CSV, 'w') as file:
             #if preds[i]>PREDICTION_THRESHOLD:
             nslice, r = rois[i]
             #print '%s,%d,%d,%d,%.3f\n' % (filename,nslice,r.centroid[0], r.centroid[1], r.equivalent_diameter)
-            file.write('%s,%d,%d,%d,%.3f\n' % (filename,nslice,r.centroid[0], r.centroid[1], r.equivalent_diameter))
+            file.write('%s,%d,%d,%d,%.3f,%.5f\n' % (filename,nslice,r.centroid[0], r.centroid[1], r.equivalent_diameter,preds[i]))
 
         np.mean(preds)
 
