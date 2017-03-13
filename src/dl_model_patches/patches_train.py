@@ -347,10 +347,10 @@ file_list = os.listdir(INPUT_PATH)
 file_list = [g for g in file_list if g.startswith('dsb_')]
 
 
-with open(OUTPUT_CSV, 'w') as file:
+with open(OUTPUT_CSV, 'a') as file:
 
     # write the header
-    file.write('filename,nslice,x,y,diameter,score\n')
+    # file.write('filename,nslice,x,y,diameter,score\n')
 
     for idx, filename in enumerate(file_list):
         if filename in previous_filenames:
@@ -359,14 +359,18 @@ with open(OUTPUT_CSV, 'w') as file:
         logging.info("Patient %s (%d/%d)" % (filename, idx, len(file_list)))
         #filename = file_list[2]
         # b = np.load(os.path.join(INPUT_PATH, filename))['arr_0']
-        X, y, rois = load_patient(filename, discard_empty_nodules=False, output_rois=True)
-        #plotting.multiplot(X[0:15])
+        try:
+            X, y, rois = load_patient(filename, discard_empty_nodules=False, output_rois=True)
+            #plotting.multiplot(X[0:15])
 
-        if len(X)==0:
+            if len(X)==0:
+                continue
+
+            X = np.expand_dims(np.asarray(X),axis=1)
+            preds = model.predict(X, verbose=1)
+        except:
+            logging.info("Error in patient %s, skipping" % filename)
             continue
-
-        X = np.expand_dims(np.asarray(X),axis=1)
-        preds = model.predict(X, verbose=1)
 
         for i in range(len(preds)):
             #if preds[i]>PREDICTION_THRESHOLD:
