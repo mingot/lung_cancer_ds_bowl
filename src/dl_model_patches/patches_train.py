@@ -269,7 +269,7 @@ USE_EXISTING = True  # load previous model to continue training or test
 wp = os.environ['LUNG_PATH']
 INPUT_PATH = '/mnt/hd2/preprocessed5'  # INPUT_PATH = wp + 'data/preprocessed5_sample'
 OUTPUT_MODEL = wp + 'models/jm_patches_train_v04.hdf5'
-OUTPUT_CSV = wp + 'output/noduls_patches_v04.csv'
+OUTPUT_CSV = wp + 'output/noduls_patches_v04_dsb.csv'
 LOGS_PATH = wp + 'logs/%s' % str(int(time()))
 if not os.path.exists(LOGS_PATH):
     os.makedirs(LOGS_PATH)
@@ -337,6 +337,7 @@ if USE_EXISTING:
 
 PREDICTION_THRESHOLD = .1
 file_list = os.listdir(INPUT_PATH)
+file_list = [g for g in file_list if g.startswith('dsb_')]
 
 
 with open(OUTPUT_CSV, 'w') as file:
