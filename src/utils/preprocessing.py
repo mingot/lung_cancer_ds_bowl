@@ -1,8 +1,6 @@
 import numpy as np
 import scipy.ndimage
 
-import segmentation
-
 MIN_BOUND = -1000.0  # Normalization
 MAX_BOUND = 400.0  # Normalization
 PIXEL_MEAN = 0.25  # centering
@@ -110,12 +108,6 @@ def resample(image, spacing, new_spacing=[1, 1, 1], method='nearest'):
         raise NotImplementedError("Interpolation method not implemented.")
 
     return image, new_spacing
-
-
-def segment_lung_mask(image, fill_lung_structures=True):
-
-    mask = segmentation.segment_lungs(image, fill_lung_structures)
-    return mask
 
 
 def normalize(image):
