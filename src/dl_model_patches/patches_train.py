@@ -353,7 +353,8 @@ with open(OUTPUT_CSV, 'w') as file:
     file.write('filename,nslice,x,y,diameter,score\n')
 
     for idx, filename in enumerate(file_list):
-        if filename in previous_ids
+        if filename in previous_filenames:
+            continue
 
         logging.info("Patient %s (%d/%d)" % (filename, idx, len(file_list)))
         #filename = file_list[2]
