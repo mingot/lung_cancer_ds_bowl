@@ -145,7 +145,8 @@ for patient_file in patient_files:
     if pat_id in current_ids:
         continue
 
-    # set to air parts that fell outside
+
+    # SET BACKGROUND: set to air parts that fell outside
     patient_pixels[patient_pixels < -1500] = -2000
 
     if SHOW_DEBUG_IMAGES:
@@ -155,10 +156,10 @@ for patient_file in patient_files:
 
     # RESAMPLING
     pix_resampled, new_spacing = preprocessing.resample(patient_pixels, spacing=originalSpacing, new_spacing=COMMON_SPACING)
-
-    print('Resampled image size: {}'.format(pix_resampled.shape))
     if nodule_mask is not None:
         nodule_mask, new_spacing = preprocessing.resample(nodule_mask, spacing=originalSpacing, new_spacing=COMMON_SPACING)
+    print('Resampled image size: {}'.format(pix_resampled.shape))
+
     if SHOW_DEBUG_IMAGES:
         plt.imshow(pix_resampled[50])
     if SAVE_DEBUG_IMAGES:
@@ -170,7 +171,7 @@ for patient_file in patient_files:
 
     # LUNG SEGMENTATION
     tstart = time()
-    lung_mask = segmentation.segment_lungs(image=pix_resampled, fill_lung=True, method="thresholding2")  # thresholding1, thresholding2, watershed
+    lung_mask = segmentation.segment_lungs(image=pix_resampled, fill_lung=True, method="thresholding1")  # thresholding1, thresholding2, watershed
     print "Time segmenting lungs: %.4f" % (time() - tstart)
 
     if SHOW_DEBUG_IMAGES:
@@ -185,10 +186,13 @@ for patient_file in patient_files:
     voxel_volume_l = COMMON_SPACING[0]*COMMON_SPACING[1]*COMMON_SPACING[2]/(1000000.0)  # Check 1: volume
     lung_volume_l = np.sum(lung_mask)*voxel_volume_l
     if lung_volume_l < 2 or lung_volume_l > 10:
-        print('CHECK LUNG MASK: Warning lung volume for patient {} out of physiological values. Double-check the segmentation.'.format(pat_id))
+        print('ERROR LUNG MASK: Lung volume for patient {} out of physiological values.'.format(pat_id))
     for nslice in range(pix_resampled.shape[0]):  # Check 2: nodules inside lung_mask
-        if np.sum(nodule_mask[nslice])>0 and np.sum(lung_mask[nslice]*nodule_mask[nslice])==0:
-            print('CHECK LUNG MASK: nodule outside the mask in patient %s, slice %d' % (pat_id, nslice))
+        if nodule_mask is not None and np.sum(nodule_mask[nslice])>0 and np.sum(lung_mask[nslice]*nodule_mask[nslice])==0:
+            print('ERROR LUNG MASK: Nodules outside the mask in patient %s, slice %d' % (pat_id, nslice))
+    # sanity check: all modules are in the segmentation
+    # if np.any(np.logical_and(nodule_mask, 0 == lung_mask)):
+    #     print('WARNING! nodules not included in segmentation.')
 
 
     # CROPPING to 512x512
@@ -236,9 +240,7 @@ for patient_file in patient_files:
         output = np.stack((pix, lung_mask))
     else:
         output = np.stack((pix, lung_mask, nodule_mask))
-        # sanity check: all modules are in the segmentation
-        if np.any(np.logical_and(nodule_mask, 0 == lung_mask)):
-            print('WARNING! nodules not included in segmentation.')
+
 
     if SAVE_RESULTS:
         np.savez_compressed(os.path.join(OUTPUT_FOLDER, "%s_%s.npz") % (PIPELINE, pat_id), output)

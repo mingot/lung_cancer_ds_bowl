@@ -28,6 +28,7 @@ def segment_lungs(image, fill_lung=True, method='thresholding'):
     return binary_image
 
 
+## Checks
 # # patient_file = "/Users/mingot/Projectes/kaggle/ds_bowl_lung/data/luna/luna0123/1.3.6.1.4.1.14519.5.2.1.6279.6001.303421828981831854739626597495.mhd"
 # image_wrong = pix_resampled.copy()
 # binary_image = np.array(image_wrong > -320, dtype=np.int8) + 1
@@ -36,14 +37,13 @@ def segment_lungs(image, fill_lung=True, method='thresholding'):
 # image = pix_resampled.copy()
 # binary_image = np.array(image > -320, dtype=np.int8) + 1
 #
-# b = erosion(binary_image)
-# labels = label(b[37])
-# plt.imshow(b[37])
+# b = erosion(clear_border(binary_image[70]))
+# labels = label(b)
+# plt.imshow(b)
 # plt.imshow(binary_image[70])
 # plt.imshow(labels)
 # plt.show()
-#
-# plotting.cube_show_slider(pix_resampled)
+
 
 # SEGMENTATION 1 : ---------------------------------------------------------------------------------------------------
 
@@ -52,8 +52,9 @@ def __segment_by_thresholding__(image, fill_lung_structures=True):
     # 0 is treated as background, which we do not want
 
     binary_image = np.array(image > -320, dtype=np.int8) + 1
-    # labels = label(dilation(binary_image))  # dilate the image to avoid gaps in conex components
-    labels = label(dilation(dilation(erosion(binary_image))))  # version 1
+    # binary_image = __clear_border_stack(binary_image)
+    labels = label(dilation(binary_image))  # dilate the image to avoid gaps in conex components
+    #labels = label(dilation(dilation(erosion(binary_image))))  # version 1
     # labels = label(binary_image)
 
     # Pick the pixel in the very corner to determine which label is air.
@@ -133,6 +134,14 @@ def __largest_label_volume__(im, bg=-1):
         return vals[np.argmax(counts)]
     else:
         return None
+
+
+def __clear_border_stack(im_cube):
+    result = []
+    for i in range(im_cube.shape[0]):
+        result.append(clear_border(im_cube[i]))
+
+    return np.stack(result)
 
 
 
