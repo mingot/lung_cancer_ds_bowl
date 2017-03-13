@@ -30,7 +30,7 @@ from keras.layers.normalization import BatchNormalization
 
 
 # PARAMETERS
-NUM_EPOCHS = 100
+NUM_EPOCHS = 1000000
 USE_EXISTING = True  # load previous model to continue training
 
 
