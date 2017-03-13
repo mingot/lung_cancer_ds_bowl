@@ -334,6 +334,13 @@ if USE_EXISTING:
 ### TESTING -----------------------------------------------------------------
 
 
+# if already processed, recover previous
+previous_filenames = set()
+with open(OUTPUT_CSV) as file:
+    for l in file:
+        l = l.split(',')[0]
+        previous_filenames.add(l)
+
 
 PREDICTION_THRESHOLD = .1
 file_list = os.listdir(INPUT_PATH)
@@ -346,6 +353,8 @@ with open(OUTPUT_CSV, 'w') as file:
     file.write('filename,nslice,x,y,diameter,score\n')
 
     for idx, filename in enumerate(file_list):
+        if filename in previous_ids
+
         logging.info("Patient %s (%d/%d)" % (filename, idx, len(file_list)))
         #filename = file_list[2]
         # b = np.load(os.path.join(INPUT_PATH, filename))['arr_0']
