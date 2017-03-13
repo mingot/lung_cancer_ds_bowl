@@ -362,6 +362,9 @@ with open(OUTPUT_CSV, 'w') as file:
         X, y, rois = load_patient(filename, discard_empty_nodules=False, output_rois=True)
         #plotting.multiplot(X[0:15])
 
+        if len(X)==0:
+            continue
+
         X = np.expand_dims(np.asarray(X),axis=1)
         preds = model.predict(X, verbose=1)
 
