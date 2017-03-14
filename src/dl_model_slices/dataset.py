@@ -31,7 +31,8 @@ if 'DL_ENV' in os.environ:
 else:
     wp = os.environ['LUNG_PATH']
     model_path  = wp + 'models/'
-    input_path = '/mnt/hd2/preprocessed5'
+    train_input_path = '/mnt/hd2/preprocessed5'
+    val_input_path = '/mnt/hd2/preprocessed5_validation'
 
 
 def normalize(image, MIN_BOUND=-1000.0, MAX_BOUND=400.0):
@@ -105,13 +106,12 @@ def get_slices_patient( filelist,
         #yield X, Y
 
 def get_dataset():
-    mylist = os.listdir(input_path)
-    file_list = [g for g in mylist if g.startswith('luna_')]
-    random.shuffle(file_list)
+    train_file_list = [g for g in os.listdir(train_input_path) if g.startswith('luna_')]
+    valid_file_list = [g for g in os.listdir(val_input_path) if g.startswith('luna_')][:TEST_CASES]
 
     X_valid, Y_valid = [],[]
     current_i = 0
-    for train_dataset_slices in get_slices_patient(file_list[-TEST_CASES:], p_keep_no_nodule_slice = 0.05):
+    for train_dataset_slices in get_slices_patient(valid_file_list, p_keep_no_nodule_slice = 0.05):
         current_i += 1
         X_valid.append(train_dataset_slices[0])
         Y_valid.append(train_dataset_slices[1])
@@ -120,7 +120,7 @@ def get_dataset():
             Y_valid = np.concatenate(Y_valid)
             break
 
-    train_gen = get_slices_patient(file_list[:-TEST_CASES], p_keep_no_nodule_slice = 0.05)
+    train_gen = get_slices_patient(train_file_list, p_keep_no_nodule_slice = 0.05)
 
     return train_gen, X_valid, Y_valid
 
