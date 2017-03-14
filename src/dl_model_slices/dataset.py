@@ -109,8 +109,8 @@ def get_slices_patient( filelist,
         #yield X, Y
 
 def get_dataset():
-    train_file_list = [os.path.join(input_path,g) for g in os.listdir(train_input_path) if g.startswith('luna_')][TEST_CASES:]
-    valid_file_list = [os.path.join(input_path,g) for g in os.listdir(val_input_path) if g.startswith('luna_')][:TEST_CASES]
+    train_file_list = [os.path.join(train_input_path,g) for g in os.listdir(train_input_path) if g.startswith('luna_')][TEST_CASES:]
+    valid_file_list = [os.path.join(val_input_path,g) for g in os.listdir(val_input_path) if g.startswith('luna_')][:TEST_CASES]
 
     X_valid, Y_valid = [],[]
     current_i = 0
