@@ -57,7 +57,7 @@ def get_slices_patient( filelist,
         random.shuffle(filelist)
         filename = filelist[0]
 
-        b = np.load(os.path.join(input_path, filename))['arr_0']
+        b = np.load(filename)['arr_0']
         if b.shape[0]!=3:
             has_nodule = False
             slice_nodule = False
@@ -109,8 +109,8 @@ def get_slices_patient( filelist,
         #yield X, Y
 
 def get_dataset():
-    train_file_list = [g for g in os.listdir(train_input_path) if g.startswith('luna_')][TEST_CASES:]
-    valid_file_list = [g for g in os.listdir(val_input_path) if g.startswith('luna_')][:TEST_CASES]
+    train_file_list = [os.path.join(input_path,g) for g in os.listdir(train_input_path) if g.startswith('luna_')][TEST_CASES:]
+    valid_file_list = [os.path.join(input_path,g) for g in os.listdir(val_input_path) if g.startswith('luna_')][:TEST_CASES]
 
     X_valid, Y_valid = [],[]
     current_i = 0
