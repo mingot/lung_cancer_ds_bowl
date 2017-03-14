@@ -206,7 +206,7 @@ def load_patient(filename, discard_empty_nodules=True, output_rois=False):
 
         # Generate labels
         labels, stats = get_labels_from_regions(regions_real, regions_pred)
-        logging.info('ROIs stats for slice %d: %s' % (j, str(stats)))
+        # logging.info('ROIs stats for slice %d: %s' % (j, str(stats)))
 
         # if ok append
         last_slice = j
