@@ -26,14 +26,17 @@ if 'DL_ENV' in os.environ:
         model_path = '../models/'
         input_path = '../data/sample_data/'
         logs_path = '../logs/slice_%s' % str(int(time()))
+        train_input_path = input_path
+        val_input_path = input_path
+
     else:
         raise 'No environment found'
 else:
     wp = os.environ['LUNG_PATH']
     model_path  = wp + 'models/'
     train_input_path = '/mnt/hd2/preprocessed5'
-    val_input_path = '/mnt/hd2/preprocessed5_validation'
-
+    #val_input_path = '/mnt/hd2/preprocessed5_validation'
+    val_input_path = '/mnt/hd2/preprocessed5'
 
 def normalize(image, MIN_BOUND=-1000.0, MAX_BOUND=400.0):
     # hard coded normalization as in https://www.kaggle.com/gzuidhof/data-science-bowl-2017/full-preprocessing-tutorial
@@ -106,7 +109,7 @@ def get_slices_patient( filelist,
         #yield X, Y
 
 def get_dataset():
-    train_file_list = [g for g in os.listdir(train_input_path) if g.startswith('luna_')]
+    train_file_list = [g for g in os.listdir(train_input_path) if g.startswith('luna_')][TEST_CASES:]
     valid_file_list = [g for g in os.listdir(val_input_path) if g.startswith('luna_')][:TEST_CASES]
 
     X_valid, Y_valid = [],[]
