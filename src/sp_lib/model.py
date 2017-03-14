@@ -243,3 +243,87 @@ def process_plot(list_dict):
             axs[ax_row, ax_col].set_title(key)
     
     plt.show()
+    
+    
+    
+import numpy as np
+from math import ceil
+import pandas as pd
+import scipy.misc as spm
+def process_pipeline_csv(
+    csv_in, 
+    patient_path, 
+    csv_out, 
+    verbose=False):
+    """
+    This function creates an augmented features csv file
+    
+    csv_in: csv file from dl
+    patient_path: path where the .npz files are stored
+    csv_out: csv file to write
+    verbose: show debug messages
+    """
+    # debug
+    # csv_in='../data/tiny_dl_example.csv'
+    # csv_out='dummy_out.csv'
+    # patient_path="/home/sergi/all/devel/big/lung_cancer_ds_bowl/preprocessed5/"
+    
+    print 'Reading csv! Make sure the format is standard: patientid column with .npz extension'
+    # we assume that the patient column is 
+    df_dl = pd.read_csv(csv_in)
+    
+    # filter bad patches
+    df_dl_filter = df_dl[df_dl['x'].between(1, 510) & 
+        df_dl['y'].between(1, 510) & 
+        df_dl['diameter'].between(3.5, 28)]
+        
+    
+    list_patient = df_dl_filter['patientid'].unique()
+    
+    # list of data frames
+    df_out = []
+    for pat in list_patient:
+        print 'Processing patient {} ...'.format(pat)
+        # (1) Extract patchs from data frame and one patient
+        p_patch, p_df = extract_patch(
+            df_dl_filter, 
+            patient_id=pat, 
+            patient_path=patient_path, 
+            patient_colname='patientid',
+            swap_xy=False, 
+            verbose=verbose)
+        
+        # (2) Extract properties (not features yet)
+        p_prop = [process_img(img['resc_hu'], img['resc_lung']) for img in p_patch]
+        # Extract meaningful features
+        # TODO: also use (weighted?) hu moments, HOG, LBP, use lung mask in the process
+        # this returns 1-row dfs for each patch, or None 
+        
+        # (3) extract properties
+        p_feat = [process_prop(p) for p in p_prop]
+        
+        # p_filtered = [x is None for x in p_feat]
+        # p_all = zip(p_df, p_feat)[p_filtered]
+        # df_all = pd.concat([p_df.iloc[[ind]].astype(dict).append(feat) for ind, feat in enumerate(p_feat) if feat is not None])
+        
+        # Combine all data frames
+        # removed slices 
+        
+        # (4) indices of the non-null patches (some patches are null because 
+        # segmentation in (2) did not find anything)
+        patch_nonnull = [x is not None for x in p_feat]
+        
+        # data frame with features
+        # (5) data_frame of features
+        df_feat = pd.concat(p_feat)
+        # recover indices
+        df_feat.index = p_df.index[patch_nonnull]
+        
+        # (6) concat data frames to obtain the final augmented data frame for this patient
+        # df_all = pd.merge(p_df.iloc[patch_nonnull], df_feat, how='cross')
+        df_all = pd.concat([p_df.iloc[patch_nonnull], df_feat], axis=1)
+        
+        df_out.append(df_all)
+    
+    print 'Done! Writing csv...'
+    pd.concat(df_out).to_csv(csv_out, index=False)
