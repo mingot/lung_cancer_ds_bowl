@@ -2,8 +2,7 @@ import itk
 import os
 import SimpleITK as sitk
 import numpy as np
-import utils.plotting
-import utils.reading.get_number_of_nodules
+from utils.reading import get_number_of_nodules
 
 def count_number_of_lost_nodules(nodules_slice_mask, vessel_mask):
     subs = nodules_slice_mask - vessel_mask
@@ -78,10 +77,13 @@ def get_vessel_mask(data):
 if __name__ == "__main__":
     path = '/mnt/hd2/preprocessed5_sample/'
     for file in os.listdir(path):
+        print("Loading the patient...")
         patient = np.load(file)['arr_0']
+        print("Calculating its vessel mask...")
         vessel_mask = get_vessel_mask(patient[0])
         if patient.shape < 3: #does not have a nodules_slice_mask
             continue
+        print("Counting nodules...")
         original_nodules, post_mask_nodules = count_nodules(patient[2], vessel_mask)
         print("Patient: " + file.split('/')[-1])
         print("Original nodules: \t\t\t\t" + str(original_nodules))
