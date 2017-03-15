@@ -254,9 +254,10 @@ def chunks(file_list=[], batch_size=32, augmentation_times=4, thickness=0):
             logging.info("Final downsampled dataset stats: TP:%d, FP:%d" % (sum(y), len(y)-sum(y)))
 
             # convert to np array and add extra axis (needed for keras)
+            X, y = np.asarray(X), np.asarray(y)
+            y = np.expand_dims(y, axis=1)
             if thickness==0:
-                X = np.expand_dims(np.asarray(X),axis=1)
-                y = np.expand_dims(np.asarray(y),axis=1)
+                X = np.expand_dims(X, axis=1)
 
             i = 0
             for X_batch, y_batch in datagen.flow(X, y, batch_size=batch_size, shuffle=True):
@@ -332,18 +333,9 @@ model.fit_generator(generator=chunks(file_list_train, batch_size=32, thickness=1
                     max_q_size=64,
                     nb_worker=1)  # a locker is needed if increased the number of parallel workers
 
-## CHECKS GENERATOR
-# while True:
-#     try:
-#         a = chunks(file_list_train, batch_size=32).next()
-#         X, Y = a
-#     except:
-#         print "Error!! try catch"
-#         print a
-#     if X is None:
-#         print "Error!! NONE FOUND!!"
-#         break
-
+# ## CHECKS GENERATOR
+# X, y = chunks(file_list_train, batch_size=32, thickness=1).next()
+# print X.shape, y.shape
 
 ### TESTING -----------------------------------------------------------------
 
