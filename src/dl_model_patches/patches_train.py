@@ -274,7 +274,7 @@ def chunks(file_list=[], batch_size=32, augmentation_times=4, thickness=0):
 
 # PARAMETERS
 PATIENTS_VALIDATION = 20  # number of patients to validate the model on
-USE_EXISTING = True  # load previous model to continue training or test
+USE_EXISTING = False  # load previous model to continue training or test
 
 
 # PATHS
