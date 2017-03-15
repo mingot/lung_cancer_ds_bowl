@@ -36,6 +36,15 @@ vars_nodules[,nodule_pred:=predict(fp_model, data, type="response")]
 vars_nodules = vars_nodules[nodule_pred>quantile(nodule_pred,0.9)]
 
 
+# var_nodules_dl_patches --------------------------------------------------
+
+vars_nodules_patches = data.table(read.csv("/Users/mingot/Projectes/kaggle/ds_bowl_lung/personal/noduls_patches_v04_dsb.csv"))
+vars_nodules_patches = vars_nodules_patches[substr(filename,1,3)=='dsb']
+vars_nodules_patches[,patientid:=gsub(".npz|dsb_","",filename)]
+vars_nodules = vars_nodules_patches[score>0.9]
+vars_nodules[,filename:=NULL]
+
+
 # Construct training ------------------------------------------------------
 
 ## Add annotations
@@ -54,6 +63,15 @@ setnames(submission, "id", "patientid")
 submission = merge(submission, vars_nodules, by="patientid", all.x=T)
 data = submission
 
+
+
+final_df = data[,.(total_nodules=.N,
+                   nodules_per_slice=.N/uniqueN(nslice),
+                   num_slices = uniqueN(nslice),
+                   nodules_upper = sum(nslice>60),
+                   max_diameter = max(diameter),
+                   max_score = max(score),
+                   mean_score = mean(score)), by=.(patientid, cancer)]
 
 # Table aggregation --------------------------------------------------------
 
@@ -143,8 +161,9 @@ for (i in 1:k){
   # train
   #mymodel = randomForest(trainingset$target ~ ., data = trainingset, ntree = 100)
   mymodel = glm(#cancer ~ . -id, family=binomial(link='logit'), 
-                cancer ~ 1 + max_intensity + max_mean_intensity, family=binomial(link='logit'), 
-                data=trainingset[,!names(testset)%in%'patientid',with=F])
+                #cancer ~ 1 + max_intensity + max_mean_intensity, family=binomial(link='logit'), 
+                cancer ~ . , family=binomial(link='logit'), 
+                data=trainingset[,!names(trainingset)%in%'patientid',with=F])
   
   # test
   pred = predict(mymodel, testset[,!names(testset)%in%'patientid',with=F], type="response")

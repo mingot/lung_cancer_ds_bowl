@@ -276,7 +276,7 @@ def chunks(file_list=[], batch_size=32, augmentation_times=4, thickness=0):
 
 # PARAMETERS
 PATIENTS_VALIDATION = 20  # number of patients to validate the model on
-USE_EXISTING = False  # load previous model to continue training or test
+USE_EXISTING = True  # load previous model to continue training or test
 
 
 # PATHS
@@ -284,7 +284,7 @@ wp = os.environ['LUNG_PATH']
 INPUT_PATH = '/mnt/hd2/preprocessed5'  # INPUT_PATH = wp + 'data/preprocessed5_sample'
 OUTPUT_MODEL = wp + 'models/jm_patches_train_v05_thickness.hdf5'
 OUTPUT_CSV = wp + 'output/noduls_patches_v05.csv'
-LOGS_PATH = wp + 'logs/%s' % str(int(time()))
+LOGS_PATH = wp + 'logs/%s' % '1489605846' #str(int(time()))
 if not os.path.exists(LOGS_PATH):
     os.makedirs(LOGS_PATH)
 
@@ -386,28 +386,28 @@ model.fit_generator(generator=chunks(file_list_train, batch_size=32, thickness=1
 #             file.write('%s,%d,%d,%d,%.3f,%.5f\n' % (filename,nslice,r.centroid[0], r.centroid[1], r.equivalent_diameter,preds[i]))
 #
 #         np.mean(preds)
-
-
-# ## Checking
-# b = np.load(os.path.join(INPUT_PATH, filename))['arr_0']
-# for j in range(b.shape[1]):
-#     if np.sum(b[2,j])!=0:
-#         print j
-# plotting.plot_mask(b[0,96], b[2,96])
-
-
-
-# ## Calculate area regions of luna
-# for idx, filename in enumerate(file_list):
-#     b = np.load(os.path.join(INPUT_PATH, filename))['arr_0']
-#     if b.shape[0]!=3:
-#         continue
 #
-#     print 'Loading %s (%d/%d)' % (filename, idx, len(file_list))
-#     for j in range(b.shape[1]):
-#         if np.sum(b[2,j])!=0:
-#             regions = get_regions(b[2,j])
-#             for region in regions:
-#                 print "Filename %s, slice %d, area %s" % (filename, j, str(calc_area(region)))
+#
+# # ## Checking
+# # b = np.load(os.path.join(INPUT_PATH, filename))['arr_0']
+# # for j in range(b.shape[1]):
+# #     if np.sum(b[2,j])!=0:
+# #         print j
+# # plotting.plot_mask(b[0,96], b[2,96])
+#
+#
+#
+# # ## Calculate area regions of luna
+# # for idx, filename in enumerate(file_list):
+# #     b = np.load(os.path.join(INPUT_PATH, filename))['arr_0']
+# #     if b.shape[0]!=3:
+# #         continue
+# #
+# #     print 'Loading %s (%d/%d)' % (filename, idx, len(file_list))
+# #     for j in range(b.shape[1]):
+# #         if np.sum(b[2,j])!=0:
+# #             regions = get_regions(b[2,j])
+# #             for region in regions:
+# #                 print "Filename %s, slice %d, area %s" % (filename, j, str(calc_area(region)))
 
 
