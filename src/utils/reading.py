@@ -211,3 +211,12 @@ def create_mask(img, nodules):
 
     return masks
 
+
+def get_number_of_nodules(nodules_slice_mask):
+    """
+    Apologies in advance if this should not be in this module. Given the nodules_slice_mask, counts the number of
+    different nodules in the slice
+    :param nodules_slice: the nodules slice mask
+    :return: an Integer, the number of different nodules in the slice
+    """
+    return len(measure.regionprops(nodules_slice_mask.astype(int)))
