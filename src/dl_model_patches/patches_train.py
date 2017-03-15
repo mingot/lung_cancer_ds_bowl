@@ -342,7 +342,7 @@ if USE_EXISTING:
 
 
 # # if already processed, recover previous
-# previous_filenames = set()
+previous_filenames = set()
 # with open(OUTPUT_CSV) as file:
 #     for l in file:
 #         l = l.split(',')[0]
