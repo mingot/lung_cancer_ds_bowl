@@ -5,11 +5,23 @@ import numpy as np
 from utils.reading import get_number_of_nodules
 
 def count_number_of_lost_nodules(nodules_slice_mask, vessel_mask):
+    """
+    Counts the number of nodules lost during the process of calculating the vessel mask
+    :param nodules_slice_mask: nodules pre mask
+    :param vessel_mask: vessel mask
+    :return: and Integer, the number of nodules remaining after calculating the Vessel Mask
+    """
     subs = nodules_slice_mask - vessel_mask
     subs[subs<0] = 0
     return get_number_of_nodules(subs)
 
 def count_nodules(nodules_slices, vessel_mask):
+    """
+    Counts the number of nodules in all the slices of the patient, before and after the vessel mask
+    :param nodules_slices: list of all the nodules slices of the patient
+    :param vessel_mask: list of all the vessel masks of the patient
+    :return: A tuple with the number of nodules at the beginning and after aplying the mask
+    """
     original, processed = 0, 0
     for n, v in zip(nodules_slices, vessel_mask):
         original += get_number_of_nodules(n)
