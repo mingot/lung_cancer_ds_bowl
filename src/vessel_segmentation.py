@@ -4,44 +4,59 @@ import SimpleITK as sitk
 import numpy as np
 import utils.plotting
 
-wp = os.environ['LUNG_PATH']
-data = np.load(wp + 'data/preprocessed5_sample/luna_124663713663969377020085460568.npz')['arr_0']
+def binarize_image(im, threshold):
+    """
+    Given a heatmap, returns a binary image
+    :param im: the image to binarize
+    :param threshold: threshold
+    :return: a binary image
+    """
+    im[im < threshold] = 0
+    im[im >= threshold] = 1
+    return im
 
-InputPixelType = itk.F
-OutputPixelType = itk.UC
-Dimension = 3
-HessianPixelType = itk.SymmetricSecondRankTensor[itk.D, Dimension]
+def getVesselMask(data):
+    """
 
-InputImageType = itk.Image[InputPixelType, Dimension]
-OutputImageType = itk.Image[OutputPixelType, Dimension]
-HessianImageType = itk.Image[HessianPixelType, Dimension]
+    :param data: a numpy array containig all the patient slides. The result of doing np.load(...)['arr_0'][0]
+    :return: an array containing the vessels mask for each slide of the patient
+    """
+    InputPixelType = itk.F
+    OutputPixelType = itk.UC
+    Dimension = 3
+    HessianPixelType = itk.SymmetricSecondRankTensor[itk.D, Dimension]
 
-VesselnessFilterType = itk.Hessian3DToVesselnessMeasureImageFilter[itk.F]
-MultiScaleEnhancementFilterType = itk.MultiScaleHessianBasedMeasureImageFilter[InputImageType,HessianImageType,InputImageType]
+    InputImageType = itk.Image[InputPixelType, Dimension]
+    OutputImageType = itk.Image[OutputPixelType, Dimension]
+    HessianImageType = itk.Image[HessianPixelType, Dimension]
 
-simage = sitk.GetImageFromArray(data[0].astype('float32'))
-lung_float = data[0].astype('float32')
-image = itk.PyBuffer[InputImageType].GetImageFromArray(lung_float)
+    VesselnessFilterType = itk.Hessian3DToVesselnessMeasureImageFilter[itk.F]
+    MultiScaleEnhancementFilterType = itk.MultiScaleHessianBasedMeasureImageFilter[
+        InputImageType, HessianImageType, InputImageType]
 
-# Instantiate the multiscale filter and set the input image
-multiScaleEnhancementFilter = MultiScaleEnhancementFilterType.New()
-multiScaleEnhancementFilter.SetInput(image)
-multiScaleEnhancementFilter.SetSigmaMinimum(0.5)
-multiScaleEnhancementFilter.SetSigmaMaximum(4.0)
-multiScaleEnhancementFilter.SetNumberOfSigmaSteps(5)
+    simage = sitk.GetImageFromArray(data.astype('float32'))
+    lung_float = data.astype('float32')
+    image = itk.PyBuffer[InputImageType].GetImageFromArray(lung_float)
 
-# Get the vesselness filter and set the parameters
-vesselnessFilter = VesselnessFilterType.New()
-vesselnessFilter.SetAlpha1(0.5)
-vesselnessFilter.SetAlpha2(0.5)
-multiScaleEnhancementFilter.SetHessianToMeasureFilter(vesselnessFilter)
+    # Instantiate the multiscale filter and set the input image
+    multiScaleEnhancementFilter = MultiScaleEnhancementFilterType.New()
+    multiScaleEnhancementFilter.SetInput(image)
+    multiScaleEnhancementFilter.SetSigmaMinimum(0.5)
+    multiScaleEnhancementFilter.SetSigmaMaximum(4.0)
+    multiScaleEnhancementFilter.SetNumberOfSigmaSteps(5)
 
-RescaleFilterType = itk.RescaleIntensityImageFilter[InputImageType, OutputImageType]
-rescaleFilter = RescaleFilterType.New()
-rescaleFilter.SetInput(multiScaleEnhancementFilter.GetOutput())
+    # Get the vesselness filter and set the parameters
+    vesselnessFilter = VesselnessFilterType.New()
+    vesselnessFilter.SetAlpha1(0.5)
+    vesselnessFilter.SetAlpha2(0.5)
+    multiScaleEnhancementFilter.SetHessianToMeasureFilter(vesselnessFilter)
 
-rescaleFilter.Update()
+    RescaleFilterType = itk.RescaleIntensityImageFilter[InputImageType, OutputImageType]
+    rescaleFilter = RescaleFilterType.New()
+    rescaleFilter.SetInput(multiScaleEnhancementFilter.GetOutput())
 
-data = np.concatenate((data, [itk.PyBuffer[OutputImageType].GetArrayFromImage(rescaleFilter.GetOutput())]))
+    rescaleFilter.Update()
 
-utils.plotting.multiplot(data[3])
+    bin_image = binarize_image(itk.PyBuffer[OutputImageType].GetArrayFromImage(rescaleFilter.GetOutput()), 25)
+
+    return bin_image
