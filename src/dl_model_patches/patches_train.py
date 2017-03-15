@@ -254,8 +254,9 @@ def chunks(file_list=[], batch_size=32, augmentation_times=4, thickness=0):
             logging.info("Final downsampled dataset stats: TP:%d, FP:%d" % (sum(y), len(y)-sum(y)))
 
             # convert to np array and add extra axis (needed for keras)
-            X = np.expand_dims(np.asarray(X),axis=1)
-            y = np.expand_dims(np.asarray(y),axis=1)
+            if thickness==0:
+                X = np.expand_dims(np.asarray(X),axis=1)
+                y = np.expand_dims(np.asarray(y),axis=1)
 
             i = 0
             for X_batch, y_batch in datagen.flow(X, y, batch_size=batch_size, shuffle=True):
