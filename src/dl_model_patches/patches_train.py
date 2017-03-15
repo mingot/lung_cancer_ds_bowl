@@ -354,7 +354,7 @@ file_list = os.listdir(INPUT_PATH)
 
 THICKNESS = 1
 
-with open(OUTPUT_CSV, 'a') as file:
+with open(OUTPUT_CSV, 'w') as file:
 
     # write the header
     # file.write('filename,nslice,x,y,diameter,score\n')
