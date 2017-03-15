@@ -100,20 +100,24 @@ def extract_rois_from_lungs(lung_image, lung_mask):
 
 
 def extract_crops_from_regions(img, regions, output_size=(40,40)):
-    # Crop images
+    # Crop img given a vector of regions.
+    # If img have depth (1 dim of 3), generate the depth cropped image
     cropped_images = []
     for region in regions:
-        #zeros = np.zeros((40,40))
-        # region = regions_pred[3]
         x1,y1,x2,y2 = region.bbox
-        cropped = img[x1:x2,y1:y2]
-        # zeros.fill(-500)
-        # xini = 40/2-(x2-x1)/2
-        # yini = 40/2-(y2-y1)/2
-        # h = x2 - x1
-        # w = y2 - y1
-        # zeros[xini:(xini+h), yini:(yini+w)] = cropped
-        cropped_images.append(transform.resize(cropped, output_size))
+        if len(img.shape)==2:  # a single image to be cropped
+            cropped = img[x1:x2,y1:y2]
+            cropped_images.append(transform.resize(cropped, output_size))
+
+        elif len(img.shape)==3:  #
+            stack_crops = []
+            cropped = img[:,x1:x2,y1:y2]
+            for nslice in range(img.shape[0]):
+                stack_crops.append(transform.resize(cropped[nslice], output_size))
+            cropped_images.append(np.stack(stack_crops))
+
+
+
     return cropped_images
 
 
@@ -153,7 +157,11 @@ datagen = ImageDataGenerator(
     horizontal_flip=True
     )
 
-def load_patient(filename, discard_empty_nodules=True, output_rois=False):
+def load_patient(filename, discard_empty_nodules=True, output_rois=False, thickness=0):
+    """
+    Returns images generated for each patient.
+     - thickness: number of slices up and down to be taken
+    """
 
     X, Y, rois = [], [], []
     logging.info('Loading patient %s' % filename)
@@ -202,6 +210,10 @@ def load_patient(filename, discard_empty_nodules=True, output_rois=False):
         # plotting.plot_bb(lung_image, regions_pred)
 
         # Extract cropped images
+        if thickness>0:  # add extra images as channels for thick resnet
+            lung_image = b[0,(j - thickness):(j + thickness + 1),:,:]
+            if lung_image.shape[0] != 2*thickness + 1:  # skip the extremes
+                continue
         cropped_images = extract_crops_from_regions(lung_image, regions_pred)
 
         # Generate labels
@@ -221,7 +233,7 @@ def load_patient(filename, discard_empty_nodules=True, output_rois=False):
     return (X, Y, rois) if output_rois else (X, Y)
 
 
-def chunks(file_list=[], batch_size=32, augmentation_times=4):
+def chunks(file_list=[], batch_size=32, augmentation_times=4, thickness=0):
 
     CONCURRENT_PATIENTS = 10  # Load more than 1 patient at a time to have diversity
     while True:
@@ -229,7 +241,7 @@ def chunks(file_list=[], batch_size=32, augmentation_times=4):
             filenames = file_list[j:(j+CONCURRENT_PATIENTS)]
             X, y = [], []
             for filename in filenames:
-                X_single, y_single = load_patient(filename)
+                X_single, y_single = load_patient(filename, thickness=thickness)
                 if len(X_single)==0:
                     continue
                 X.extend(X_single)
@@ -268,8 +280,8 @@ USE_EXISTING = True  # load previous model to continue training or test
 # PATHS
 wp = os.environ['LUNG_PATH']
 INPUT_PATH = '/mnt/hd2/preprocessed5'  # INPUT_PATH = wp + 'data/preprocessed5_sample'
-OUTPUT_MODEL = wp + 'models/jm_patches_train_v04.hdf5'
-OUTPUT_CSV = wp + 'output/noduls_patches_v04_dsb.csv'
+OUTPUT_MODEL = wp + 'models/jm_patches_train_v05_thickness.hdf5'
+OUTPUT_CSV = wp + 'output/noduls_patches_v05_dsb.csv'
 LOGS_PATH = wp + 'logs/%s' % str(int(time()))
 if not os.path.exists(LOGS_PATH):
     os.makedirs(LOGS_PATH)
@@ -290,7 +302,7 @@ logging.basicConfig(level=logging.INFO,
 
 
 # Load model
-model = ResnetBuilder().build_resnet_50((1,40,40),1)
+model = ResnetBuilder().build_resnet_50((3,40,40),1)
 model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['accuracy','fmeasure'])
 if USE_EXISTING:
     print 'Loading exiting model...'

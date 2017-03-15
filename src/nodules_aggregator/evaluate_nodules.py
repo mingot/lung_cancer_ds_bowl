@@ -6,12 +6,13 @@ import numpy as np
 import os
 from math import ceil
 from dl_utils.heatmap import extract_regions_from_heatmap
+import matplotlib.pyplot as plt
 
 
 ## PATHS AND FILES
 wp = os.environ['LUNG_PATH']
-DATA_PATH = '/mnt/hd2/preprocessed5/'  # wp + 'data/preprocessed5_sample/'
-NODULES_FILE = "/home/mingot/output/noduls_patches_v04_dsb.csv"  #  wp + 'output/noduls_thickunet_v01.csv'
+DATA_PATH = '/mnt/hd2/preprocessed5/'  # DATA_PATH = wp + 'data/preprocessed5_sample/'
+NODULES_FILE = "/home/mingot/output/noduls_patches_v04_dsb.csv"  #  NODULES_FILE = wp + 'personal/noduls_patches_v04_dsb.csv'
 df_node = pd.read_csv(NODULES_FILE)
 file_list = [g for g in os.listdir(DATA_PATH) if g.startswith('luna_')]
 
@@ -57,6 +58,8 @@ for idx, filename in enumerate(file_list):  # to extract form .csv
     for nslice in range(patient.shape[1]):
         if patient[2,nslice].any()!=0:
             slices.append(nslice)
+
+    df_node2 = df_node[(df_node['filename']==filename)]
 
     for idx, row in df_node[df_node['filename']==filename].iterrows():
         # row = df_node[(df_node['filename']==filename)].iloc[300]
