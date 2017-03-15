@@ -321,12 +321,12 @@ file_list_train = file_list[:-PATIENTS_VALIDATION]
 logging.info("Test patients: %s" % str(file_list_test))
 
 
-model.fit_generator(generator=chunks(file_list_train, batch_size=32),
+model.fit_generator(generator=chunks(file_list_train, batch_size=32, thickness=1),
                     samples_per_epoch=1280,  # make it small to update TB and CHECKPOINT frequently
                     nb_epoch=500,
                     verbose=1,
                     callbacks=[tb, model_checkpoint],
-                    validation_data=chunks(file_list_test, batch_size=32),
+                    validation_data=chunks(file_list_test, batch_size=32, thickness=1),
                     nb_val_samples=32*20,
                     max_q_size=64,
                     nb_worker=1)  # a locker is needed if increased the number of parallel workers
