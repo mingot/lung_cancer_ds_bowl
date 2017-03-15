@@ -283,7 +283,7 @@ USE_EXISTING = False  # load previous model to continue training or test
 wp = os.environ['LUNG_PATH']
 INPUT_PATH = '/mnt/hd2/preprocessed5'  # INPUT_PATH = wp + 'data/preprocessed5_sample'
 OUTPUT_MODEL = wp + 'models/jm_patches_train_v05_thickness.hdf5'
-OUTPUT_CSV = wp + 'output/noduls_patches_v05_dsb.csv'
+OUTPUT_CSV = wp + 'output/noduls_patches_v05.csv'
 LOGS_PATH = wp + 'logs/%s' % str(int(time()))
 if not os.path.exists(LOGS_PATH):
     os.makedirs(LOGS_PATH)
@@ -334,8 +334,9 @@ model.fit_generator(generator=chunks(file_list_train, batch_size=32, thickness=1
                     nb_worker=1)  # a locker is needed if increased the number of parallel workers
 
 # ## CHECKS GENERATOR
-# X, y = chunks(file_list_train, batch_size=32, thickness=1).next()
-# print X.shape, y.shape
+# for i in range(10):
+#     X, y = chunks(file_list_train, batch_size=32, thickness=1).next()
+#     print X.shape, y.shape
 
 ### TESTING -----------------------------------------------------------------
 
