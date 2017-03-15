@@ -314,24 +314,24 @@ if USE_EXISTING:
 
 ### TRAINING -----------------------------------------------------------------
 
-# PATIENTS FILE LIST
-file_list = os.listdir(INPUT_PATH)
-file_list = [g for g in file_list if g.startswith('luna_')]
-random.shuffle(file_list)
-file_list_test = file_list[-PATIENTS_VALIDATION:]
-file_list_train = file_list[:-PATIENTS_VALIDATION]
-logging.info("Test patients: %s" % str(file_list_test))
-
-
-model.fit_generator(generator=chunks(file_list_train, batch_size=32, thickness=1),
-                    samples_per_epoch=1280,  # make it small to update TB and CHECKPOINT frequently
-                    nb_epoch=500,
-                    verbose=1,
-                    callbacks=[tb, model_checkpoint],
-                    validation_data=chunks(file_list_test, batch_size=32, thickness=1),
-                    nb_val_samples=32*20,
-                    max_q_size=64,
-                    nb_worker=1)  # a locker is needed if increased the number of parallel workers
+# # PATIENTS FILE LIST
+# file_list = os.listdir(INPUT_PATH)
+# file_list = [g for g in file_list if g.startswith('luna_')]
+# random.shuffle(file_list)
+# file_list_test = file_list[-PATIENTS_VALIDATION:]
+# file_list_train = file_list[:-PATIENTS_VALIDATION]
+# logging.info("Test patients: %s" % str(file_list_test))
+#
+#
+# model.fit_generator(generator=chunks(file_list_train, batch_size=32, thickness=1),
+#                     samples_per_epoch=1280,  # make it small to update TB and CHECKPOINT frequently
+#                     nb_epoch=500,
+#                     verbose=1,
+#                     callbacks=[tb, model_checkpoint],
+#                     validation_data=chunks(file_list_test, batch_size=32, thickness=1),
+#                     nb_val_samples=32*20,
+#                     max_q_size=64,
+#                     nb_worker=1)  # a locker is needed if increased the number of parallel workers
 
 # ## CHECKS GENERATOR
 # for i in range(10):
@@ -341,53 +341,55 @@ model.fit_generator(generator=chunks(file_list_train, batch_size=32, thickness=1
 ### TESTING -----------------------------------------------------------------
 
 
-# # if already processed, recover previous
-# previous_filenames = set()
-# with open(OUTPUT_CSV) as file:
-#     for l in file:
-#         l = l.split(',')[0]
-#         previous_filenames.add(l)
-#
-#
-# PREDICTION_THRESHOLD = .1
-# file_list = os.listdir(INPUT_PATH)
-# file_list = [g for g in file_list if g.startswith('dsb_')]
-#
-#
-# with open(OUTPUT_CSV, 'a') as file:
-#
-#     # write the header
-#     # file.write('filename,nslice,x,y,diameter,score\n')
-#
-#     for idx, filename in enumerate(file_list):
-#         if filename in previous_filenames:
-#             continue
-#
-#         logging.info("Patient %s (%d/%d)" % (filename, idx, len(file_list)))
-#         #filename = file_list[2]
-#         # b = np.load(os.path.join(INPUT_PATH, filename))['arr_0']
-#         try:
-#             X, y, rois = load_patient(filename, discard_empty_nodules=False, output_rois=True)
-#             #plotting.multiplot(X[0:15])
-#
-#             if len(X)==0:
-#                 continue
-#
-#             X = np.expand_dims(np.asarray(X),axis=1)
-#             preds = model.predict(X, verbose=1)
-#         except:
-#             logging.info("Error in patient %s, skipping" % filename)
-#             continue
-#
-#         for i in range(len(preds)):
-#             #if preds[i]>PREDICTION_THRESHOLD:
-#             nslice, r = rois[i]
-#             #print '%s,%d,%d,%d,%.3f\n' % (filename,nslice,r.centroid[0], r.centroid[1], r.equivalent_diameter)
-#             file.write('%s,%d,%d,%d,%.3f,%.5f\n' % (filename,nslice,r.centroid[0], r.centroid[1], r.equivalent_diameter,preds[i]))
-#
-#         np.mean(preds)
-#
-#
+# if already processed, recover previous
+previous_filenames = set()
+with open(OUTPUT_CSV) as file:
+    for l in file:
+        l = l.split(',')[0]
+        previous_filenames.add(l)
+
+
+file_list = os.listdir(INPUT_PATH)
+#file_list = [g for g in file_list if g.startswith('dsb_')]
+
+THICKNESS = 1
+
+with open(OUTPUT_CSV, 'a') as file:
+
+    # write the header
+    # file.write('filename,nslice,x,y,diameter,score\n')
+
+    for idx, filename in enumerate(file_list):
+        if filename in previous_filenames:
+            continue
+
+        logging.info("Patient %s (%d/%d)" % (filename, idx, len(file_list)))
+        #filename = file_list[2]
+        # b = np.load(os.path.join(INPUT_PATH, filename))['arr_0']
+        try:
+            X, y, rois = load_patient(filename, discard_empty_nodules=False, output_rois=True, thickness=THICKNESS)
+            if THICKNESS==0:
+                X = np.expand_dims(X, axis=1)
+            #plotting.multiplot(X[0:15])
+
+            if len(X)==0:
+                continue
+
+            X = np.expand_dims(np.asarray(X),axis=1)
+            preds = model.predict(X, verbose=1)
+        except:
+            logging.info("Error in patient %s, skipping" % filename)
+            continue
+
+        for i in range(len(preds)):
+            #if preds[i]>PREDICTION_THRESHOLD:
+            nslice, r = rois[i]
+            #print '%s,%d,%d,%d,%.3f\n' % (filename,nslice,r.centroid[0], r.centroid[1], r.equivalent_diameter)
+            file.write('%s,%d,%d,%d,%.3f,%.5f\n' % (filename,nslice,r.centroid[0], r.centroid[1], r.equivalent_diameter,preds[i]))
+
+        np.mean(preds)
+
+
 # # ## Checking
 # # b = np.load(os.path.join(INPUT_PATH, filename))['arr_0']
 # # for j in range(b.shape[1]):
