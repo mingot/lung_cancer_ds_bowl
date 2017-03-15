@@ -341,12 +341,12 @@ if USE_EXISTING:
 ### TESTING -----------------------------------------------------------------
 
 
-# if already processed, recover previous
-previous_filenames = set()
-with open(OUTPUT_CSV) as file:
-    for l in file:
-        l = l.split(',')[0]
-        previous_filenames.add(l)
+# # if already processed, recover previous
+# previous_filenames = set()
+# with open(OUTPUT_CSV) as file:
+#     for l in file:
+#         l = l.split(',')[0]
+#         previous_filenames.add(l)
 
 
 file_list = os.listdir(INPUT_PATH)
