@@ -368,14 +368,14 @@ with open(OUTPUT_CSV, 'w') as file:
         # b = np.load(os.path.join(INPUT_PATH, filename))['arr_0']
         try:
             X, y, rois = load_patient(filename, discard_empty_nodules=False, output_rois=True, thickness=THICKNESS)
-            if THICKNESS==0:
-                X = np.expand_dims(X, axis=1)
             #plotting.multiplot(X[0:15])
 
             if len(X)==0:
                 continue
 
-            X = np.expand_dims(np.asarray(X),axis=1)
+            X = np.asarray(X)
+            if THICKNESS==0:
+                X = np.expand_dims(X, axis=1)
             preds = model.predict(X, verbose=1)
         except:
             logging.info("Error in patient %s, skipping" % filename)
