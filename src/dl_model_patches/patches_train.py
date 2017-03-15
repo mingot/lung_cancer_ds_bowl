@@ -257,7 +257,7 @@ def chunks(file_list=[], batch_size=32, augmentation_times=4):
 
 
 
-### MODEL LOASING -----------------------------------------------------------------
+### MODEL LOADING -----------------------------------------------------------------
 
 
 # PARAMETERS

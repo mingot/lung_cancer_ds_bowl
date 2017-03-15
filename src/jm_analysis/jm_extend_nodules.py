@@ -40,8 +40,6 @@ df_node = df_node[(df_node['x']!=0) & (df_node['y']!=0) & (df_node['x']!=511) & 
 file_list = [g for g in os.listdir(DATA_PATH) if g.startswith('luna_')]
 
 
-
-
 def process_img(img):
     """
     This function processes the given patch and returns the
@@ -165,34 +163,34 @@ def visualize_csv(img, node_df):
 
 # INDIVIDUAL CHECKS -----------------------------------------------------------------
 
-## Checks for specific patient
-filename = "luna_126631670596873065041988320084.npz"
-patient = np.load(DATA_PATH + filename)['arr_0']
-for nslice in range(patient.shape[1]):
-    if patient[2,nslice].any()!=0:
-        print nslice
-nslice = 85
-visualize_csv(patient[0,nslice], df_node[(df_node['filename']==filename) & (df_node['nslice']==nslice)])
-plotting.plot_mask(patient[0,nslice], patient[2,nslice])
-plt.imshow(patient[1,nslice])
-plt.show()
-
-plotting.cube_show_slider(patient[0])
-
-# check afected slices per patient
-for filename in file_list:
-        patient = np.load(DATA_PATH + filename)['arr_0']
-        patient.shape
-
-        if patient.shape[0]!=3:  # skip labels without groundtruth
-            print 'patient %s no nodules' % filename
-            continue
-
-        slices = []
-        for nslice in range(patient.shape[1]):
-            if patient[2,nslice].any()!=0:
-                slices.append(nslice)
-        print "patient %s slices: %s" % (filename, str(slices))
+# ## Checks for specific patient
+# filename = "luna_126631670596873065041988320084.npz"
+# patient = np.load(DATA_PATH + filename)['arr_0']
+# for nslice in range(patient.shape[1]):
+#     if patient[2,nslice].any()!=0:
+#         print nslice
+# nslice = 85
+# visualize_csv(patient[0,nslice], df_node[(df_node['filename']==filename) & (df_node['nslice']==nslice)])
+# plotting.plot_mask(patient[0,nslice], patient[2,nslice])
+# plt.imshow(patient[1,nslice])
+# plt.show()
+#
+# plotting.cube_show_slider(patient[0])
+#
+# # check afected slices per patient
+# for filename in file_list:
+#         patient = np.load(DATA_PATH + filename)['arr_0']
+#         patient.shape
+#
+#         if patient.shape[0]!=3:  # skip labels without groundtruth
+#             print 'patient %s no nodules' % filename
+#             continue
+#
+#         slices = []
+#         for nslice in range(patient.shape[1]):
+#             if patient[2,nslice].any()!=0:
+#                 slices.append(nslice)
+#         print "patient %s slices: %s" % (filename, str(slices))
 
 
 
@@ -227,18 +225,18 @@ with open(OUTPUT_FILE, 'w') as file:
             z = int(row['nslice'])
             r = int(ceil(row['diameter']/2.))
 
-            # extract hog features
-            img_hu = patient[0,z,(cx-r):(cx+r+1),(cy-r):(cy+r+1)]
-            img_hu = 255.0*(img_hu - np.min(img_hu))/(np.max(img_hu) - np.min(img_hu))
-            img_hu = img_hu.astype(np.int, copy=False)
-            resc_hu = spm.imresize(img_hu, (20,20))
-            features_hog, img  = hog(resc_hu, pixels_per_cell=(10,10),  cells_per_block=(2,2), visualise=True)
-            ff = [str(f) for f in features_hog]
-
-            plt.imshow(img_hu)
-            plt.show()
-
-            pp = process_img(img_hu)
+            # # extract hog features
+            # img_hu = patient[0,z,(cx-r):(cx+r+1),(cy-r):(cy+r+1)]
+            # img_hu = 255.0*(img_hu - np.min(img_hu))/(np.max(img_hu) - np.min(img_hu))
+            # img_hu = img_hu.astype(np.int, copy=False)
+            # resc_hu = spm.imresize(img_hu, (20,20))
+            # features_hog, img  = hog(resc_hu, pixels_per_cell=(10,10),  cells_per_block=(2,2), visualise=True)
+            # ff = [str(f) for f in features_hog]
+            #
+            # plt.imshow(img_hu)
+            # plt.show()
+            #
+            # pp = process_img(img_hu)
 
             # Get the score of the region (ground truth)
             regions = extract_regions_from_heatmap(patient[2,z])
