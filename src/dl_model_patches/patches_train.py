@@ -233,12 +233,16 @@ def load_patient(filename, discard_empty_nodules=True, output_rois=False, thickn
     return (X, Y, rois) if output_rois else (X, Y)
 
 
-def chunks(file_list=[], batch_size=32, augmentation_times=4, thickness=0):
-
-    CONCURRENT_PATIENTS = 10  # Load more than 1 patient at a time to have diversity
+def chunks(file_list=[], batch_size=32, augmentation_times=4, concurrent_patients=10, thickness=0):
+    """
+    Batches generator for keras fit_generator. Returns batches of patches 40x40px
+     - augmentation_times: number of time to return the data augmented
+     - concurrent_patients: number of patients to load at the same time to add diversity
+     - thickness: number of slices up and down to add as a channel to the patch
+    """
     while True:
-        for j in range(0,len(file_list),CONCURRENT_PATIENTS):
-            filenames = file_list[j:(j+CONCURRENT_PATIENTS)]
+        for j in range(0,len(file_list),concurrent_patients):
+            filenames = file_list[j:(j+concurrent_patients)]
             X, y = [], []
             for filename in filenames:
                 X_single, y_single = load_patient(filename, thickness=thickness)
@@ -343,10 +347,10 @@ if USE_EXISTING:
 
 # # if already processed, recover previous
 previous_filenames = set()
-# with open(OUTPUT_CSV) as file:
-#     for l in file:
-#         l = l.split(',')[0]
-#         previous_filenames.add(l)
+with open(OUTPUT_CSV) as file:
+    for l in file:
+        l = l.split(',')[0]
+        previous_filenames.add(l)
 
 
 file_list = os.listdir(INPUT_PATH)
@@ -354,7 +358,7 @@ file_list = os.listdir(INPUT_PATH)
 
 THICKNESS = 1
 
-with open(OUTPUT_CSV, 'w') as file:
+with open(OUTPUT_CSV, 'a') as file:
 
     # write the header
     # file.write('filename,nslice,x,y,diameter,score\n')
