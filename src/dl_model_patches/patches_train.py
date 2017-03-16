@@ -361,7 +361,7 @@ THICKNESS = 1
 with open(OUTPUT_CSV, 'a') as file:
 
     # write the header
-    # file.write('filename,nslice,x,y,diameter,score\n')
+    file.write('filename,nslice,x,y,diameter,score\n')
 
     for idx, filename in enumerate(file_list):
         if filename in previous_filenames:

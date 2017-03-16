@@ -12,9 +12,10 @@ import matplotlib.pyplot as plt
 ## PATHS AND FILES
 wp = os.environ['LUNG_PATH']
 DATA_PATH = '/mnt/hd2/preprocessed5/'  # DATA_PATH = wp + 'data/preprocessed5_sample/'
-NODULES_FILE = "/home/mingot/output/noduls_patches_v05.csv"  #  NODULES_FILE = wp + 'personal/noduls_patches_v04_dsb.csv'
+NODULES_FILE = "/home/mingot/output/noduls_patches_v05.csv"  # NODULES_FILE = wp + 'personal/noduls_patches_v04_dsb.csv'
 df_node = pd.read_csv(NODULES_FILE)
 file_list = [g for g in os.listdir(DATA_PATH) if g.startswith('luna_')]
+filenames_scored = set(df_node['filename'])
 
 ## Filter nodules
 SCORE_THRESHOLD = 0.8
@@ -46,12 +47,15 @@ def intersection_regions(r1, r2):
 tp, fp, fn = 0, 0, 0
 for idx, filename in enumerate(file_list):  # to extract form .csv
     #filename = "luna_126631670596873065041988320084.npz"
-
-    patient = np.load(DATA_PATH + filename)['arr_0']
-
     print "Patient %s (%d/%d)" % (filename, idx, len(file_list))
 
+    if filename not in filenames_scored:
+        print "++ Patient not scored"
+        continue
+
+    patient = np.load(DATA_PATH + filename)['arr_0']
     if patient.shape[0]!=3:  # skip labels without ground truth
+        print "++ Patient without ground truth"
         continue
 
     slices = []
