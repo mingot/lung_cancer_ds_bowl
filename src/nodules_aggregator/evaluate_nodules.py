@@ -53,10 +53,10 @@ for idx, filename in enumerate(file_list):  # to extract form .csv
     if filename not in filenames_scored:
         if filename not in filenames_scored_full:
             print "++ Patient not scored"
+            continue
         else:
             print "++ Patient with no acceptable candidates"
-        continue
-
+        
     patient = np.load(DATA_PATH + filename)['arr_0']
     if patient.shape[0]!=3:  # skip labels without ground truth
         print "++ Patient without ground truth"
@@ -91,3 +91,5 @@ for idx, filename in enumerate(file_list):  # to extract form .csv
 
     fn += len(slices)
     print "Results TP:%d FP:%d FN:%d of %d candidates" % (tp,fp,fn,len(df_node[df_node['filename']==filename].index))
+
+print "Results TP:%d FP:%d FN:%d" % (tp,fp,fn)
