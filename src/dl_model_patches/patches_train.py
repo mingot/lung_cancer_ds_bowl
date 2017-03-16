@@ -148,13 +148,14 @@ def get_labels_from_regions(regions_real, regions_pred):
 
 # Data augmentation generator
 datagen = ImageDataGenerator(
-    rotation_range=.06,
-    width_shift_range=0.02,
-    height_shift_range=0.02,
-    shear_range=0.0002,
-    zoom_range=0.0002,
+    rotation_range=3,  # .06,
+    #width_shift_range=0.05, #0.02,
+    #height_shift_range=0.05, #0.02,
+    #shear_range=0.0002,
+    zoom_range=0.2, #0.0002,
     dim_ordering="th",
-    horizontal_flip=True
+    horizontal_flip=True,
+    vertical_flip=True
     )
 
 def load_patient(filename, discard_empty_nodules=True, output_rois=False, thickness=0):
@@ -263,6 +264,9 @@ def chunks(file_list=[], batch_size=32, augmentation_times=4, concurrent_patient
             if thickness==0:
                 X = np.expand_dims(X, axis=1)
 
+            X_n, y_n = datagen.flow(X, y, batch_size=10, shuffle=True).next()
+            plotting.multiplot(X_n, [aa[0] for aa in y_n] )
+
             i = 0
             for X_batch, y_batch in datagen.flow(X, y, batch_size=batch_size, shuffle=True):
                 i += 1
@@ -311,9 +315,8 @@ logging.basicConfig(level=logging.INFO,
 model = ResnetBuilder().build_resnet_50((3,40,40),1)
 model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['accuracy','fmeasure'])
 if USE_EXISTING:
-    print 'Loading exiting model...'
+    logging.info('Loading exiting model...')
     model.load_weights(OUTPUT_MODEL)
-    #model.load_weights(wp + 'models/jm_patches_train_v3.hdf5')
 
 
 ### TRAINING -----------------------------------------------------------------
@@ -423,36 +426,38 @@ with open(OUTPUT_CSV, write_method) as file:
 
 
 ### Individual checks
-# plotting.multiplot(X[2300])
-# b = np.load(INPUT_PATH+'/'+filename)['arr_0']
-# for j in range(b.shape[1]):
-#     if np.sum(b[2,j])!=0:
-#         print j
-#
-# sel_nslice = 96
-# sel_regions = []
-# sel_ids = []
-# for idx,r in enumerate(rois):
-#     nslice, region = r
-#     if nslice==sel_nslice:
-#         sel_regions.append(region)
-#         sel_ids.append(idx)
-#
-#
-# plotting.plot_mask(b[0,sel_nslice], b[2,sel_nslice])
-# plotting.plot_bb(b[0,sel_nslice], sel_regions[2])
-#
-# sel_ids[2]
-# plotting.multiplot(X[4145])
-# preds[4145]
-#
-# new_X = X[4145]
-# new_X = np.expand_dims(new_X, axis=0)
-# model.predict(new_X, verbose=1)
-#
-# #select biggest
-# max_area = [0,0]
-# for idx, region in enumerate(sel_regions):
-#     if calc_area(region)>1500:
-#         print idx, calc_area(region)
+plotting.multiplot(X[2300])
+b = np.load(INPUT_PATH+'/'+filename)['arr_0']
+for j in range(b.shape[1]):
+    if np.sum(b[2,j])!=0:
+        print j
+
+sel_nslice = 96
+sel_regions = []
+sel_ids = []
+for idx,r in enumerate(rois):
+    nslice, region = r
+    if nslice==sel_nslice:
+        sel_regions.append(region)
+        sel_ids.append(idx)
+
+
+plotting.plot_mask(b[0,sel_nslice], b[2,sel_nslice])
+plotting.plot_bb(b[0,sel_nslice], sel_regions[2])
+
+sel_ids[2]
+plotting.multiplot(X[4145])
+preds[4145]
+
+new_X = X[4145]
+new_X = np.expand_dims(new_X, axis=0)
+model.predict(new_X, verbose=1)
+
+#select biggest
+max_area = [0,0]
+for idx, region in enumerate(sel_regions):
+    if calc_area(region)>1500:
+        print idx, calc_area(region)
+
+## checking image aumentation
 
