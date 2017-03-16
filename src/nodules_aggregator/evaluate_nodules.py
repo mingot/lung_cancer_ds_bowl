@@ -20,7 +20,7 @@ file_list = [g for g in os.listdir(DATA_PATH) if g.startswith('luna_')]
 SCORE_THRESHOLD = 0.8
 df_node = df_node[df_node['score']>SCORE_THRESHOLD]
 
-
+## Auxiliar functions
 class AuxRegion():
     def __init__(self, dim):
         self.bbox = dim
@@ -73,8 +73,8 @@ for idx, filename in enumerate(file_list):  # to extract form .csv
         if len(regions)>1:
             print 'Patient: %s has more than 1 region at slice %d' % (filename, z)
         a = AuxRegion([cx - r, cy - r, cx + r + 1, cy + r + 1])  # x1, y1, x2, y2
-        score = intersection_regions(a,regions[0])
-        if score>0.3:
+        intersection_area = intersection_regions(a,regions[0])
+        if intersection_area>0.3:
             tp+=1
             if z in slices:
                 slices.remove(z)
