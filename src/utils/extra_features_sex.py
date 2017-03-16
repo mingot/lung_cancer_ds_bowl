@@ -1,4 +1,4 @@
-import os, csv
+  import os, csv
 import numpy as np
 import SimpleITK as sitk
 from glob import glob
