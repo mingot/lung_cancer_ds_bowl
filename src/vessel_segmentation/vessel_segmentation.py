@@ -93,7 +93,8 @@ if __name__ == "__main__":
         patient = np.load(path + file)['arr_0']
         print("Calculating its vessel mask...")
         vessel_mask = get_vessel_mask(patient[0])
-        if patient.shape < 3: #does not have a nodules_slice_mask
+        if patient.shape[0] < 3: #does not have a nodules_slice_mask
+            print("The patient does not have a nodules slice mask")
             continue
         print("Counting nodules...")
         original_nodules, post_mask_nodules = count_nodules(patient[2], vessel_mask)
