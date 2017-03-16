@@ -47,6 +47,9 @@ def multiplot_single_image(imgs, show=True):
 
 def plot_bb(img, regions):
     """Draw the img and the bounding box defined by a scikit image region (measure module)."""
+    if not isinstance(regions, list):  # if given a single region, still works
+        regions = [regions]
+
     fig, ax = plt.subplots(ncols=1, nrows=1, figsize=(6, 6))
     ax.imshow(img)
     for region in regions:

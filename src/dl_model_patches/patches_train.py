@@ -286,8 +286,8 @@ USE_EXISTING = True  # load previous model to continue training or test
 # PATHS
 wp = os.environ['LUNG_PATH']
 INPUT_PATH = '/mnt/hd2/preprocessed5'  # INPUT_PATH = wp + 'data/preprocessed5_sample'
-OUTPUT_MODEL = wp + 'models/jm_patches_train_v05_thickness.hdf5'
-OUTPUT_CSV = wp + 'output/noduls_patches_v05.csv'
+OUTPUT_MODEL = wp + 'models/jm_patches_train_v05_thickness_backup3.hdf5'  # OUTPUT_MODEL = wp + 'personal/jm_patches_train_v05_thickness_backup3.hdf5'
+OUTPUT_CSV = wp + 'output/noduls_patches_v05_backup3.csv'
 LOGS_PATH = wp + 'logs/%s' % '1489605846' #str(int(time()))
 if not os.path.exists(LOGS_PATH):
     os.makedirs(LOGS_PATH)
@@ -345,34 +345,37 @@ if USE_EXISTING:
 ### TESTING -----------------------------------------------------------------
 
 
-# # if already processed, recover previous
-previous_filenames = set()
-with open(OUTPUT_CSV) as file:
-    for l in file:
-        l = l.split(',')[0]
-        previous_filenames.add(l)
-
-
+## Params and filepaths
+THICKNESS = 1
+write_method = 'w'
 file_list = os.listdir(INPUT_PATH)
 #file_list = [g for g in file_list if g.startswith('dsb_')]
 
-THICKNESS = 1
 
-with open(OUTPUT_CSV, 'a') as file:
 
-    # write the header
-    file.write('filename,nslice,x,y,diameter,score\n')
+## if the outputcsv file already exists, continue it
+previous_filenames = set()
+if os.path.exists(OUTPUT_CSV):
+    write_method = 'a'
+    with open(OUTPUT_CSV) as file:
+        for l in file:
+            previous_filenames.add(l.split(',')[0])
+
+
+
+with open(OUTPUT_CSV, write_method) as file:
+
+    # write the header if the file is new
+    if write_method=='w':
+        file.write('filename,nslice,x,y,diameter,score\n')
 
     for idx, filename in enumerate(file_list):
         if filename in previous_filenames:
             continue
 
         logging.info("Patient %s (%d/%d)" % (filename, idx, len(file_list)))
-        #filename = file_list[2]
-        # b = np.load(os.path.join(INPUT_PATH, filename))['arr_0']
         try:
             X, y, rois = load_patient(filename, discard_empty_nodules=False, output_rois=True, thickness=THICKNESS)
-            #plotting.multiplot(X[0:15])
 
             if len(X)==0:
                 continue
@@ -386,34 +389,70 @@ with open(OUTPUT_CSV, 'a') as file:
             continue
 
         for i in range(len(preds)):
-            #if preds[i]>PREDICTION_THRESHOLD:
             nslice, r = rois[i]
             #print '%s,%d,%d,%d,%.3f\n' % (filename,nslice,r.centroid[0], r.centroid[1], r.equivalent_diameter)
             file.write('%s,%d,%d,%d,%.3f,%.5f\n' % (filename,nslice,r.centroid[0], r.centroid[1], r.equivalent_diameter,preds[i]))
 
-        np.mean(preds)
+            if preds[i]>0.8:
+                logging.info("++ Good candidate found with (nslice,x,y,diam,score): %d,%d,%d,%.2f,%.2f" % (nslice,r.centroid[0], r.centroid[1], r.equivalent_diameter,preds[i]))
 
 
-# # ## Checking
-# # b = np.load(os.path.join(INPUT_PATH, filename))['arr_0']
-# # for j in range(b.shape[1]):
-# #     if np.sum(b[2,j])!=0:
-# #         print j
-# # plotting.plot_mask(b[0,96], b[2,96])
-#
-#
-#
-# # ## Calculate area regions of luna
-# # for idx, filename in enumerate(file_list):
-# #     b = np.load(os.path.join(INPUT_PATH, filename))['arr_0']
-# #     if b.shape[0]!=3:
-# #         continue
-# #
-# #     print 'Loading %s (%d/%d)' % (filename, idx, len(file_list))
-# #     for j in range(b.shape[1]):
-# #         if np.sum(b[2,j])!=0:
-# #             regions = get_regions(b[2,j])
-# #             for region in regions:
-# #                 print "Filename %s, slice %d, area %s" % (filename, j, str(calc_area(region)))
 
+# ## Checking
+# b = np.load(os.path.join(INPUT_PATH, filename))['arr_0']
+# for j in range(b.shape[1]):
+#     if np.sum(b[2,j])!=0:
+#         print j
+# plotting.plot_mask(b[0,96], b[2,96])
+
+
+
+# ## Calculate area regions of luna
+# for idx, filename in enumerate(file_list):
+#     b = np.load(os.path.join(INPUT_PATH, filename))['arr_0']
+#     if b.shape[0]!=3:
+#         continue
+#
+#     print 'Loading %s (%d/%d)' % (filename, idx, len(file_list))
+#     for j in range(b.shape[1]):
+#         if np.sum(b[2,j])!=0:
+#             regions = get_regions(b[2,j])
+#             for region in regions:
+#                 print "Filename %s, slice %d, area %s" % (filename, j, str(calc_area(region)))
+
+
+
+### Individual checks
+# plotting.multiplot(X[2300])
+# b = np.load(INPUT_PATH+'/'+filename)['arr_0']
+# for j in range(b.shape[1]):
+#     if np.sum(b[2,j])!=0:
+#         print j
+#
+# sel_nslice = 96
+# sel_regions = []
+# sel_ids = []
+# for idx,r in enumerate(rois):
+#     nslice, region = r
+#     if nslice==sel_nslice:
+#         sel_regions.append(region)
+#         sel_ids.append(idx)
+#
+#
+# plotting.plot_mask(b[0,sel_nslice], b[2,sel_nslice])
+# plotting.plot_bb(b[0,sel_nslice], sel_regions[2])
+#
+# sel_ids[2]
+# plotting.multiplot(X[4145])
+# preds[4145]
+#
+# new_X = X[4145]
+# new_X = np.expand_dims(new_X, axis=0)
+# model.predict(new_X, verbose=1)
+#
+# #select biggest
+# max_area = [0,0]
+# for idx, region in enumerate(sel_regions):
+#     if calc_area(region)>1500:
+#         print idx, calc_area(region)
 
