@@ -13,7 +13,10 @@ def multiplot(imgs, labels=None):
     f, plots = plt.subplots(num_rows, num_rows, sharex='all', sharey='all', figsize=(num_rows, num_rows))
     for i in range(nimg):
         plots[i // num_rows, i % num_rows].axis('off')
-        plots[i // num_rows, i % num_rows].imshow(imgs[i])
+        if len(imgs[i].shape)==2:  # single channel image
+            plots[i // num_rows, i % num_rows].imshow(imgs[i])
+        else:  # multiple channel image, plot the first channel
+            plots[i // num_rows, i % num_rows].imshow(imgs[i][0])
         if labels and labels[i]==1:
             plots[i // num_rows, i % num_rows].set_title('TARGET')
     plt.show()
@@ -47,6 +50,9 @@ def multiplot_single_image(imgs, show=True):
 
 def plot_bb(img, regions):
     """Draw the img and the bounding box defined by a scikit image region (measure module)."""
+    if not isinstance(regions, list):  # if given a single region, still works
+        regions = [regions]
+
     fig, ax = plt.subplots(ncols=1, nrows=1, figsize=(6, 6))
     ax.imshow(img)
     for region in regions:

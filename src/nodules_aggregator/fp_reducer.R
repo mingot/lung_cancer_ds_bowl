@@ -1,3 +1,6 @@
+# Reads a .csv containing nodules (and optionally extra features for those nodules) and creates a model 
+# for reducing the number of FPs.
+
 library(data.table)
 library(pROC)
 
