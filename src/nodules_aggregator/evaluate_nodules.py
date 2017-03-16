@@ -81,7 +81,13 @@ for idx, filename in enumerate(file_list):  # to extract form .csv
         r = int(ceil(row['diameter']/2.))
 
         # Get the score of the region (ground truth)
-        regions = extract_regions_from_heatmap(patient[2,z])
+        if np.sum(patient[2,z])!=0:
+            regions = extract_regions_from_heatmap(patient[2,z])
+        else:
+            if score>0.8:
+                fp+=1
+            continue
+
         if len(regions)>1:
             print 'Patient: %s has more than 1 region at slice %d' % (filename, z)
         a = AuxRegion([cx - r, cy - r, cx + r + 1, cy + r + 1])  # x1, y1, x2, y2
@@ -93,7 +99,7 @@ for idx, filename in enumerate(file_list):  # to extract form .csv
                 tp_ni+=1  # roi candidates not identified by DL network
             if z in slices:
                 slices.remove(z)
-        elif score>0.8:
+        elif intersection_area<0.3 and score>0.8:
             fp+=1
 
     fn += len(slices)
