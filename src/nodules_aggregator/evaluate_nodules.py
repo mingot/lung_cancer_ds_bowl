@@ -19,7 +19,7 @@ filenames_scored_full = set(df_node['filename'])
 
 ## Filter nodules
 SCORE_THRESHOLD = 0.8
-df_node = df_node[df_node['score']>SCORE_THRESHOLD]
+# df_node = df_node[df_node['score']>SCORE_THRESHOLD]
 filenames_scored = set(df_node['filename'])
 
 ## Auxiliar functions
@@ -45,7 +45,7 @@ def intersection_regions(r1, r2):
 # FINAL CSV LOADING -----------------------------------------------------------------
 
 ## Generate features, score for each BB and store them
-tp, fp, fn = 0, 0, 0
+tp, tp_ni, fp, fn, eval_candidates = 0, 0, 0, 0, 0
 for idx, filename in enumerate(file_list):  # to extract form .csv
     #filename = "luna_126631670596873065041988320084.npz"
     print "Patient %s (%d/%d)" % (filename, idx, len(file_list))
@@ -56,11 +56,14 @@ for idx, filename in enumerate(file_list):  # to extract form .csv
             continue
         else:
             print "++ Patient with no acceptable candidates"
-        
+
     patient = np.load(DATA_PATH + filename)['arr_0']
     if patient.shape[0]!=3:  # skip labels without ground truth
         print "++ Patient without ground truth"
         continue
+
+    # candidate is going to be evaluated
+    eval_candidates +=1
 
     slices = []
     for nslice in range(patient.shape[1]):
@@ -74,6 +77,7 @@ for idx, filename in enumerate(file_list):  # to extract form .csv
         cx = int(row['x'])  # row
         cy = int(row['y'])  # column
         z = int(row['nslice'])
+        score = int(row['score'])
         r = int(ceil(row['diameter']/2.))
 
         # Get the score of the region (ground truth)
@@ -83,13 +87,16 @@ for idx, filename in enumerate(file_list):  # to extract form .csv
         a = AuxRegion([cx - r, cy - r, cx + r + 1, cy + r + 1])  # x1, y1, x2, y2
         intersection_area = intersection_regions(a,regions[0])
         if intersection_area>0.3:
-            tp+=1
+            if score>0.8:
+                tp+=1
+            else:
+                tp_ni+=1  # roi candidates not identified by DL network
             if z in slices:
                 slices.remove(z)
-        else:
+        elif score>0.8:
             fp+=1
 
     fn += len(slices)
     print "Results TP:%d FP:%d FN:%d of %d candidates" % (tp,fp,fn,len(df_node[df_node['filename']==filename].index))
 
-print "Results TP:%d FP:%d FN:%d" % (tp,fp,fn)
+print "Results TP:%d, TPNI:%d, FP:%d FN:%d for %d patients evaluated" % (tp,tp_ni,fp,fn,eval_candidates)
