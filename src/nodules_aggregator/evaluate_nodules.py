@@ -77,7 +77,7 @@ for idx, filename in enumerate(file_list):  # to extract form .csv
         cx = int(row['x'])  # row
         cy = int(row['y'])  # column
         z = int(row['nslice'])
-        score = int(row['score'])
+        score = float(row['score'])
         r = int(ceil(row['diameter']/2.))
 
         # Get the score of the region (ground truth)
