@@ -14,8 +14,11 @@ import pandas as pd
 # example with patients:
 # dsb_0700108170c91ea2219006e9484999ef.npz
 # dsb_6d3b16f2e60c3a1a4246f340dba73676.npz
-csv_in = 'data/tiny_dl_example.csv'
+# csv_in = PATH_LUNG + 'personal/noduls_patches_v05_backup3_tiny.csv'
+# csv_out = PATH_LUNG + 'personal/noduls_patches_v05_backup3_tiny_out.csv'
+# patient_path = PATH_LUNG + 'data/preprocessed5_sample'
 csv_out = 'data/tiny_dl_example_augmented.csv'
+csv_in = 'data/tiny_dl_example.csv'
 patient_path = "/home/sergi/all/devel/big/lung_cancer_ds_bowl/preprocessed5/"
 
 # read csv from deep learning and write new csv
@@ -26,4 +29,3 @@ splm.process_pipeline_csv(
 
 df_augmented = pd.read_csv(csv_out)
 df_augmented.head()
-
