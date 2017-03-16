@@ -15,11 +15,12 @@ DATA_PATH = '/mnt/hd2/preprocessed5/'  # DATA_PATH = wp + 'data/preprocessed5_sa
 NODULES_FILE = "/home/mingot/output/noduls_patches_v05.csv"  # NODULES_FILE = wp + 'personal/noduls_patches_v04_dsb.csv'
 df_node = pd.read_csv(NODULES_FILE)
 file_list = [g for g in os.listdir(DATA_PATH) if g.startswith('luna_')]
-filenames_scored = set(df_node['filename'])
+filenames_scored_full = set(df_node['filename'])
 
 ## Filter nodules
 SCORE_THRESHOLD = 0.8
 df_node = df_node[df_node['score']>SCORE_THRESHOLD]
+filenames_scored = set(df_node['filename'])
 
 ## Auxiliar functions
 class AuxRegion():
@@ -50,7 +51,10 @@ for idx, filename in enumerate(file_list):  # to extract form .csv
     print "Patient %s (%d/%d)" % (filename, idx, len(file_list))
 
     if filename not in filenames_scored:
-        print "++ Patient not scored"
+        if filename not in filenames_scored_full:
+            print "++ Patient not scored"
+        else:
+            print "++ Patient with no acceptable candidates"
         continue
 
     patient = np.load(DATA_PATH + filename)['arr_0']
