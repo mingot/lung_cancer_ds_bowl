@@ -94,14 +94,18 @@ for idx, filename in enumerate(file_list):  # to extract form .csv
         # Get the ground truth regions
         if np.sum(patient[2,nslice]) != 0:  # if nodules in the slice, extract the interesection area
 
-            regions_real = [r[1] for r in total_nodule_regions if r[0]==nslice]  # select regions for this slice
-            candidate_region = AuxRegion([cx - rad, cy - rad, cx + rad + 1, cy + rad + 1])  # x1, y1, x2, y2
-            intersections = [intersection_regions(candidate_region, nodule_region) for nodule_region in regions_real]
-            intersection_area = max(intersections)
+            # regions_real = [r[1] for r in total_nodule_regions if r[0]==nslice]  # select regions for this slice
+            # candidate_region = AuxRegion([cx - rad, cy - rad, cx + rad + 1, cy + rad + 1])  # x1, y1, x2, y2
+            # intersections = [intersection_regions(candidate_region, nodule_region) for nodule_region in regions_real]
+            # intersection_area = max(intersections)
+            #
+            # if intersection_area >= INTERSECTION_AREA_TH:  # account the region to measure not found regions
+            #     r = regions_real[np.argmax(intersections)]
+            #     found_nodule_regions.add(r)
 
-            if intersection_area >= INTERSECTION_AREA_TH:  # account the region to measure not found regions
-                r = regions_real[np.argmax(intersections)]
-                found_nodule_regions.add(r)
+            regions_real = extract_regions_from_heatmap(patient[2,nslice])
+            candidate_region = AuxRegion([cx - rad, cy - rad, cx + rad + 1, cy + rad + 1])  # x1, y1, x2, y2
+            intersection_area = max([intersection_regions(candidate_region, nodule_region) for nodule_region in regions_real])
         else:
             intersection_area = 0
 
