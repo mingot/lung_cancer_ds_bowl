@@ -13,7 +13,7 @@ def get_emphysema_predictors(img, mask):
     gated_pix_lung = pix_lung[pix_lung < threshold]
 
     # the histogram of the data
-    plt.hist(pix_lung, 50, normed=1, facecolor='green', alpha=0.75)
+    # plt.hist(pix_lung, 50, normed=1, facecolor='green', alpha=0.75)
 
     gated_skewness = stats.skew(gated_pix_lung)
     gated_kurtosis = stats.kurtosis(gated_pix_lung)
