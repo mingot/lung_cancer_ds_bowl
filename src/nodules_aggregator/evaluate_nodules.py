@@ -46,14 +46,14 @@ def intersection_regions(r1, r2):
 # FINAL CSV LOADING -----------------------------------------------------------------
 
 ## Generate features, score for each BB and store them
-tp, tp_ni, fp, fn, eval_candidates = 0, 0, 0, 0, 0
-real, pred = [], []
+tp, tp_ni, fp, fn, eval_candidates, total_rois = 0, 0, 0, 0, 0, 0
+real, pred = [], []  # for auc predictions
 for idx, filename in enumerate(file_list):  # to extract form .csv
-    #filename = "luna_126631670596873065041988320084.npz"
-    print "Patient %s (%d/%d)" % (filename, idx, len(file_list))
     if idx>50:
         break
 
+    #filename = "luna_126631670596873065041988320084.npz"
+    print "Patient %s (%d/%d)" % (filename, idx, len(file_list))
 
     if filename not in filenames_scored:
         if filename not in filenames_scored_full:
@@ -62,6 +62,7 @@ for idx, filename in enumerate(file_list):  # to extract form .csv
         else:
             print "++ Patient with no acceptable candidates"
 
+    # load patient
     patient = np.load(DATA_PATH + filename)['arr_0']
     if patient.shape[0]!=3:  # skip labels without ground truth
         print "++ Patient without ground truth"
@@ -70,12 +71,12 @@ for idx, filename in enumerate(file_list):  # to extract form .csv
     # candidate is going to be evaluated
     eval_candidates +=1
 
+    # slices with nodules
     slices = []
     for nslice in range(patient.shape[1]):
         if patient[2,nslice].any()!=0:
             slices.append(nslice)
 
-    df_node2 = df_node[(df_node['filename']==filename)]
 
     for idx, row in df_node[df_node['filename']==filename].iterrows():
         # row = df_node[(df_node['filename']==filename)].iloc[300]
@@ -85,10 +86,10 @@ for idx, filename in enumerate(file_list):  # to extract form .csv
         score = float(row['score'])
         r = int(ceil(row['diameter']/2.))
 
-        # Get the score of the region (ground truth)
+        # Get the ground truth regions
         if np.sum(patient[2,z])!=0:
             regions = extract_regions_from_heatmap(patient[2,z])
-        else:
+        else:  # if no nodules, skip row and count as FP
             if score>0.8:
                 fp+=1
             continue
@@ -114,7 +115,9 @@ for idx, filename in enumerate(file_list):  # to extract form .csv
             fp+=1
 
     fn += len(slices)
-    print "Results TP:%d, TPNI:%d, FP:%d FN:%d of %d candidates" % (tp,tp_ni,fp,fn,len(df_node[df_node['filename']==filename].index))
+    num_rois = len(df_node[df_node['filename']==filename].index)
+    total_rois += num_rois
+    print "Results TP:%d, TPNI:%d, FP:%d FN:%d of %d ROIs candidates" % (tp,tp_ni,fp,fn,num_rois)
 
-print "Results TP:%d, TPNI:%d, FP:%d FN:%d for %d patients evaluated" % (tp,tp_ni,fp,fn,eval_candidates)
+print "Results TP:%d, TPNI:%d, FP:%d FN:%d for %d patients evaluated with %d patches" % (tp,tp_ni,fp,fn,eval_candidates,total_rois)
 print "AUC: %.4f" % metrics.auc(real,pred,reorder=True)
