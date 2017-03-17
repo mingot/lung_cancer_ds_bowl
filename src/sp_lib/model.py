@@ -206,8 +206,17 @@ def process_prop(prop):
     """
     if prop is None:
         return None
-        
-    return pd.DataFrame.from_records([{
+    
+    hu_moments = prop.moments_hu
+    hu_names = ['11_hu'+str(b) for b in np.arange(len(hu_moments))]
+    
+    # inertia
+    eig0 = prop.inertia_tensor_eigvals[0]
+    eig1 = prop.inertia_tensor_eigvals[1]
+    
+    # basic features
+    # added 'esbeltez' and hu moments from Jacobo!
+    dict_ans = {
         '01_eccentricity': prop.eccentricity, 
         '02_extent': prop.extent, 
         '03_area': prop.area, 
@@ -215,9 +224,14 @@ def process_prop(prop):
         '05_solidity': prop.solidity, 
         '06_mean_intensity': prop.mean_intensity, 
         '07_max_intensity': prop.max_intensity, 
-        '08_inertia_tensor_eigvals0': prop.inertia_tensor_eigvals[0], 
-        '09_inertia_tensor_eigvals1': prop.inertia_tensor_eigvals[1]
-    }])
+        '08_inertia_tensor_eigvals0': eig0, 
+        '09_inertia_tensor_eigvals1': eig1, 
+        '10_esb': np.sqrt(1 - eig1/eig0)
+    }
+    dict_hu = dict(zip(hu_names, hu_moments))
+    dict_ans.update(dict_hu)
+    
+    return pd.DataFrame.from_records([dict_ans])
 
 import matplotlib.pyplot as plt
 def process_plot(list_dict):
@@ -245,11 +259,25 @@ def process_plot(list_dict):
     plt.show()
     
     
+import numpy as np
+import skimage.feature as skf
+def process_lbp(img_hu):
+    ans = skf.local_binary_pattern(img_hu, P=8*3, R=3, method='uniform').astype(int)
+    ans_bins = np.bincount(ans.ravel())
     
+    # complete zeros that could be missing
+    ans_bins = np.r_[ans_bins, np.zeros(26 - len(ans_bins))]
+    
+    return ans_bins
+    
+    
+
 import numpy as np
 from math import ceil
 import pandas as pd
 import scipy.misc as spm
+import skimage.feature as skf
+import pdb
 def process_pipeline_csv(
     csv_in, 
     patient_path, 
@@ -267,6 +295,7 @@ def process_pipeline_csv(
     # csv_in='../data/tiny_dl_example.csv'
     # csv_out='dummy_out.csv'
     # patient_path="/home/sergi/all/devel/big/lung_cancer_ds_bowl/preprocessed5/"
+    # verbose=False
     
     print 'Reading csv! Make sure the format is standard: patientid column with .npz extension'
     # we assume that the patient column is 
@@ -284,6 +313,9 @@ def process_pipeline_csv(
     df_out = []
     for pat in list_patient:
         print 'Processing patient {} ...'.format(pat)
+        # debug
+        # pat = list_patient[0]
+        
         # (1) Extract patchs from data frame and one patient
         p_patch, p_df = extract_patch(
             df_dl_filter, 
@@ -299,7 +331,17 @@ def process_pipeline_csv(
         # TODO: also use (weighted?) hu moments, HOG, LBP, use lung mask in the process
         # this returns 1-row dfs for each patch, or None 
         
-        # (3) extract properties
+        # (3.1) HOG features
+        hog_feat = [skf.hog(img['resc_hu'], pixels_per_cell=(10,10), cells_per_block=(2,2)) for img in p_patch]
+        hog_names = ['20_hog'+str(b) for b in np.arange(len(hog_feat[0]))]
+        hog_df = pd.DataFrame.from_records([dict(zip(hog_names, feat)) for feat in hog_feat])
+        
+        # (3.2) LBP for texture
+        lbp_feat = [process_lbp(img['resc_hu']) for img in p_patch]
+        lbp_names = ['30_lbp'+str(b) for b in np.arange(len(lbp_feat[0]))]
+        lbp_df = pd.DataFrame.from_records([dict(zip(lbp_names, lbp)) for lbp in lbp_feat])
+        
+        # (3.3) extract basic properties
         p_feat = [process_prop(p) for p in p_prop]
         
         # p_filtered = [x is None for x in p_feat]
@@ -312,16 +354,31 @@ def process_pipeline_csv(
         # (4) indices of the non-null patches (some patches are null because 
         # segmentation in (2) did not find anything)
         patch_nonnull = [x is not None for x in p_feat]
+        if np.array(patch_nonnull).sum() == 0:
+            continue
         
         # data frame with features
         # (5) data_frame of features
+        # pdb.set_trace()
+        # data frame with features
         df_feat = pd.concat(p_feat)
+        df_feat.index = np.array(patch_nonnull).nonzero()[0]
+        # concatenate all data frames (indices are a pain in the ass)
+        df_augmented = pd.concat([
+            df_feat, 
+            hog_df.iloc[patch_nonnull], 
+            lbp_df.iloc[patch_nonnull]], 
+            axis=1)
+        # keep track of original indices
+        df_augmented.index = p_df.index[patch_nonnull]
+        
         # recover indices
-        df_feat.index = p_df.index[patch_nonnull]
+        # 
+        
         
         # (6) concat data frames to obtain the final augmented data frame for this patient
         # df_all = pd.merge(p_df.iloc[patch_nonnull], df_feat, how='cross')
-        df_all = pd.concat([p_df.iloc[patch_nonnull], df_feat], axis=1)
+        df_all = pd.concat([p_df.iloc[patch_nonnull], df_augmented], axis=1)
         
         df_out.append(df_all)
     
