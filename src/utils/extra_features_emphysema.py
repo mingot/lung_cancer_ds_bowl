@@ -19,3 +19,14 @@ def get_emphysema_predictors(img, mask):
     gated_kurtosis = stats.kurtosis(gated_pix_lung)
 
     return gated_skewness, gated_kurtosis
+
+
+def compute_emphysema_probability(img, mask):
+
+    probability = 0
+
+    gated_skewness, gated_kurtosis = get_emphysema_predictors(img, mask)
+
+    #TODO: Combine gated_skewness, gated_kurtosis to obtain an estimate of the probability of the emphysema
+
+    return probability
