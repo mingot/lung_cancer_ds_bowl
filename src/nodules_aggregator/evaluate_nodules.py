@@ -50,7 +50,7 @@ def intersection_regions(r1, r2):
 # FINAL CSV LOADING -----------------------------------------------------------------
 
 INTERSECTION_AREA_TH = 0.1  # intersection/union to be considered matched region
-PREDICTION_TH = 0.9  # prediction threshold
+PREDICTION_TH = 0.8  # prediction threshold
 
 ## Generate features, score for each BB and store them
 tp, fp, fn, tn = 0, 0, 0, 0
@@ -81,9 +81,12 @@ for idx, filename in enumerate(file_list):  # to extract form .csv
 
     # track all the positive regions to compute the nodule regions not identified
     total_nodule_regions = []
+    found_regions = []
     for nslice in range(patient.shape[1]):
         if patient[2,nslice].any()!=0:
-            total_nodule_regions.extend(extract_regions_from_heatmap(patient[2,nslice]))
+            regions = extract_regions_from_heatmap(patient[2,nslice])
+            regions = [(nslice, r) for r in regions]
+            total_nodule_regions.extend(regions)
 
     for idx, row in df_node[df_node['filename']==filename].iterrows():
         cx, cy, nslice = int(row['x']), int(row['y']), int(row['nslice'])
@@ -91,9 +94,21 @@ for idx, filename in enumerate(file_list):  # to extract form .csv
 
         # Get the ground truth regions
         if np.sum(patient[2,nslice]) != 0:  # if nodules in the slice, extract real regions
-            regions_real = extract_regions_from_heatmap(patient[2,nslice])
+
+            regions_real = [r[1] for r in total_nodule_regions if r[0]==nslice]
             candidate_region = AuxRegion([cx - rad, cy - rad, cx + rad + 1, cy + rad + 1])  # x1, y1, x2, y2
-            intersection_area = max([intersection_regions(candidate_region, nodule_region) for nodule_region in regions_real])
+            intersections = [intersection_regions(candidate_region, nodule_region) for nodule_region in regions_real]
+            intersection_area = max(intersections)
+
+            if intersection_area >= INTERSECTION_AREA_TH:
+                r = regions_real[np.argmax(intersections)]
+                found_regions.append(r)
+                # if (nslice, r) in total_nodule_regions:
+                #     total_nodule_regions.remove((nslice, r))
+
+            # regions_real = extract_regions_from_heatmap(patient[2,nslice])
+            # candidate_region = AuxRegion([cx - rad, cy - rad, cx + rad + 1, cy + rad + 1])  # x1, y1, x2, y2
+            # intersection_area = max([intersection_regions(candidate_region, nodule_region) for nodule_region in regions_real])
         else:
             intersection_area = 0
 
@@ -116,10 +131,18 @@ for idx, filename in enumerate(file_list):  # to extract form .csv
         #     total_nodule_regions.remove(candidate_region)
 
 
-    fnni += len(total_nodule_regions)
+    # fnni += len(total_nodule_regions)
     num_rois = len(df_node[df_node['filename']==filename].index)
     total_rois += num_rois
     print "Results TP:%d, FP:%d, TN:%d, FN:%d with %d FNNI regions of %d ROIs candidates" % (tp,fp,tn,fn,fnni,num_rois)
+
+rs = [r[1] for r in total_nodule_regions]
+fs = 0
+for r in found_regions:
+    if r in rs:
+        fs +=1
+
+print "Found %d of %d ROIs" % (fs, len(total_nodule_regions))
 
 print "Results TP:%d, FP:%d, TN:%d, FN:%d with %d FNNI for %d patients evaluated with %d patches" % (tp,fp,tn,fn,fnni,patients_scored,total_rois)
 print "Precision:%.1f, Accuracy:%.1f, Sensitivity:%.1f, Specificity:%.1f" % (tp*100.0/(tp+fp), (tp+tn)*100.0/(tp+fp+tn+fn), tp*100.0/(tp+fn), tn*100.0/(tn+fp))
