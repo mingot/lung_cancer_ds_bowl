@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 wp = os.environ['LUNG_PATH']
 DATA_PATH = '/mnt/hd2/preprocessed5/'  # DATA_PATH = wp + 'data/preprocessed5_sample/'
 NODULES_FILE = "/home/mingot/output/noduls_patches_v05_backup3.csv"  # NODULES_FILE = wp + 'personal/noduls_patches_v04_dsb.csv'
-df_node = pd.read_csv(NODULES_FILE, skiprows=[1977536])
+df_node = pd.read_csv(NODULES_FILE, skiprows=[1977536,1977535])
 file_list = [g for g in os.listdir(DATA_PATH) if g.startswith('luna_')]
 filenames_scored_full = set(df_node['filename'])
 
