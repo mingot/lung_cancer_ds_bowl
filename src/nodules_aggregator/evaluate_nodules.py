@@ -45,6 +45,9 @@ def intersection_regions(r1, r2):
 
 # FINAL CSV LOADING -----------------------------------------------------------------
 
+INTERSECTION_AREA_TH = 0.1  # intersection/union to be considered matched region
+PREDICTION_TH = 0.8  # prediction threshold
+
 ## Generate features, score for each BB and store them
 tp, tp_ni, fp, fn, eval_candidates, total_rois = 0, 0, 0, 0, 0, 0
 real, pred = [], []  # for auc predictions
@@ -90,8 +93,11 @@ for idx, filename in enumerate(file_list):  # to extract form .csv
         if np.sum(patient[2,z])!=0:
             regions = extract_regions_from_heatmap(patient[2,z])
         else:  # if no nodules, skip row and count as FP
-            if score>0.8:
+            if score > PREDICTION_TH:
                 fp+=1
+            # auc
+            real.append(0)
+            pred.append(score)
             continue
 
         if len(regions)>1:
@@ -100,18 +106,18 @@ for idx, filename in enumerate(file_list):  # to extract form .csv
         intersection_area = intersection_regions(a,regions[0])
 
         # auc
-        real.append(int(intersection_area>0.1))
+        real.append(int(intersection_area >= INTERSECTION_AREA_TH))
         pred.append(score)
 
         # confusion matrix
-        if intersection_area>0.1:
-            if score>0.8:
+        if intersection_area >= INTERSECTION_AREA_TH:
+            if score > PREDICTION_TH:
                 tp+=1
             else:
                 tp_ni+=1  # roi candidates not identified by DL network
             if z in slices:
                 slices.remove(z)
-        elif intersection_area<0.3 and score>0.8:
+        elif intersection_area < INTERSECTION_AREA_TH and score > PREDICTION_TH:
             fp+=1
 
     fn += len(slices)
