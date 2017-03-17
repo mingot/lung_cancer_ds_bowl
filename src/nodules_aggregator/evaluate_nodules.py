@@ -42,11 +42,15 @@ def intersection_regions(r1, r2):
     return overlapArea
 
 
+# Results TP:25, FP:1420, TN:141532, FN:112 with 180 FNNI for 33 patients evaluated with 143089 patches
+# Precision:1.7, Accuracy:98.9, Sensitivity:18.2, Specificity:99.0
+# AUC: 0.4999
+
 
 # FINAL CSV LOADING -----------------------------------------------------------------
 
 INTERSECTION_AREA_TH = 0.1  # intersection/union to be considered matched region
-PREDICTION_TH = 0.8  # prediction threshold
+PREDICTION_TH = 0.9  # prediction threshold
 
 ## Generate features, score for each BB and store them
 tp, fp, fn, tn = 0, 0, 0, 0
@@ -82,17 +86,13 @@ for idx, filename in enumerate(file_list):  # to extract form .csv
             total_nodule_regions.extend(extract_regions_from_heatmap(patient[2,nslice]))
 
     for idx, row in df_node[df_node['filename']==filename].iterrows():
-        # row = df_node[(df_node['filename']==filename)].iloc[300]
-        cx = int(row['x'])  # row
-        cy = int(row['y'])  # column
-        z = int(row['nslice'])
-        score = float(row['score'])
-        r = int(ceil(row['diameter']/2.))
+        cx, cy, nslice = int(row['x']), int(row['y']), int(row['nslice'])
+        score, rad = float(row['score']), int(ceil(row['diameter']/2.))
 
         # Get the ground truth regions
-        if np.sum(patient[2,z]) != 0:  # if nodules in the slice, extract real regions
-            regions_real = extract_regions_from_heatmap(patient[2,z])
-            candidate_region = AuxRegion([cx - r, cy - r, cx + r + 1, cy + r + 1])  # x1, y1, x2, y2
+        if np.sum(patient[2,nslice]) != 0:  # if nodules in the slice, extract real regions
+            regions_real = extract_regions_from_heatmap(patient[2,nslice])
+            candidate_region = AuxRegion([cx - rad, cy - rad, cx + rad + 1, cy + rad + 1])  # x1, y1, x2, y2
             intersection_area = max([intersection_regions(candidate_region, nodule_region) for nodule_region in regions_real])
         else:
             intersection_area = 0
