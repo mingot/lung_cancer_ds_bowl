@@ -60,8 +60,7 @@ with open(NODULES_FILE+'_output', 'w') as output_file:
     output_file.write('filename,nslice,x,y,diameter,score,intersection_area\n')
 
     for idx, filename in enumerate(file_list):  # to extract form .csv
-        if idx>10:
-            break
+        
         print "Patient %s (%d/%d)" % (filename, idx, len(file_list))
 
         if filename not in filenames_scored:
@@ -120,7 +119,7 @@ with open(NODULES_FILE+'_output', 'w') as output_file:
             elif intersection_area <  INTERSECTION_AREA_TH and score <= PREDICTION_TH:
                 tn += 1
 
-            output_file.write('%s,%d,%d,%d,%.3f,%.5f,%.5f\n' % (filename, nslice, cx, cy, 2*rad, score, intersection_area))  # TODO: remove
+            output_file.write('%s,%d,%d,%d,%.2f,%.3f,%.2f\n' % (filename, nslice, cx, cy, 2*rad, score, intersection_area))  # TODO: remove
 
         num_rois = len(df_node[df_node['filename']==filename].index)
         total_rois += num_rois
