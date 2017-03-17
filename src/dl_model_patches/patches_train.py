@@ -161,6 +161,7 @@ datagen = ImageDataGenerator(
     vertical_flip=True
     )
 
+
 def load_patient(filename, discard_empty_nodules=True, output_rois=False, thickness=0):
     """
     Returns images generated for each patient.
@@ -360,7 +361,6 @@ file_list = os.listdir(INPUT_PATH)
 #file_list = [g for g in file_list if g.startswith('dsb_')]
 
 
-
 ## if the OUTPUT_CSV file already exists, continue it
 previous_filenames = set()
 if os.path.exists(OUTPUT_CSV):
@@ -368,7 +368,6 @@ if os.path.exists(OUTPUT_CSV):
     with open(OUTPUT_CSV) as file:
         for l in file:
             previous_filenames.add(l.split(',')[0])
-
 
 
 with open(OUTPUT_CSV, write_method) as file:
@@ -398,46 +397,46 @@ with open(OUTPUT_CSV, write_method) as file:
 
         for i in range(len(preds)):
             nslice, r = rois[i]
-            #print '%s,%d,%d,%d,%.3f\n' % (filename,nslice,r.centroid[0], r.centroid[1], r.equivalent_diameter)
-            file.write('%s,%d,%d,%d,%.3f,%.5f\n' % (filename,nslice,r.centroid[0], r.centroid[1], r.equivalent_diameter,preds[i]))
+            # TODO: also output label
+            file.write('%s,%d,%d,%d,%.3f,%.5f\n' % (filename, nslice, r.centroid[0], r.centroid[1], r.equivalent_diameter,preds[i]))
 
             if preds[i]>0.8:
                 logging.info("++ Good candidate found with (nslice,x,y,diam,score): %d,%d,%d,%.2f,%.2f" % (nslice,r.centroid[0], r.centroid[1], r.equivalent_diameter,preds[i]))
 
 
 
-## Checking
-filename = 'luna_129007566048223160327836686225.npz'
-b = np.load(os.path.join(INPUT_PATH, filename))['arr_0']
-for j in range(b.shape[1]):
-    if np.sum(b[2,j])!=0:
-        print j
-
-nslice = 95
-plotting.plot_mask(b[0,nslice], b[2,nslice])
-
-X, y, rois = load_patient(filename, discard_empty_nodules=False, output_rois=True, thickness=THICKNESS)
-print 'hola'
-
-for nslice in range(b.shape[1]):
-    if np.sum(b[2,nslice])!=0:
-        regions_pred = [r[1] for r in rois if r[0]==nslice]
-        regions_real = get_regions(b[2,nslice])
-        labels, stats = get_labels_from_regions(regions_real, regions_pred)
-        print nslice, stats
-
-sel_regions = []
-for r in rois:
-    sel_nslice, region = r
-    if sel_nslice==nslice:
-        sel_regions.append(region)
-
-plotting.plot_bb(b[0,nslice], sel_regions)
-
-
-### quality checks for ROIs detection
-for filename in file_list:
-    X, y = load_patient(filename, discard_empty_nodules=True, output_rois=False, thickness=0)
+# ## Checking
+# filename = 'luna_129007566048223160327836686225.npz'
+# b = np.load(os.path.join(INPUT_PATH, filename))['arr_0']
+# for j in range(b.shape[1]):
+#     if np.sum(b[2,j])!=0:
+#         print j
+#
+# nslice = 95
+# plotting.plot_mask(b[0,nslice], b[2,nslice])
+#
+# X, y, rois = load_patient(filename, discard_empty_nodules=False, output_rois=True, thickness=THICKNESS)
+# print 'hola'
+#
+# for nslice in range(b.shape[1]):
+#     if np.sum(b[2,nslice])!=0:
+#         regions_pred = [r[1] for r in rois if r[0]==nslice]
+#         regions_real = get_regions(b[2,nslice])
+#         labels, stats = get_labels_from_regions(regions_real, regions_pred)
+#         print nslice, stats
+#
+# sel_regions = []
+# for r in rois:
+#     sel_nslice, region = r
+#     if sel_nslice==nslice:
+#         sel_regions.append(region)
+#
+# plotting.plot_bb(b[0,nslice], sel_regions)
+#
+#
+# ### quality checks for ROIs detection
+# for filename in file_list:
+#     X, y = load_patient(filename, discard_empty_nodules=True, output_rois=False, thickness=0)
 
 
 
@@ -457,7 +456,7 @@ for filename in file_list:
 
 
 
-# ### Individual checks
+# ### Individual prediction checks
 # plotting.multiplot(X[2300])
 # b = np.load(INPUT_PATH+'/'+filename)['arr_0']
 # for j in range(b.shape[1]):
@@ -492,6 +491,37 @@ for filename in file_list:
 #         print idx, calc_area(region)
 
 
+## evaluation checks
+i = 0
+#X, y, rois = load_patient(file_list[i], discard_empty_nodules=False, output_rois=True, thickness=THICKNESS)
+i = 5
+b = np.load(INPUT_PATH + '/' + file_list[i])['arr_0']
+X, y = load_patient(file_list[5], discard_empty_nodules=False, output_rois=False, thickness=THICKNESS)
+X = np.asarray(X)
+preds = model.predict(X, verbose=1)
+
+plotting.multiplot(X[22])
+plotting.multiplot(X[71])
+plotting.multiplot(X[130])
+plotting.multiplot(X[168])
+
+
+[(preds[i],i) for i in range(len(preds)) if y[i]==1]
+np.mean(preds)
+np.mean(y)
+
+model.evaluate(X, y, verbose=1)
+
+from sklearn import metrics
+metrics.auc(y,preds,reorder=True)
+
+
+
+X, y = load_patient(file_list[5], discard_empty_nodules=False, output_rois=False, thickness=THICKNESS)
+X = np.asarray(X)
+model.evaluate(X, y, verbose=1)
+preds = model.predict(X, verbose=1)
+metrics.auc(y,preds,reorder=True)
 
 # ### Performance test
 # import random

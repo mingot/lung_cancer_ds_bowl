@@ -42,76 +42,92 @@ def intersection_regions(r1, r2):
     return overlapArea
 
 
+# Results TP:25, FP:1420, TN:141532, FN:112 with 180 FNNI for 33 patients evaluated with 143089 patches
+# Precision:1.7, Accuracy:98.9, Sensitivity:18.2, Specificity:99.0
+# AUC: 0.4999
+
 
 # FINAL CSV LOADING -----------------------------------------------------------------
 
+INTERSECTION_AREA_TH = 0.1  # intersection/union to be considered matched region
+PREDICTION_TH = 0.8         # prediction threshold
+
 ## Generate features, score for each BB and store them
-tp, tp_ni, fp, fn, eval_candidates = 0, 0, 0, 0, 0
-real, pred = [], []
-for idx, filename in enumerate(file_list):  # to extract form .csv
-    #filename = "luna_126631670596873065041988320084.npz"
-    print "Patient %s (%d/%d)" % (filename, idx, len(file_list))
+tp, fp, fn, tn = 0, 0, 0, 0
+total_nodules, fnni, patients_scored, total_rois = 0, 0, 0, 0
+real, pred = [], []  # for auc predictions
+with open(NODULES_FILE+'_output', 'w') as output_file:
+    output_file.write('filename,nslice,x,y,diameter,score,intersection_area\n')
 
-    if filename not in filenames_scored:
-        if filename not in filenames_scored_full:
-            print "++ Patient not scored"
-            continue
-        else:
-            print "++ Patient with no acceptable candidates"
+    for idx, filename in enumerate(file_list):  # to extract form .csv
+        print "Patient %s (%d/%d)" % (filename, idx, len(file_list))
 
-    patient = np.load(DATA_PATH + filename)['arr_0']
-    if patient.shape[0]!=3:  # skip labels without ground truth
-        print "++ Patient without ground truth"
-        continue
-
-    # candidate is going to be evaluated
-    eval_candidates +=1
-
-    slices = []
-    for nslice in range(patient.shape[1]):
-        if patient[2,nslice].any()!=0:
-            slices.append(nslice)
-
-    df_node2 = df_node[(df_node['filename']==filename)]
-
-    for idx, row in df_node[df_node['filename']==filename].iterrows():
-        # row = df_node[(df_node['filename']==filename)].iloc[300]
-        cx = int(row['x'])  # row
-        cy = int(row['y'])  # column
-        z = int(row['nslice'])
-        score = float(row['score'])
-        r = int(ceil(row['diameter']/2.))
-
-        # Get the score of the region (ground truth)
-        if np.sum(patient[2,z])!=0:
-            regions = extract_regions_from_heatmap(patient[2,z])
-        else:
-            if score>0.8:
-                fp+=1
-            continue
-
-        if len(regions)>1:
-            print 'Patient: %s has more than 1 region at slice %d' % (filename, z)
-        a = AuxRegion([cx - r, cy - r, cx + r + 1, cy + r + 1])  # x1, y1, x2, y2
-        intersection_area = intersection_regions(a,regions[0])
-
-        # auc
-        real.append(int(intersection_area>0.1))
-        pred.append(score)
-
-        # confusion matrix
-        if intersection_area>0.1:
-            if score>0.8:
-                tp+=1
+        if filename not in filenames_scored:
+            if filename not in filenames_scored_full:
+                print "++ Patient not scored"
+                continue
             else:
-                tp_ni+=1  # roi candidates not identified by DL network
-            if z in slices:
-                slices.remove(z)
-        elif intersection_area<0.3 and score>0.8:
-            fp+=1
+                print "++ Patient with no acceptable candidates"
 
-    fn += len(slices)
-    print "Results TP:%d, TPNI:%d, FP:%d FN:%d of %d candidates" % (tp,tp_ni,fp,fn,len(df_node[df_node['filename']==filename].index))
+        # load patient
+        patient = np.load(DATA_PATH + filename)['arr_0']
+        if patient.shape[0]!=3:  # skip labels without ground truth
+            print "++ Patient without ground truth"
+            continue
 
-print "Results TP:%d, TPNI:%d, FP:%d FN:%d for %d patients evaluated" % (tp,tp_ni,fp,fn,eval_candidates)
-print "AUC: %.4f" % metrics.auc(real,pred)
+        # candidate is going to be evaluated
+        patients_scored +=1
+
+        # track all the positive regions to compute the nodule regions not identified
+        total_nodule_regions, found_nodule_regions = [], set()
+        for nslice in range(patient.shape[1]):
+            if patient[2,nslice].any()!=0:
+                regions = extract_regions_from_heatmap(patient[2,nslice])
+                regions = [(nslice, r) for r in regions]
+                total_nodule_regions.extend(regions)
+        total_nodules += len(total_nodule_regions)
+
+        for idx, row in df_node[df_node['filename']==filename].iterrows():
+            cx, cy, nslice = int(row['x']), int(row['y']), int(row['nslice'])
+            score, rad = float(row['score']), int(ceil(row['diameter']/2.))
+
+            # Get the ground truth regions
+            if np.sum(patient[2,nslice]) != 0:  # if nodules in the slice, extract the interesection area
+                regions_real = [r[1] for r in total_nodule_regions if r[0]==nslice]  # select regions for this slice
+                candidate_region = AuxRegion([cx - rad, cy - rad, cx + rad + 1, cy + rad + 1])  # x1, y1, x2, y2
+                intersections = [intersection_regions(candidate_region, nodule_region) for nodule_region in regions_real]
+                intersection_area = max(intersections)
+
+                if intersection_area >= INTERSECTION_AREA_TH:  # account the region to measure not found regions
+                    found_region = regions_real[np.argmax(intersections)]
+                    found_nodule_regions.add(found_region)
+            else:
+                intersection_area = 0
+
+            # auc
+            real.append(int(intersection_area >= INTERSECTION_AREA_TH))
+            pred.append(score)
+
+            # confusion matrix
+            if   intersection_area >= INTERSECTION_AREA_TH and score >  PREDICTION_TH:
+                tp += 1
+            elif intersection_area >= INTERSECTION_AREA_TH and score <= PREDICTION_TH:
+                fn += 1
+            elif intersection_area <  INTERSECTION_AREA_TH and score >  PREDICTION_TH:
+                fp += 1
+            elif intersection_area <  INTERSECTION_AREA_TH and score <= PREDICTION_TH:
+                tn += 1
+
+            output_file.write('%s,%d,%d,%d,%.2f,%.3f,%.2f\n' % (filename, nslice, cx, cy, 2*rad, score, intersection_area))  # TODO: remove
+
+        num_rois = len(df_node[df_node['filename']==filename].index)
+        total_rois += num_rois
+        fnni += (len(total_nodule_regions) - len(found_nodule_regions))
+        print "++ %d ROI candidates, %d real nodules, %d identified" % (num_rois, len(total_nodule_regions), len(found_nodule_regions))
+        print "++ Results TP:%d, FP:%d, TN:%d, FN:%d with %d FNNI regions of %d ROIs candidates" % (tp,fp,tn,fn,fnni,num_rois)
+
+print "\n\n"
+print "***********************"
+print "Results TP:%d, FP:%d, TN:%d, FN:%d with (%d/%d) FNNI for %d patients evaluated with %d patches" % (tp,fp,tn,fn,fnni,total_nodules,patients_scored,total_rois)
+print "Precision:%.1f, Accuracy:%.1f, Sensitivity:%.1f, Specificity:%.1f" % (tp*100.0/(tp+fp), (tp+tn)*100.0/(tp+fp+tn+fn), tp*100.0/(tp+fn), tn*100.0/(tn+fp))
+print "AUC: %.4f" % metrics.roc_auc_score(real,pred)
