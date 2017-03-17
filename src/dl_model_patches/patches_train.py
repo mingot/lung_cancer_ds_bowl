@@ -67,7 +67,7 @@ def calc_ratio(r):
 
 def augment_bbox(r, margin=5):
     """Increase pixels by margin."""
-    r.bbox = (r.bbox[0]-margin, r.bbox[1]-margin, r.bbox[2]+margin, r.bbox[3]+margin)
+    r.bbox = (max(r.bbox[0]-margin,0), max(r.bbox[1]-margin,0), r.bbox[2]+margin, r.bbox[3]+margin)
     return r
 
 
@@ -224,7 +224,7 @@ def load_patient(filename, discard_empty_nodules=True, output_rois=False, thickn
         if not output_rois:  # when not testing, compute labels
             regions_real = get_regions(nodules_mask, threshold=np.mean(nodules_mask))
             labels, stats = get_labels_from_regions(regions_real, regions_pred)
-        # logging.info('ROIs stats for slice %d: %s' % (j, str(stats)))
+            logging.info('++ ROIs stats for slice %d: %s' % (j, str(stats)))
 
         # if ok append
         last_slice = j
@@ -406,12 +406,38 @@ with open(OUTPUT_CSV, write_method) as file:
 
 
 
-# ## Checking
-# b = np.load(os.path.join(INPUT_PATH, filename))['arr_0']
-# for j in range(b.shape[1]):
-#     if np.sum(b[2,j])!=0:
-#         print j
-# plotting.plot_mask(b[0,96], b[2,96])
+## Checking
+filename = 'luna_129007566048223160327836686225.npz'
+b = np.load(os.path.join(INPUT_PATH, filename))['arr_0']
+for j in range(b.shape[1]):
+    if np.sum(b[2,j])!=0:
+        print j
+
+nslice = 95
+plotting.plot_mask(b[0,nslice], b[2,nslice])
+
+X, y, rois = load_patient(filename, discard_empty_nodules=False, output_rois=True, thickness=THICKNESS)
+print 'hola'
+
+for nslice in range(b.shape[1]):
+    if np.sum(b[2,nslice])!=0:
+        regions_pred = [r[1] for r in rois if r[0]==nslice]
+        regions_real = get_regions(b[2,nslice])
+        labels, stats = get_labels_from_regions(regions_real, regions_pred)
+        print nslice, stats
+
+sel_regions = []
+for r in rois:
+    sel_nslice, region = r
+    if sel_nslice==nslice:
+        sel_regions.append(region)
+
+plotting.plot_bb(b[0,nslice], sel_regions)
+
+
+### quality checks for ROIs detection
+for filename in file_list:
+    X, y = load_patient(filename, discard_empty_nodules=True, output_rois=False, thickness=0)
 
 
 
@@ -429,19 +455,8 @@ with open(OUTPUT_CSV, write_method) as file:
 #                 print "Filename %s, slice %d, area %s" % (filename, j, str(calc_area(region)))
 
 
-# ### Performance test
-# import random
-# file_list = os.listdir(INPUT_PATH)
-# random.shuffle(file_list)
-# NUM = 5
-#
-# tstart = time()
-# for i in range(NUM):
-#     X, y, rois = load_patient(file_list[i], discard_empty_nodules=False, output_rois=True, thickness=THICKNESS)
-# print (time() - tstart)/NUM
-#
-#
-#
+
+
 # ### Individual checks
 # plotting.multiplot(X[2300])
 # b = np.load(INPUT_PATH+'/'+filename)['arr_0']
@@ -475,6 +490,16 @@ with open(OUTPUT_CSV, write_method) as file:
 # for idx, region in enumerate(sel_regions):
 #     if calc_area(region)>1500:
 #         print idx, calc_area(region)
+
+
+
+# ### Performance test
+# import random
+# file_list = os.listdir(INPUT_PATH)
+# random.shuffle(file_list)
+# NUM = 5
 #
-# ## checking image aumentation
-#
+# tstart = time()
+# for i in range(NUM):
+#     X, y, rois = load_patient(file_list[i], discard_empty_nodules=False, output_rois=True, thickness=THICKNESS)
+# print (time() - tstart)/NUM

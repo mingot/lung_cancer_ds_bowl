@@ -6,6 +6,7 @@ import numpy as np
 import os
 from math import ceil
 from dl_utils.heatmap import extract_regions_from_heatmap
+from sklearn import metrics
 import matplotlib.pyplot as plt
 
 
@@ -46,6 +47,7 @@ def intersection_regions(r1, r2):
 
 ## Generate features, score for each BB and store them
 tp, tp_ni, fp, fn, eval_candidates = 0, 0, 0, 0, 0
+real, pred = [], []
 for idx, filename in enumerate(file_list):  # to extract form .csv
     #filename = "luna_126631670596873065041988320084.npz"
     print "Patient %s (%d/%d)" % (filename, idx, len(file_list))
@@ -92,6 +94,12 @@ for idx, filename in enumerate(file_list):  # to extract form .csv
             print 'Patient: %s has more than 1 region at slice %d' % (filename, z)
         a = AuxRegion([cx - r, cy - r, cx + r + 1, cy + r + 1])  # x1, y1, x2, y2
         intersection_area = intersection_regions(a,regions[0])
+
+        # auc
+        real.append(int(intersection_area>0.1))
+        pred.append(score)
+
+        # confusion matrix
         if intersection_area>0.1:
             if score>0.8:
                 tp+=1
@@ -106,3 +114,4 @@ for idx, filename in enumerate(file_list):  # to extract form .csv
     print "Results TP:%d, TPNI:%d, FP:%d FN:%d of %d candidates" % (tp,tp_ni,fp,fn,len(df_node[df_node['filename']==filename].index))
 
 print "Results TP:%d, TPNI:%d, FP:%d FN:%d for %d patients evaluated" % (tp,tp_ni,fp,fn,eval_candidates)
+print "AUC: %.4f" % metrics.auc(real,pred)
