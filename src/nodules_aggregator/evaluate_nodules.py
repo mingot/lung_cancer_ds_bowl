@@ -54,7 +54,7 @@ PREDICTION_TH = 0.8  # prediction threshold
 
 ## Generate features, score for each BB and store them
 tp, fp, fn, tn = 0, 0, 0, 0
-fnni, patients_scored, total_rois = 0, 0, 0
+total_nodules, fnni, patients_scored, total_rois = 0, 0, 0, 0
 real, pred = [], []  # for auc predictions
 for idx, filename in enumerate(file_list):  # to extract form .csv
     if idx>10:
@@ -86,6 +86,7 @@ for idx, filename in enumerate(file_list):  # to extract form .csv
             regions = extract_regions_from_heatmap(patient[2,nslice])
             regions = [(nslice, r) for r in regions]
             total_nodule_regions.extend(regions)
+    total_nodules += len(total_nodule_regions)
 
     for idx, row in df_node[df_node['filename']==filename].iterrows():
         cx, cy, nslice = int(row['x']), int(row['y']), int(row['nslice'])
@@ -132,6 +133,6 @@ for idx, filename in enumerate(file_list):  # to extract form .csv
 
 print "\n\n"
 print "***********************"
-print "Results TP:%d, FP:%d, TN:%d, FN:%d with %d FNNI for %d patients evaluated with %d patches" % (tp,fp,tn,fn,fnni,patients_scored,total_rois)
+print "Results TP:%d, FP:%d, TN:%d, FN:%d with (%d/%d) FNNI for %d patients evaluated with %d patches" % (tp,fp,tn,fn,fnni,total_nodules,patients_scored,total_rois)
 print "Precision:%.1f, Accuracy:%.1f, Sensitivity:%.1f, Specificity:%.1f" % (tp*100.0/(tp+fp), (tp+tn)*100.0/(tp+fp+tn+fn), tp*100.0/(tp+fn), tn*100.0/(tn+fp))
 print "AUC: %.4f" % metrics.auc(real,pred,reorder=True)
