@@ -122,4 +122,5 @@ for idx, filename in enumerate(file_list):  # to extract form .csv
     print "Results TP:%d, FP:%d, TN:%d, FN:%d with %d FNNI regions of %d ROIs candidates" % (tp,fp,tn,fn,fnni,num_rois)
 
 print "Results TP:%d, FP:%d, TN:%d, FN:%d with %d FNNI for %d patients evaluated with %d patches" % (tp,fp,tn,fn,fnni,patients_scored,total_rois)
+print "Precision:%.1f, Accuracy:%.1f, Sensitivity:%.1f, Specificity:%.1f" % (tp*100.0/(tp+fp), (tp+tn)*100.0/(tp+fp+tn+fn), tp*100.0/(tp+fn), tn*100.0/(tn+fp))
 print "AUC: %.4f" % metrics.auc(real,pred,reorder=True)
