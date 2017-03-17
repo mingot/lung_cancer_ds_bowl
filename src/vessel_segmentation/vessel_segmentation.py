@@ -2,7 +2,7 @@ import itk
 import os
 import SimpleITK as sitk
 import numpy as np
-from utils.reading import get_number_of_nodules
+from ..utils.reading import get_number_of_nodules
 
 def count_number_of_lost_nodules(nodules_slice_mask, vessel_mask):
     """
