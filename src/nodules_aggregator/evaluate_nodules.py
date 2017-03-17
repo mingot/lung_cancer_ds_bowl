@@ -60,7 +60,6 @@ with open(NODULES_FILE+'_output', 'w') as output_file:
     output_file.write('filename,nslice,x,y,diameter,score,intersection_area\n')
 
     for idx, filename in enumerate(file_list):  # to extract form .csv
-        if idx>10: break
         print "Patient %s (%d/%d)" % (filename, idx, len(file_list))
 
         if filename not in filenames_scored:
