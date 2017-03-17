@@ -22,8 +22,8 @@ input_path = '/mnt/hd2/preprocessed4'
 model_path = '/mnt/hd2/models/'
 BATCH_SIZE = 20
 
-model = ResnetBuilder().build_resnet_18((512,1,512),1)
-model.load_weights(model_path + 'jc_sampleresnet18_v0.hdf5')
+#model = ResnetBuilder().build_resnet_18((512,1,512),1)
+model.load(model_path + 'jc_sampleresnet18_v0.hdf5') #load_weights y load son diff
 
 fieldnames = ['id', 'min','mean','max']
 file_list = os.listdir(input_path)
