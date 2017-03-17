@@ -7,6 +7,7 @@ import random
 import os.path
 import numpy as np
 from time import time
+from keras.models import load_model
 from keras import backend as K
 from keras.optimizers import Adam
 from numpy.random import binomial
@@ -23,8 +24,7 @@ model_path = '/mnt/hd2/models/'
 BATCH_SIZE = 20
 
 #model = ResnetBuilder().build_resnet_18((512,1,512),1)
-model.load(model_path + 'jc_sampleresnet18_v0.hdf5') #load_weights y load son diff
-
+model = load_model(model_path + 'jc_sampleresnet18_v0.hdf5')
 fieldnames = ['id', 'min','mean','max']
 file_list = os.listdir(input_path)
 len_list = len(file_list)
