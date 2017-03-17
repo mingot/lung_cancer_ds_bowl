@@ -120,7 +120,7 @@ with open(NODULES_FILE+'_output', 'w') as output_file:
             elif intersection_area <  INTERSECTION_AREA_TH and score <= PREDICTION_TH:
                 tn += 1
 
-            output_file.write('%s,%d,%d,%d,%.3f,%.5f,%.5f\n' % (filename, nslice, r.centroid[0], r.centroid[1], r.equivalent_diameter, score, intersection_area))  # TODO: remove
+            output_file.write('%s,%d,%d,%d,%.3f,%.5f,%.5f\n' % (filename, nslice, cx, cy, 2*rad, score, intersection_area))  # TODO: remove
 
         num_rois = len(df_node[df_node['filename']==filename].index)
         total_rois += num_rois
