@@ -51,7 +51,7 @@ real, pred = [], []
 for idx, filename in enumerate(file_list):  # to extract form .csv
     #filename = "luna_126631670596873065041988320084.npz"
     print "Patient %s (%d/%d)" % (filename, idx, len(file_list))
-    if idx>20:
+    if idx>50:
         break
 
 
