@@ -19,7 +19,9 @@ import pandas as pd
 # patient_path = PATH_LUNG + 'data/preprocessed5_sample'
 csv_out = 'data/tiny_dl_example_augmented.csv'
 csv_in = 'data/tiny_dl_example.csv'
-patient_path = "/home/sergi/all/devel/big/lung_cancer_ds_bowl/preprocessed5/"
+# csv_in = 'data/output_model_teixi_luna2.csv'
+# patient_path = "/home/sergi/all/devel/big/lung_cancer_ds_bowl/preprocessed5/"
+patient_path = "/media/sergi/Seagate Expansion Drive/preprocessed5/"
 
 # read csv from deep learning and write new csv
 splm.process_pipeline_csv(

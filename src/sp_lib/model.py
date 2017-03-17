@@ -43,8 +43,8 @@ def extract_patch(
         if verbose: 
             print 'Slice: {} CX: {} CY: {}'.format(z, cx, cy)
         
-        x = range(cx - r, cx + r + 1)
-        y = range(cy - r, cy + r + 1)
+        x = range(max(0, cx - r), min(512, cx + r + 1))
+        y = range(max(0, cy - r), min(512, cy + r + 1))
     
         hu = np_pat[0, z]
         hu[hu < C - W/2] = C - W/2
@@ -103,7 +103,13 @@ def process_img(img, lung_mask, return_images=False):
     # 2 detect edges
     #ex_2 = sks.active_contour(ex_1, )
     #ex_2 = skf.canny(ex_1)
-    thresh = skfi.threshold_otsu(ex_1)
+    
+    # exception if image has only one colour
+    try:
+        thresh = skfi.threshold_otsu(ex_1)
+    except TypeError: # blank image
+        return None
+        
     ex_2 = skm.closing(ex_1 > thresh, square(3))
     
     # plt.imshow(ex_2)
@@ -308,7 +314,7 @@ def process_pipeline_csv(
         
     
     list_patient = df_dl_filter['patientid'].unique()
-    
+    print 'Total of patients: {}'.format(len(list_patient))
     # list of data frames
     df_out = []
     for pat in list_patient:
