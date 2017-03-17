@@ -2,7 +2,7 @@ import itk
 import os
 import SimpleITK as sitk
 import numpy as np
-from ..utils.reading import get_number_of_nodules
+from utils.reading import get_number_of_nodules
 
 def count_number_of_lost_nodules(nodules_slice_mask, vessel_mask):
     """
@@ -100,4 +100,4 @@ if __name__ == "__main__":
         original_nodules, post_mask_nodules = count_nodules(patient[2], vessel_mask)
         print("Patient: " + file.split('/')[-1])
         print("Original nodules: \t\t\t\t" + str(original_nodules))
-        print("Number of nodules afther aplying the mask: " + str(post_mask_nodules))
+        print("Number of nodules after applying the mask: " + str(post_mask_nodules))
