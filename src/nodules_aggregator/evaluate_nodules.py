@@ -49,10 +49,11 @@ INTERSECTION_AREA_TH = 0.1  # intersection/union to be considered matched region
 PREDICTION_TH = 0.8  # prediction threshold
 
 ## Generate features, score for each BB and store them
-tp, tp_ni, fp, fn, eval_candidates, total_rois = 0, 0, 0, 0, 0, 0
+tp, fp, fn, tn = 0, 0, 0, 0
+fnni, patients_scored, total_rois = 0, 0, 0
 real, pred = [], []  # for auc predictions
 for idx, filename in enumerate(file_list):  # to extract form .csv
-    if idx>50:
+    if idx>10:
         break
 
     #filename = "luna_126631670596873065041988320084.npz"
@@ -72,14 +73,13 @@ for idx, filename in enumerate(file_list):  # to extract form .csv
         continue
 
     # candidate is going to be evaluated
-    eval_candidates +=1
+    patients_scored +=1
 
-    # slices with nodules
-    slices = []
+    # track all the positive regions to compute the nodule regions not identified
+    total_nodule_regions = []
     for nslice in range(patient.shape[1]):
         if patient[2,nslice].any()!=0:
-            slices.append(nslice)
-
+            total_nodule_regions.extend(extract_regions_from_heatmap(patient[2,nslice]))
 
     for idx, row in df_node[df_node['filename']==filename].iterrows():
         # row = df_node[(df_node['filename']==filename)].iloc[300]
@@ -90,40 +90,36 @@ for idx, filename in enumerate(file_list):  # to extract form .csv
         r = int(ceil(row['diameter']/2.))
 
         # Get the ground truth regions
-        if np.sum(patient[2,z])!=0:
-            regions = extract_regions_from_heatmap(patient[2,z])
-        else:  # if no nodules, skip row and count as FP
-            if score > PREDICTION_TH:
-                fp+=1
-            # auc
-            real.append(0)
-            pred.append(score)
-            continue
-
-        if len(regions)>1:
-            print 'Patient: %s has more than 1 region at slice %d' % (filename, z)
-        a = AuxRegion([cx - r, cy - r, cx + r + 1, cy + r + 1])  # x1, y1, x2, y2
-        intersection_area = intersection_regions(a,regions[0])
+        if np.sum(patient[2,z]) != 0:  # if nodules in the slice, extract real regions
+            regions_real = extract_regions_from_heatmap(patient[2,z])
+            candidate_region = AuxRegion([cx - r, cy - r, cx + r + 1, cy + r + 1])  # x1, y1, x2, y2
+            intersection_area = max([intersection_regions(candidate_region, nodule_region) for nodule_region in regions_real])
+        else:
+            intersection_area = 0
 
         # auc
         real.append(int(intersection_area >= INTERSECTION_AREA_TH))
         pred.append(score)
 
         # confusion matrix
-        if intersection_area >= INTERSECTION_AREA_TH:
-            if score > PREDICTION_TH:
-                tp+=1
-            else:
-                tp_ni+=1  # roi candidates not identified by DL network
-            if z in slices:
-                slices.remove(z)
-        elif intersection_area < INTERSECTION_AREA_TH and score > PREDICTION_TH:
-            fp+=1
+        if   intersection_area >= INTERSECTION_AREA_TH and score >  PREDICTION_TH:
+            tp += 1
+        elif intersection_area >= INTERSECTION_AREA_TH and score <= PREDICTION_TH:
+            fn += 1
+        elif intersection_area <  INTERSECTION_AREA_TH and score >  PREDICTION_TH:
+            fp += 1
+        elif intersection_area <  INTERSECTION_AREA_TH and score <= PREDICTION_TH:
+            tn += 1
 
-    fn += len(slices)
+        # # remove region
+        # if intersection_area >= INTERSECTION_AREA_TH and candidate_region in total_nodule_regions:
+        #     total_nodule_regions.remove(candidate_region)
+
+
+    fnni += len(total_nodule_regions)
     num_rois = len(df_node[df_node['filename']==filename].index)
     total_rois += num_rois
-    print "Results TP:%d, TPNI:%d, FP:%d FN:%d of %d ROIs candidates" % (tp,tp_ni,fp,fn,num_rois)
+    print "Results TP:%d, FP:%d, TN:%d, FN:%d with %d FNNI regions of %d ROIs candidates" % (tp,fp,tn,fn,fnni,num_rois)
 
-print "Results TP:%d, TPNI:%d, FP:%d FN:%d for %d patients evaluated with %d patches" % (tp,tp_ni,fp,fn,eval_candidates,total_rois)
+print "Results TP:%d, FP:%d, TN:%d, FN:%d with %d FNNI for %d patients evaluated with %d patches" % (tp,fp,tn,fn,fnni,patients_scored,total_rois)
 print "AUC: %.4f" % metrics.auc(real,pred,reorder=True)
