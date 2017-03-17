@@ -19,12 +19,13 @@ sys.path.append("/home/felix/lung_cancer_ds_bowl/src/jc_dl/")
 from dl_networks.sample_resnet import ResnetBuilder
 from dl_utils.tb_callback import TensorBoard
 
-input_path = '/mnt/hd2/preprocessed4'
+input_path = '/mnt/hd2/preprocessed5'
 model_path = '/mnt/hd2/models/'
-BATCH_SIZE = 20
+BATCH_SIZE = 100
 
-#model = ResnetBuilder().build_resnet_18((512,1,512),1)
-model = load_model(model_path + 'jc_sampleresnet18_v0.hdf5')
+model = ResnetBuilder().build_resnet_50((512,1,512),1)
+model.load_weights(model_path + 'jc_sampleresnet18_v1.hdf5')
+
 fieldnames = ['id', 'min','mean','max']
 file_list = os.listdir(input_path)
 len_list = len(file_list)
@@ -35,6 +36,7 @@ with open('output.csv', 'w') as csvfile:
     for i, filename in enumerate(file_list):
         print("processing file number " +str(i)+" of "+str(len_list))
         X = np.load(os.path.join(input_path, filename))['arr_0'][0,:,:,:]
+        X.reshape([ X.shape[0], 1, X.shape[1], X.shape[2] ])
         Y = model.predict(X,batch_size=BATCH_SIZE)
         min_, max_, mean_, std_ = K.min(Y), K.max(Y), K.mean(Y), K.std(Y)
         writer.writerow({'id': filename, 'min': min_, 'max': max_, 'mean':mean_, 'std':std_})
