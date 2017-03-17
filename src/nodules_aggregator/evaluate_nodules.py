@@ -57,7 +57,7 @@ tp, fp, fn, tn = 0, 0, 0, 0
 total_nodules, fnni, patients_scored, total_rois = 0, 0, 0, 0
 real, pred = [], []  # for auc predictions
 for idx, filename in enumerate(file_list):  # to extract form .csv
-    if idx>10:
+    if idx>50:
         break
 
     #filename = "luna_126631670596873065041988320084.npz"
