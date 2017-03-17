@@ -51,6 +51,9 @@ real, pred = [], []
 for idx, filename in enumerate(file_list):  # to extract form .csv
     #filename = "luna_126631670596873065041988320084.npz"
     print "Patient %s (%d/%d)" % (filename, idx, len(file_list))
+    if idx>20:
+        break
+
 
     if filename not in filenames_scored:
         if filename not in filenames_scored_full:
@@ -114,4 +117,4 @@ for idx, filename in enumerate(file_list):  # to extract form .csv
     print "Results TP:%d, TPNI:%d, FP:%d FN:%d of %d candidates" % (tp,tp_ni,fp,fn,len(df_node[df_node['filename']==filename].index))
 
 print "Results TP:%d, TPNI:%d, FP:%d FN:%d for %d patients evaluated" % (tp,tp_ni,fp,fn,eval_candidates)
-print "AUC: %.4f" % metrics.auc(real,pred)
+print "AUC: %.4f" % metrics.auc(real,pred,reorder=True)
