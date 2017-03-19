@@ -19,7 +19,7 @@ cands = which(luna_data$target==0)
 data0 = luna_data[sample(cands,0.1*length(cands))]
 luna_data = rbind(luna_data[target==1], data0)
 mean(luna_data$target)
-vars_model <-c("nslice","x","y","diameter","max_intensity","min_intensity","mean_intensity","target")
+vars_model <- c("nslice","x","y","diameter","max_intensity","min_intensity","mean_intensity","target")
 luna_data <- luna_data[,.SD,.SDcols = vars_model]
 luna_data[,target := as.factor(target)]
 

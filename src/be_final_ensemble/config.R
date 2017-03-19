@@ -106,3 +106,19 @@ predictCv <- function(tr, test_task) {
   
   return(preds)
 }
+
+LogLossBinary = function(actual, predicted) {
+  eps = 1e-15
+  predicted <- pmin(pmax(predicted, eps), 1-eps)
+  - (sum(actual * log(predicted) + (1 - actual) * log(1 - predicted))) / length(actual)
+}
+
+my.AUC <- function (actual, predicted) {
+  decimals = 6
+  predicted <- round(predicted, decimals)
+  r <- as.numeric(rank(predicted))
+  n_pos <- as.numeric(sum(actual == 1))
+  n_neg <- as.numeric(length(actual) - n_pos)
+  auc <- (sum(r[actual == 1]) - n_pos * (n_pos + 1) / 2) / (n_pos *  n_neg)
+  return(auc)
+}
