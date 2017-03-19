@@ -2,21 +2,38 @@
 source(paste0(path_repo,"src/be_final_ensemble/fp_model.R"))
 
 # DATA ---------------------------------------------------------------------------------------------
+
+## PATIENTS AND LABELS Data ------------------------------------------------------------------------
+
+## Add variables to all sets
+annotations = fread(paste0(path_repo,"data/stage1_labels.csv"))
+submission = fread(paste0(path_repo,"/data/stage1_sample_submission.csv"))
+submission[,cancer := 0]
+
+#Saving which patients are belong to training
+patients_train <- annotations[,id]
+
+# Binding train and scoring
+patients <- rbind(annotations,submission)
+setnames(patients, "id", "patientid")
+patients[,cancer := as.factor(cancer)]
+
+
 ## UNET Data ---------------------------------------------------------------------------------------
 
 vars_nodules <- fread(paste0(path_repo,"data/final_model/dl_unet_v01_mingot_pc.csv"))
 vars_nodules[,patientid:=gsub("dsb_","",patientid)]
-
-
 vars_nodules = vars_nodules[(!x %in% extreme_values) & (!y %in% extreme_values)]  
 
 ### Filter by fp model
 vars_nodules[,nodule_pred:=predictCv(fp_model, vars_nodules)]
 vars_nodules = vars_nodules[nodule_pred>quantile(nodule_pred,0.9)]
+# Merging with patients to get cancer info for easier debug
+vars_nodules <- merge(vars_nodules,patients,all.x=T,by = "patientid")
 
 
 ## RESNET Data -------------------------------------------------------------------------------------
-
+#vars_nodules_patches <- fread(paste0("D:/dsb/nodules_patches_v05_augmented.csv"))
 vars_nodules_patches <- data.table(read.csv(paste0("D:/dsb/noduls_patches_v05_backup3.csv")))
 vars_nodules_patches <- vars_nodules_patches[grep("dsb_",filename)][!is.na(x)]
 vars_nodules_patches[,patientid:=gsub(".npz|dsb_","",filename)]
@@ -36,7 +53,7 @@ vars_nodules <- merge(
   )
 ## Aggregating to patient level
 dataset_nodules <- aggregate_patient(vars_nodules)
-
+dataset_nodules[,cancer:=NULL]
 
 ## SLICES OUTPUT Data ------------------------------------------------------------------------------
 
@@ -47,27 +64,10 @@ dataset_slices[,patient_id := gsub(".npz|dsb_","",patient_id)]
 setnames(dataset_slices,"patient_id","patientid")
 
 
-## PATIENTS AND LABELS Data ------------------------------------------------------------------------
-
-## Add variables to all sets
-annotations = fread(paste0(path_repo,"data/stage1_labels.csv"))
-submission = fread(paste0(path_repo,"/data/stage1_sample_submission.csv"))
-submission[,cancer := 0]
-
-#Saving which patients are belong to training
-patients_train <- annotations[,id]
-
-# Binding train and scoring
-dataset <- rbind(annotations,submission)
-setnames(dataset, "id", "patientid")
-dataset[,cancer := as.factor(cancer)]
-
 ## Joining all the patient variables
-dataset_final <- merge(dataset, dataset_nodules, all.x=T, by="patientid")
+dataset_final <- merge(patients,dataset_nodules,all.x = T, by = "patientid")
 dataset_final <- merge(dataset_final,dataset_slices,all.x = T, by = "patientid")
-#dataset_final[,no_slices_with_nodules := as.numeric(is.na(total_nodules_unet))]
 dataset_final <- na_to_zeros(dataset_final,names(dataset_final))
-
 
 # SEPARATING TRAIN AND SCORING ---------------------------------------------------------------------
 
@@ -120,7 +120,7 @@ summary(final_model$learner.model)
 parallelStop()
 
 # train_metrics
-preds <- predictCv(tr_cv,train_task)
+preds <- predictCv(tr,train_task)
 target <- data_train[,as.numeric(as.character(cancer))]
 my.AUC(target,preds)
 LogLossBinary(target,preds)
@@ -172,7 +172,7 @@ aggregate_patient <- function(dt) {
                    mean_score_patches = mean(score_patches,na.rm=T)
                    
   ),
-  by=.(patientid)]
+  by=.(patientid,cancer)]
   
   final_df[!is.finite(max_intensity), max_intensity:=0]
   final_df[!is.finite(min_intensity), min_intensity:=0]
