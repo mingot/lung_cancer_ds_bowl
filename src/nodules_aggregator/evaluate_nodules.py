@@ -124,7 +124,7 @@ with open(NODULES_FILE+'_output', 'w') as output_file:
         total_rois += num_rois
         fnni += (len(total_nodule_regions) - len(found_nodule_regions))
         print "++ %d ROI candidates, %d real nodules, %d identified" % (num_rois, len(total_nodule_regions), len(found_nodule_regions))
-        print "++ Results TP:%d, FP:%d, TN:%d, FN:%d with %d FNNI regions of %d ROIs candidates" % (tp,fp,tn,fn,fnni,num_rois)
+        print "++ Global Results TP:%d, FP:%d, TN:%d, FN:%d with %d FNNI regions" % (tp,fp,tn,fn,fnni)
 
 print "\n\n"
 print "***********************"

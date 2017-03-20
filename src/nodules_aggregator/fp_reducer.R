@@ -14,9 +14,11 @@ setnames(hog, c('V1','V2','V3','V4','V5'), c('score','filename','nslice','x','y'
 
 luna_data = merge(luna_data, hog, by=c("filename","nslice","x","y"), all.x=T)
 
+
 # TEMPORAL!!
 luna_data = luna_data[!is.na(score)]
 luna_data[,target:=as.numeric(score>0.1)]  # dangerous!
+
 
 ## reduce 0's to make it balanced
 cands = which(luna_data$target==0)

@@ -2,9 +2,9 @@
 import numpy as np
 import SimpleITK as sitk
 from glob import glob
-from reading import *
-from plotting import *
-from preprocessing import *
+from utils.reading import *
+from utils.plotting import *
+from utils.preprocessing import *
 from scipy.ndimage.morphology import *
 from skimage import filters
 from skimage.measure import label, regionprops, moments, moments_central, moments_normalized, moments_hu
@@ -323,3 +323,22 @@ if __name__ == "__main__":
             writer.writeheader()
             for i, d in zip(patient_files, features):
                 writer.writerow(dict({'patient_id': i}, **d))
+
+
+# Mingot
+wp = os.environ['LUNG_PATH']
+INPUT_PATH = wp + 'data/preprocessed5_sample'
+p = np.load(INPUT_PATH + '/' + patient_files[5])['arr_0']
+
+lung_mask = __center_lungs__(p[1], p[0].shape)
+lung_height = __get_lung_height__(lung_mask)
+chest_mask = __segment_chest__(p[0], lung_mask)
+
+sex_predictors = __get_sex_predictors__(p[0], chest_mask)
+
+cube_show_slider(p[0])
+cube_show_slider(chest_mask)
+cube_show_slider(lung_mask)
+plt.imshow(lung_mask[85])
+plt.imshow(chest_mask[85])
+plt.show()
