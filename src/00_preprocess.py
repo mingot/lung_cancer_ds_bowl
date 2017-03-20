@@ -46,7 +46,7 @@ COMMON_SPACING = [2, 0.7, 0.7]
 # Execution parameters
 SHOW_DEBUG_IMAGES = False
 SAVE_DEBUG_IMAGES = False
-SAVE_RESULTS = False
+SAVE_RESULTS = True
 
 # Overwriting parameters by console
 for arg in sys.argv[1:]:
