@@ -374,7 +374,7 @@ with open(OUTPUT_CSV, write_method) as file:
 
     # write the header if the file is new
     if write_method=='w':
-        file.write('filename,nslice,x,y,diameter,score\n')
+        file.write('patientid,nslice,x,y,diameter,score\n')
 
     for idx, filename in enumerate(file_list):
         if filename in previous_filenames:

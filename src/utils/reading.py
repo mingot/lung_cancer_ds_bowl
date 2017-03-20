@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import dicom
 import os
+from skimage.draw import circle
 import scipy.ndimage
 import matplotlib.pyplot as plt
 import SimpleITK as sitk
@@ -156,6 +157,7 @@ def load_slices_from_mhd(img_file):
 
 def make_mask(center, diam, z, width, height, spacing, origin):
     """
+    DEPRECATED: now it's done with skimage.draw.circle
     Center : centers of circles px -- list of coordinates x,y,z
     diam : diameters of circles px -- diameter
     widthXheight : pixel dim of image
@@ -183,20 +185,22 @@ def make_mask(center, diam, z, width, height, spacing, origin):
             p_x = spacing[0]*v_x + origin[0]
             p_y = spacing[1]*v_y + origin[1]
             if np.linalg.norm(center-np.array([p_x,p_y,z]))<=diam:
-                mask[int((p_y-origin[1])/spacing[1]),int((p_x-origin[0])/spacing[0])] = 1
+                mask[int((p_y - origin[1])/spacing[1]),int((p_x - origin[0])/spacing[0])] = 1
     return mask
 
 
 def create_mask(img, nodules):
+    changed = False  # TODO: REMOVE!
 
     if len(nodules) == 0:
-        return None
+        return None, changed
 
     height, width, num_z = img.GetSize()
     masks = np.zeros([num_z, height, width], dtype=np.uint8)
     origin = np.array(img.GetOrigin())  # x,y,z  Origin in world coordinates (mm)
     spacing = np.array(img.GetSpacing())  # spacing of voxels in world coor. (mm)
 
+    # row = nodules.iloc[0]
     for index, row in nodules.iterrows():
         node_x = row["coordX"]
         node_y = row["coordY"]
@@ -205,11 +209,21 @@ def create_mask(img, nodules):
         center = np.array([node_x, node_y, node_z])  # nodule center
         v_center = np.rint((center-origin)/spacing)  # nodule center in voxel space
 
+        if v_center[0]<0 and v_center[1]<0:  # fix for when the origin invert the coordinates
+            v_center[0] = -v_center[0]
+            v_center[1] = -v_center[1]
+            changed = True
+
         for i_z in range(int(v_center[2])-1,int(v_center[2])+2):
-            new_mask = make_mask(center, diam, i_z*spacing[2] + origin[2], width, height, spacing, origin)
+
+            #new_mask = make_mask(center, diam, i_z*spacing[2] + origin[2], width, height, spacing, origin)  # deprecated
+            new_mask = np.zeros([height, width], dtype=np.uint8)
+            rr, cc = circle(v_center[1], v_center[0], int(diam/spacing[0]+15)/2)
+            new_mask[rr, cc] = 1
+
             masks[i_z, :, :] = np.bitwise_or(masks[i_z, :, :], new_mask)
 
-    return masks
+    return masks, changed  # TODO: CHANGE
 
 
 def get_number_of_nodules(nodules_slice_mask):
