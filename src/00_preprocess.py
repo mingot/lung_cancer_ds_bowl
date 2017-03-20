@@ -74,7 +74,7 @@ if PIPELINE == 'dsb':
 elif PIPELINE == 'lidc':
     patient_files = os.listdir(INPUT_FOLDER)
     try:
-        df_nodules = pandas.read_csv(NODULES_PATH)
+        df_nodules = pd.read_csv(NODULES_PATH)
         df_nodules.index = df_nodules['case']
     except Exception as e:
         print (e)
