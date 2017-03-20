@@ -355,7 +355,7 @@ file_list = os.listdir(INPUT_PATH)
 file_list = [g for g in file_list if g.startswith('luna_')]
 random.shuffle(file_list)
 file_list_train = [os.path.join(INPUT_PATH, fp) for fp in file_list if fp in patients_with_annotations]
-file_list_test = [os.path.join(INPUT_PATH, fp) for fp in os.listdir(VALIDATION_PATH) if fp in patients_with_annotations]
+file_list_test = [os.path.join(VALIDATION_PATH, fp) for fp in os.listdir(VALIDATION_PATH) if fp in patients_with_annotations]
 #PATIENTS_VALIDATION = 20  # number of patients to validate the model on
 #file_list_test = file_list[-PATIENTS_VALIDATION:]
 #file_list_train = file_list[:-PATIENTS_VALIDATION]
@@ -521,38 +521,6 @@ model.fit_generator(generator=chunks(file_list_train, batch_size=32, thickness=1
 #     if calc_area(region)>1500:
 #         print idx, calc_area(region)
 
-
-## evaluation checks
-i = 0
-#X, y, rois = load_patient(file_list[i], discard_empty_nodules=False, output_rois=True, thickness=THICKNESS)
-i = 5
-b = np.load(INPUT_PATH + '/' + file_list[i])['arr_0']
-X, y = load_patient(file_list[5], discard_empty_nodules=False, output_rois=False, thickness=THICKNESS)
-X = np.asarray(X)
-preds = model.predict(X, verbose=1)
-
-plotting.multiplot(X[22])
-plotting.multiplot(X[71])
-plotting.multiplot(X[130])
-plotting.multiplot(X[168])
-
-
-[(preds[i],i) for i in range(len(preds)) if y[i]==1]
-np.mean(preds)
-np.mean(y)
-
-model.evaluate(X, y, verbose=1)
-
-from sklearn import metrics
-metrics.auc(y,preds,reorder=True)
-
-
-
-X, y = load_patient(file_list[5], discard_empty_nodules=False, output_rois=False, thickness=THICKNESS)
-X = np.asarray(X)
-model.evaluate(X, y, verbose=1)
-preds = model.predict(X, verbose=1)
-metrics.auc(y,preds,reorder=True)
 
 # ### Performance test
 # import random
