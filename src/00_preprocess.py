@@ -85,6 +85,7 @@ elif PIPELINE == 'luna':
     df_nodules = pd.read_csv(NODULES_PATH)
 
 ## get IDS in the output folder to avoid recalculating them
+current_ids = []
 # current_ids = glob(OUTPUT_FOLDER+'/*.npz')
 # current_ids = [x.split('_')[-1].replace('.npz', '') for x in current_ids]
 
