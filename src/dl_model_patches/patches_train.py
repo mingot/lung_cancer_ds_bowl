@@ -295,13 +295,10 @@ def chunks(file_list=[], batch_size=32, augmentation_times=4, concurrent_patient
             i = 0
             for X_batch, y_batch in data_generator.flow(X, y, batch_size=batch_size, shuffle=True):
                 i += 1
-                print "Generator iteration: %d" % i
                 if i*len(X_batch) > len(X)*augmentation_times:  # stop when we have augmented enough the batch
-                    logging.info("Exit generator")
                     break
                 if X_batch.shape[0] != batch_size:  # ensure correct batch size
                     continue
-                # print X_batch.shape, y_batch.shape
                 yield X_batch, y_batch
 
 
