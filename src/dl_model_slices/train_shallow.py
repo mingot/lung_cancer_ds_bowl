@@ -30,7 +30,7 @@ train_files = [os.path.join(train_input_path,g) for g in os.listdir(train_input_
 #test_files = [os.path.join(test_input_path,g) for g in os.listdir(test_input_path) if g.startswith('luna_')][:TEST_CASES]
 tb = TensorBoard(log_dir=logs_path, histogram_freq=1, write_graph=False, write_images=False) # replace keras.callbacks.TensorBoard
 model = ResnetBuilder().build_resnet_18((512,1,512),1)
-sgd = keras.optimizers.SGD(lr=0.5e-4, decay=1e-1, momentum=0.9, nesterov=True, clipnorm=1.)
+sgd = keras.optimizers.SGD(lr=0.5e-4, decay=1e-3, momentum=0.99, nesterov=True, clipnorm=1.)
 model.compile(optimizer=Adam(lr=0.5e-4), loss='binary_crossentropy', metrics=['accuracy'])
 
 if USE_EXISTING: model.load_weights(model_path + 'fg_sampleresnet18_v0.hdf5')
