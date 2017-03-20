@@ -85,12 +85,10 @@ elif PIPELINE == 'luna':
     df_nodules = pd.read_csv(NODULES_PATH)
 
 ## get IDS in the output folder to avoid recalculating them
-current_ids = []
-# current_ids = glob(OUTPUT_FOLDER+'/*.npz')
-# current_ids = [x.split('_')[-1].replace('.npz', '') for x in current_ids]
+current_ids = glob(OUTPUT_FOLDER+'/*.npz')
+current_ids = [x.split('_')[-1].replace('.npz', '') for x in current_ids]
 
 
-patient_files = ['/home/shared/data/luna/images/1.3.6.1.4.1.14519.5.2.1.6279.6001.148447286464082095534651426689.mhd']
 # Main loop over the ensemble of the database
 times = []
 for patient_file in patient_files:
