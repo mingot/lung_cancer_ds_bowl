@@ -3,9 +3,6 @@ library(data.table)
 library(mlr)
 library(parallelMap)
 library(ggplot2)
-#PATHS
-path_repo <<- "D:/lung_cancer_ds_bowl/"
-
 # Constants
 extreme_values <<- c(0,511)
 

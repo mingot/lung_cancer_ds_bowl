@@ -1,4 +1,8 @@
+
+## REPO PATH, CANVIAR SI ES NECESSARI
+path_repo <<- "D:/lung_cancer_ds_bowl/"
 # IMPORTS ------------------------------------------------------------------------------------------
+source(paste0(path_repo,"src/be_final_ensemble/config.R"))
 source(paste0(path_repo,"src/be_final_ensemble/fp_model.R"))
 
 # DATA ---------------------------------------------------------------------------------------------
@@ -34,7 +38,7 @@ vars_nodules <- merge(vars_nodules,patients,all.x=T,by = "patientid")
 
 ## RESNET Data -------------------------------------------------------------------------------------
 #vars_nodules_patches <- fread(paste0("D:/dsb/nodules_patches_v05_augmented.csv"))
-vars_nodules_patches <- data.table(read.csv(paste0("D:/dsb/noduls_patches_v05_backup3.csv")))
+vars_nodules_patches <- data.table(read.csv(paste0("D:/dsb/noduls_patches_v05_backup3.csv"))) ## PATH
 vars_nodules_patches <- vars_nodules_patches[grep("dsb_",filename)][!is.na(x)]
 vars_nodules_patches[,patientid:=gsub(".npz|dsb_","",filename)]
 vars_nodules_patches[,filename := NULL]
@@ -120,7 +124,7 @@ summary(final_model$learner.model)
 parallelStop()
 
 # train_metrics
-preds <- predictCv(tr,train_task)
+preds <- predictCv(final_model,train_task)
 target <- data_train[,as.numeric(as.character(cancer))]
 my.AUC(target,preds)
 LogLossBinary(target,preds)
