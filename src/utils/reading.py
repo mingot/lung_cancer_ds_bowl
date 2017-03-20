@@ -190,10 +190,9 @@ def make_mask(center, diam, z, width, height, spacing, origin):
 
 
 def create_mask(img, nodules):
-    changed = False  # TODO: REMOVE!
 
     if len(nodules) == 0:
-        return None, changed
+        return None
 
     height, width, num_z = img.GetSize()
     masks = np.zeros([num_z, height, width], dtype=np.uint8)
@@ -223,7 +222,7 @@ def create_mask(img, nodules):
 
             masks[i_z, :, :] = np.bitwise_or(masks[i_z, :, :], new_mask)
 
-    return masks, changed  # TODO: CHANGE
+    return masks
 
 
 def get_number_of_nodules(nodules_slice_mask):

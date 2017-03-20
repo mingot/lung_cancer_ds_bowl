@@ -89,6 +89,7 @@ current_ids = glob(OUTPUT_FOLDER+'/*.npz')
 current_ids = [x.split('_')[-1].replace('.npz', '') for x in current_ids]
 
 
+patient_files = ['/home/shared/data/luna/images/1.3.6.1.4.1.14519.5.2.1.6279.6001.148447286464082095534651426689.mhd']
 # Main loop over the ensemble of the database
 times = []
 for patient_file in patient_files:
@@ -254,58 +255,3 @@ for patient_file in patient_files:
 
 print('Average time per image: {}'.format(np.mean(times)))
 
-
-
-# #### TESTING
-# wp = os.environ.get('LUNG_PATH', '')
-# ORIGINAL_PATH = os.path.join(wp, 'data/luna/luna0123')
-# PROC_PATH = os.path.join(wp, 'data/preprocessed5_sample/')   #'/mnt/hd2/preprocessed5/'
-#
-# patient_files = glob(ORIGINAL_PATH + '/*.mhd')  # patients from subset
-#
-# patient_file = patient_files[0]
-# patient_file = '/Users/mingot/Projectes/kaggle/ds_bowl_lung/data/luna/luna0123/1.3.6.1.4.1.14519.5.2.1.6279.6001.123697637451437522065941162930.mhd'
-# patient_file =  '/Users/mingot/Projectes/kaggle/ds_bowl_lung/data/luna/luna0123/1.3.6.1.4.1.14519.5.2.1.6279.6001.127965161564033605177803085629.mhd'
-#
-# COMMON_SPACING = [2, 0.7, 0.7]
-# for patient_file in patient_files:
-#     patient = sitk.ReadImage(patient_file)
-#     patient_pixels = sitk.GetArrayFromImage(patient)  # indexes are z,y,x
-#     originalSpacing = [patient.GetSpacing()[2], patient.GetSpacing()[0], patient.GetSpacing()[1]]
-#     pat_id = patient_file.split('.')[-2]
-#
-#     # load nodules
-#     seriesuid = patient_file.split('/')[-1].replace('.mhd', '')
-#     nodules = df_nodules[df_nodules["seriesuid"] == seriesuid]  # filter nodules for patient
-#     nodule_mask, changed = reading.create_mask(img=patient, nodules=nodules)
-#
-#     if not changed:
-#         continue
-#
-#     print 'Fixing patient %s' % patient_file
-#
-#     # resampling
-#     nodule_mask, new_spacing = preprocessing.resample(nodule_mask, spacing=originalSpacing, new_spacing=COMMON_SPACING)
-#
-#     # cropping
-#     nodule_mask = preprocessing.resize_image(nodule_mask, size=512)
-#
-#     # storing
-#     proc_filename = PROC_PATH + "%s_%s.npz" % ('luna', pat_id)
-#     try:
-#         old = np.load(proc_filename)['arr_0']
-#     except:
-#         print 'No file: %s' % proc_filename
-#         continue
-#     old[2] = nodule_mask
-#     #np.savez_compressed(proc_filename)
-#     print 'done!'
-#
-#
-# for j in range(nodule_mask.shape[0]):
-#     if np.sum(nodule_mask[j])!=0:
-#         print j
-#
-# plotting.plot_mask(old[0,69], nodule_mask[69])
-# plotting.plot_mask(old[0,107], old[2,107])
-# plotting.cube_show_slider(patient_pixels)
