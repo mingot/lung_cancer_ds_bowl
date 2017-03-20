@@ -48,16 +48,10 @@ names_change <- c("x","y","diameter","score")
 setnames(vars_nodules_patches,names_change,paste0(names_change,"_patches"))
 
 ## Merging al nodules variables
-vars_nodules <- merge(
-  vars_nodules,
-  vars_nodules_patches,
-  all.x = T,
-  all.y=T,
-  by = c("nslice","patientid")
-  )
+vars_nodules <- rbind(vars_nodules,vars_nodules_patches,fill = TRUE)
+vars_nodules[,cancer := NULL]
 ## Aggregating to patient level
 dataset_nodules <- aggregate_patient(vars_nodules)
-dataset_nodules[,cancer:=NULL]
 
 ## SLICES OUTPUT Data ------------------------------------------------------------------------------
 
@@ -176,7 +170,7 @@ aggregate_patient <- function(dt) {
                    mean_score_patches = mean(score_patches,na.rm=T)
                    
   ),
-  by=.(patientid,cancer)]
+  by=.(patientid)]
   
   final_df[!is.finite(max_intensity), max_intensity:=0]
   final_df[!is.finite(min_intensity), min_intensity:=0]
@@ -221,6 +215,7 @@ aggregate_patient <- function(dt) {
       nslice_nodule_patch = nslice,
       diameter_nodule_patch = diameter_patches)
     ]
+  max_score_nodule <- max_score_nodule[,.SD[1],patientid]
   final_df <- merge(final_df,max_score,all.x = T, by="patientid")
   final_df <- merge(final_df,max_score_nodule,all.x=T,by = "patientid")
   final_df <- na_to_zeros(
