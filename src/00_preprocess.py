@@ -107,8 +107,6 @@ for patient_file in patient_files:
             pat_id = patient_file
 
         elif PIPELINE == 'luna':
-            patient_file = patient_files[3]  # good: 1, 3, 5, 7
-
             patient = sitk.ReadImage(patient_file) 
             patient_pixels = sitk.GetArrayFromImage(patient)  # indexes are z,y,x
             originalSpacing = [patient.GetSpacing()[2], patient.GetSpacing()[0], patient.GetSpacing()[1]]
