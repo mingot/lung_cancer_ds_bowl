@@ -1,4 +1,8 @@
+
+## REPO PATH, CANVIAR SI ES NECESSARI
+path_repo <<- "D:/lung_cancer_ds_bowl/"
 # IMPORTS ------------------------------------------------------------------------------------------
+source(paste0(path_repo,"src/be_final_ensemble/config.R"))
 source(paste0(path_repo,"src/be_final_ensemble/fp_model.R"))
 
 # DATA ---------------------------------------------------------------------------------------------
@@ -34,7 +38,7 @@ vars_nodules <- merge(vars_nodules,patients,all.x=T,by = "patientid")
 
 ## RESNET Data -------------------------------------------------------------------------------------
 #vars_nodules_patches <- fread(paste0("D:/dsb/nodules_patches_v05_augmented.csv"))
-vars_nodules_patches <- data.table(read.csv(paste0("D:/dsb/noduls_patches_v05_backup3.csv")))
+vars_nodules_patches <- data.table(read.csv(paste0("D:/dsb/noduls_patches_v05_backup3.csv"))) ## PATH
 vars_nodules_patches <- vars_nodules_patches[grep("dsb_",filename)][!is.na(x)]
 vars_nodules_patches[,patientid:=gsub(".npz|dsb_","",filename)]
 vars_nodules_patches[,filename := NULL]
@@ -44,16 +48,10 @@ names_change <- c("x","y","diameter","score")
 setnames(vars_nodules_patches,names_change,paste0(names_change,"_patches"))
 
 ## Merging al nodules variables
-vars_nodules <- merge(
-  vars_nodules,
-  vars_nodules_patches,
-  all.x = T,
-  all.y=T,
-  by = c("nslice","patientid")
-  )
+vars_nodules <- rbind(vars_nodules,vars_nodules_patches,fill = TRUE)
+vars_nodules[,cancer := NULL]
 ## Aggregating to patient level
 dataset_nodules <- aggregate_patient(vars_nodules)
-dataset_nodules[,cancer:=NULL]
 
 ## SLICES OUTPUT Data ------------------------------------------------------------------------------
 
@@ -120,7 +118,7 @@ summary(final_model$learner.model)
 parallelStop()
 
 # train_metrics
-preds <- predictCv(tr,train_task)
+preds <- predictCv(final_model,train_task)
 target <- data_train[,as.numeric(as.character(cancer))]
 my.AUC(target,preds)
 LogLossBinary(target,preds)
@@ -172,7 +170,7 @@ aggregate_patient <- function(dt) {
                    mean_score_patches = mean(score_patches,na.rm=T)
                    
   ),
-  by=.(patientid,cancer)]
+  by=.(patientid)]
   
   final_df[!is.finite(max_intensity), max_intensity:=0]
   final_df[!is.finite(min_intensity), min_intensity:=0]
@@ -217,6 +215,7 @@ aggregate_patient <- function(dt) {
       nslice_nodule_patch = nslice,
       diameter_nodule_patch = diameter_patches)
     ]
+  max_score_nodule <- max_score_nodule[,.SD[1],patientid]
   final_df <- merge(final_df,max_score,all.x = T, by="patientid")
   final_df <- merge(final_df,max_score_nodule,all.x=T,by = "patientid")
   final_df <- na_to_zeros(
