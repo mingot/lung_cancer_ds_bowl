@@ -8,7 +8,8 @@ PATH_LUNG = os.environ.get('LUNG_PATH')
 os.chdir(PATH_LUNG)
 
 # my crappy functions
-import sp_lib.model as splm
+# import sp_lib.model as splm
+from nodules_aggregator.extend_nodules import process_pipeline_csv
 import pandas as pd
 
 # example with patients:
@@ -19,13 +20,19 @@ import pandas as pd
 # patient_path = PATH_LUNG + 'data/preprocessed5_sample'
 csv_out = 'data/tiny_dl_example_augmented.csv'
 csv_in = 'data/tiny_dl_example.csv'
-patient_path = "/home/sergi/all/devel/big/lung_cancer_ds_bowl/preprocessed5/"
+# csv_in = 'data/output_model_teixi_luna2.csv'
+# csv_in = 'data/noduls_patches_v05_backup3_sample.csv'
+# patient_path = "/home/sergi/all/devel/big/lung_cancer_ds_bowl/preprocessed5/"
+patient_path = "/media/sergi/Seagate Expansion Drive/preprocessed5/"
 
 # read csv from deep learning and write new csv
-splm.process_pipeline_csv(
+process_pipeline_csv(
     csv_in=csv_in, 
     patient_path=patient_path, 
-    csv_out=csv_out)
-
+    csv_out=csv_out, 
+    patient_colname='patientid',
+    nCores=2)
+    
 df_augmented = pd.read_csv(csv_out)
 df_augmented.head()
+

@@ -20,7 +20,6 @@ from time import time
 import SimpleITK as sitk
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas
 import pandas as pd
 from PIL import Image
 
@@ -47,7 +46,7 @@ COMMON_SPACING = [2, 0.7, 0.7]
 # Execution parameters
 SHOW_DEBUG_IMAGES = False
 SAVE_DEBUG_IMAGES = False
-SAVE_RESULTS = False
+SAVE_RESULTS = True
 
 # Overwriting parameters by console
 for arg in sys.argv[1:]:
@@ -75,7 +74,7 @@ if PIPELINE == 'dsb':
 elif PIPELINE == 'lidc':
     patient_files = os.listdir(INPUT_FOLDER)
     try:
-        df_nodules = pandas.read_csv(NODULES_PATH)
+        df_nodules = pd.read_csv(NODULES_PATH)
         df_nodules.index = df_nodules['case']
     except Exception as e:
         print (e)
@@ -85,9 +84,10 @@ elif PIPELINE == 'luna':
     patient_files = glob(INPUT_FOLDER + '/*.mhd')  # patients from subset
     df_nodules = pd.read_csv(NODULES_PATH)
 
-# get IDS in the output folder to avoid recalculating them
+## get IDS in the output folder to avoid recalculating them
 current_ids = glob(OUTPUT_FOLDER+'/*.npz')
 current_ids = [x.split('_')[-1].replace('.npz', '') for x in current_ids]
+
 
 # Main loop over the ensemble of the database
 times = []
