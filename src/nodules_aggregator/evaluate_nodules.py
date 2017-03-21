@@ -18,12 +18,12 @@ NODULES_FILE = "/home/mingot/output/noduls_patches_v06.csv"  # NODULES_FILE = wp
 ## File loadgin
 df_node = pd.read_csv(NODULES_FILE, skiprows=[1977535])  # TODO: remove the skipeed row
 file_list = [g for g in os.listdir(DATA_PATH) if g.startswith('luna_')]
-filenames_scored_full = set(df_node['filename'])
+filenames_scored_full = set(df_node['patientid'])
 
 ## Filter nodules
 SCORE_THRESHOLD = 0.8
 # df_node = df_node[df_node['score']>SCORE_THRESHOLD]
-filenames_scored = set(df_node['filename'])
+filenames_scored = set(df_node['patientid'])
 
 ## Auxiliar functions
 class AuxRegion():
@@ -59,7 +59,7 @@ tp, fp, fn, tn = 0, 0, 0, 0
 total_nodules, fnni, patients_scored, total_rois = 0, 0, 0, 0
 real, pred = [], []  # for auc predictions
 with open(NODULES_FILE+'_output', 'w') as output_file:
-    output_file.write('filename,nslice,x,y,diameter,score,intersection_area\n')
+    output_file.write('patientid,nslice,x,y,diameter,score,intersection_area\n')
 
     for idx, filename in enumerate(file_list):  # to extract form .csv
         print "Patient %s (%d/%d)" % (filename, idx, len(file_list))
@@ -89,7 +89,7 @@ with open(NODULES_FILE+'_output', 'w') as output_file:
                 total_nodule_regions.extend(regions)
         total_nodules += len(total_nodule_regions)
 
-        for idx, row in df_node[df_node['filename']==filename].iterrows():
+        for idx, row in df_node[df_node['patientid']==filename].iterrows():
             cx, cy, nslice = int(row['x']), int(row['y']), int(row['nslice'])
             score, rad = float(row['score']), int(ceil(row['diameter']/2.))
 
@@ -122,7 +122,7 @@ with open(NODULES_FILE+'_output', 'w') as output_file:
 
             output_file.write('%s,%d,%d,%d,%.2f,%.3f,%.2f\n' % (filename, nslice, cx, cy, 2*rad, score, intersection_area))  # TODO: remove
 
-        num_rois = len(df_node[df_node['filename']==filename].index)
+        num_rois = len(df_node[df_node['patientid']==filename].index)
         total_rois += num_rois
         fnni += (len(total_nodule_regions) - len(found_nodule_regions))
         print "++ %d ROI candidates, %d real nodules, %d identified" % (num_rois, len(total_nodule_regions), len(found_nodule_regions))
