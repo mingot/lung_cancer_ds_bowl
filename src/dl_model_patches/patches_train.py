@@ -307,7 +307,7 @@ def chunks(file_list=[], batch_size=32, augmentation_times=4, concurrent_patient
 
 
 # PARAMETERS
-USE_EXISTING = False  # load previous model to continue training or test
+USE_EXISTING = True  # load previous model to continue training or test
 
 
 # PATHS
@@ -346,91 +346,93 @@ if USE_EXISTING:
 
 ### TRAINING -----------------------------------------------------------------
 
-## PATIENTS FILE LIST
-patients_with_annotations = pd.read_csv(NODULES_PATH)  # filter patients with no annotations to avoid having to read them
-patients_with_annotations = list(set(patients_with_annotations['seriesuid']))
-patients_with_annotations = ["luna_%s.npz" % p.split('.')[-1] for p in patients_with_annotations]
+# ## PATIENTS FILE LIST
+# patients_with_annotations = pd.read_csv(NODULES_PATH)  # filter patients with no annotations to avoid having to read them
+# patients_with_annotations = list(set(patients_with_annotations['seriesuid']))
+# patients_with_annotations = ["luna_%s.npz" % p.split('.')[-1] for p in patients_with_annotations]
+#
+# file_list = os.listdir(INPUT_PATH)
+# file_list = [g for g in file_list if g.startswith('luna_')]
+# random.shuffle(file_list)
+# file_list_train = [os.path.join(INPUT_PATH, fp) for fp in file_list if fp in patients_with_annotations]
+# file_list_test = [os.path.join(VALIDATION_PATH, fp) for fp in os.listdir(VALIDATION_PATH) if fp in patients_with_annotations]
+# #PATIENTS_VALIDATION = 20  # number of patients to validate the model on
+# #file_list_test = file_list[-PATIENTS_VALIDATION:]
+# #file_list_train = file_list[:-PATIENTS_VALIDATION]
+#
+# #ival = IntervalEvaluation(validation_data=(X_test, y_test), interval=10)
 
-file_list = os.listdir(INPUT_PATH)
-file_list = [g for g in file_list if g.startswith('luna_')]
-random.shuffle(file_list)
-file_list_train = [os.path.join(INPUT_PATH, fp) for fp in file_list if fp in patients_with_annotations]
-file_list_test = [os.path.join(VALIDATION_PATH, fp) for fp in os.listdir(VALIDATION_PATH) if fp in patients_with_annotations]
-#PATIENTS_VALIDATION = 20  # number of patients to validate the model on
-#file_list_test = file_list[-PATIENTS_VALIDATION:]
-#file_list_train = file_list[:-PATIENTS_VALIDATION]
-
-logging.info("Test patients: %s" % str(file_list_test))
-
-#ival = IntervalEvaluation(validation_data=(X_test, y_test), interval=10)
-
-model.fit_generator(generator=chunks(file_list_train, batch_size=32, thickness=1),
-                    samples_per_epoch=1280,  # make it small to update TB and CHECKPOINT frequently
-                    nb_epoch=500,
-                    verbose=1,
-                    callbacks=[tb, model_checkpoint],
-                    validation_data=chunks(file_list_test, batch_size=32, thickness=1, is_training=False),
-                    nb_val_samples=32*40,
-                    max_q_size=64,
-                    nb_worker=1)  # a locker is needed if increased the number of parallel workers
+# model.fit_generator(generator=chunks(file_list_train, batch_size=32, thickness=1),
+#                     samples_per_epoch=1280,  # make it small to update TB and CHECKPOINT frequently
+#                     nb_epoch=500,
+#                     verbose=1,
+#                     callbacks=[tb, model_checkpoint],
+#                     validation_data=chunks(file_list_test, batch_size=32, thickness=1, is_training=False),
+#                     nb_val_samples=32*40,
+#                     max_q_size=64,
+#                     nb_worker=1)  # a locker is needed if increased the number of parallel workers
 
 # ## CHECKS GENERATOR
 # for i in range(10):
-#     X, y = next(chunks(file_list_train[0:1], batch_size=4, thickness=1))
+#     X, y = next(chunks(file_list_train[1:3], batch_size=4, thickness=1))
 #     print X.shape, y.shape
+
+
+
 
 
 ### TESTING -----------------------------------------------------------------
 
 
-# ## Params and filepaths
-# THICKNESS = 1
-# write_method = 'w'
-# file_list = os.listdir(INPUT_PATH)
-# #file_list = [g for g in file_list if g.startswith('dsb_')]
-#
-#
-# ## if the OUTPUT_CSV file already exists, continue it
-# previous_filenames = set()
-# if os.path.exists(OUTPUT_CSV):
-#     write_method = 'a'
-#     with open(OUTPUT_CSV) as file:
-#         for l in file:
-#             previous_filenames.add(l.split(',')[0])
-#
-#
-# with open(OUTPUT_CSV, write_method) as file:
-#
-#     # write the header if the file is new
-#     if write_method=='w':
-#         file.write('patientid,nslice,x,y,diameter,score\n')
-#
-#     for idx, filename in enumerate(file_list):
-#         if filename in previous_filenames:
-#             continue
-#
-#         logging.info("Patient %s (%d/%d)" % (filename, idx, len(file_list)))
-#         try:
-#             X, y, rois = load_patient(filename, discard_empty_nodules=False, output_rois=True, thickness=THICKNESS)
-#
-#             if len(X)==0:
-#                 continue
-#
-#             X = np.asarray(X)
-#             if THICKNESS==0:
-#                 X = np.expand_dims(X, axis=1)
-#             preds = model.predict(X, verbose=1)
-#         except:
-#             logging.info("Error in patient %s, skipping" % filename)
-#             continue
-#
-#         for i in range(len(preds)):
-#             nslice, r = rois[i]
-#             # TODO: also output label
-#             file.write('%s,%d,%d,%d,%.3f,%.5f\n' % (filename, nslice, r.centroid[0], r.centroid[1], r.equivalent_diameter,preds[i]))
-#
-#             if preds[i]>0.8:
-#                 logging.info("++ Good candidate found with (nslice,x,y,diam,score): %d,%d,%d,%.2f,%.2f" % (nslice,r.centroid[0], r.centroid[1], r.equivalent_diameter,preds[i]))
+## Params and filepaths
+THICKNESS = 1
+write_method = 'w'
+file_list = [os.path.join(INPUT_PATH, fp) for fp in os.listdir(INPUT_PATH)]
+file_list += [os.path.join(VALIDATION_PATH, fp) for fp in os.listdir(VALIDATION_PATH)]
+#file_list = [g for g in file_list if g.startswith('dsb_')]
+
+
+## if the OUTPUT_CSV file already exists, continue it
+previous_filenames = set()
+if os.path.exists(OUTPUT_CSV):
+    write_method = 'a'
+    with open(OUTPUT_CSV) as file:
+        for l in file:
+            previous_filenames.add(l.split(',')[0])
+
+
+with open(OUTPUT_CSV, write_method) as file:
+
+    # write the header if the file is new
+    if write_method=='w':
+        file.write('patientid,nslice,x,y,diameter,score\n')
+
+    for idx, filename in enumerate(file_list):
+        if filename in previous_filenames:
+            continue
+
+        logging.info("Patient %s (%d/%d)" % (filename, idx, len(file_list)))
+        try:
+            X, y, rois = load_patient(filename, discard_empty_nodules=False, output_rois=True, thickness=THICKNESS)
+
+            if len(X)==0:
+                continue
+
+            X = np.asarray(X)
+            if THICKNESS==0:
+                X = np.expand_dims(X, axis=1)
+            preds = model.predict(X, verbose=1)
+        except:
+            logging.info("Error in patient %s, skipping" % filename)
+            continue
+
+        for i in range(len(preds)):
+            nslice, r = rois[i]
+            # TODO: also output label
+            file.write('%s,%d,%d,%d,%.3f,%.5f\n' % (filename, nslice, r.centroid[0], r.centroid[1], r.equivalent_diameter,preds[i]))
+
+            if preds[i]>0.8:
+                logging.info("++ Good candidate found with (nslice,x,y,diam,score): %d,%d,%d,%.2f,%.2f" % (nslice,r.centroid[0], r.centroid[1], r.equivalent_diameter,preds[i]))
 
 
 
