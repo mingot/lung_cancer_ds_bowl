@@ -177,7 +177,7 @@ train_datagen = ImageDataGenerator(
     vertical_flip=True
     )
 
-test_datagen = ImageDataGenerator(dim_ordering="th")
+test_datagen = ImageDataGenerator(dim_ordering="th")  # dummy for testing to have the same structure
 
 
 def load_patient(filename, discard_empty_nodules=True, output_rois=False, thickness=0):
@@ -192,7 +192,7 @@ def load_patient(filename, discard_empty_nodules=True, output_rois=False, thickn
     # filename = 'luna_121805476976020513950614465787.npz'
     # j = 46
     t_start = time()
-    #b = np.load(os.path.join(INPUT_PATH, filename))['arr_0']
+    # b = np.load(os.path.join(INPUT_PATH, filename))['arr_0']
     b = np.load(filename)['arr_0']
 
     # Check if it has nodules annotated
@@ -204,6 +204,14 @@ def load_patient(filename, discard_empty_nodules=True, output_rois=False, thickn
             aux[0] = b[0]
             aux[1] = b[1]
             b = aux
+
+    for j in range(b.shape[1]):
+        if np.sum(b[2,j])!=0:
+            print j
+
+    plotting.plot_mask(b[0,94], b[1,94])
+    plt.imshow(b[1,75])
+    plt.show()
 
     last_slice = -1e3  # big initialization
     slices = []
