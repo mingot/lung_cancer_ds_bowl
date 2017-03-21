@@ -16,8 +16,11 @@ DATA_PATH = '/mnt/hd2/preprocessed5/'  # DATA_PATH = wp + 'data/preprocessed5_sa
 NODULES_FILE = "/home/mingot/output/noduls_patches_v06.csv"  # NODULES_FILE = wp + 'personal/noduls_patches_v04_dsb.csv'
 
 ## File loadgin
-df_node = pd.read_csv(NODULES_FILE, skiprows=[1977535])  # TODO: remove the skipeed row
+df_node = pd.read_csv(NODULES_FILE)
 file_list = [g for g in os.listdir(DATA_PATH) if g.startswith('luna_')]
+pp = df_node['patientid'] #TODO: remove
+pp = [p.split('/')[-1] for p in pp]
+df_node['patientid'] = pp
 filenames_scored_full = set(df_node['patientid'])
 
 ## Filter nodules

@@ -429,7 +429,7 @@ with open(OUTPUT_CSV, write_method) as file:
         for i in range(len(preds)):
             nslice, r = rois[i]
             # TODO: also output label
-            file.write('%s,%d,%d,%d,%.3f,%.5f\n' % (filename, nslice, r.centroid[0], r.centroid[1], r.equivalent_diameter,preds[i]))
+            file.write('%s,%d,%d,%d,%.3f,%.5f\n' % (filename.split('/')[-1], nslice, r.centroid[0], r.centroid[1], r.equivalent_diameter,preds[i]))
 
             if preds[i]>0.8:
                 logging.info("++ Good candidate found with (nslice,x,y,diam,score): %d,%d,%d,%.2f,%.2f" % (nslice,r.centroid[0], r.centroid[1], r.equivalent_diameter,preds[i]))
