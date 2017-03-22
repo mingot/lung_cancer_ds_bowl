@@ -72,18 +72,21 @@ def load_patient_with_candidates(patient_filename, patient_nodules_df, thickness
     nslices = list(set(patient_nodules_df['nslice']))
 
     logging.info("Loading patient: %s" % patient_filename)
-
     X, y = [], []
     for nslice in nslices:
+
         sel_patient_nodules_df = patient_nodules_df[patient_nodules_df['nslice']==nslice]
         regions_pred = extract_regions_from_patient(patient, sel_patient_nodules_df)
         regions_real = common.get_regions(patient[2,nslice], threshold=np.mean(patient[2,nslice]))
         labels, stats = common.get_labels_from_regions(regions_real, regions_pred)
 
+
+
         # TODO: remove when filtering good candidates is done in the begining
         idx_sel = [i for i in range(len(regions_pred)) if labels[i]==1 or sel_patient_nodules_df.iloc[i]['score']>SCORE_TH]
         regions_pred = [regions_pred[i] for i in idx_sel]
         labels = [labels[i] for i in idx_sel]
+
 
         lung_image = patient[0, nslice]
         if thickness>0:  # add extra images as channels for thick resnet
@@ -91,6 +94,7 @@ def load_patient_with_candidates(patient_filename, patient_nodules_df, thickness
             if lung_image.shape[0] != 2*thickness + 1:  # skip the extremes
                 continue
         cropped_images = common.extract_crops_from_regions(img=lung_image, regions=regions_pred)
+
 
         X.extend(cropped_images)
         y.extend(labels)
@@ -103,7 +107,7 @@ train_datagen = ImageDataGenerator(dim_ordering="th", horizontal_flip=True, vert
 test_datagen = ImageDataGenerator(dim_ordering="th")  # dummy for testing to have the same structure
 
 
-def chunk_generator(X, y, filenames, nodules_df, thickness=0, batch_size=32, is_training=True):
+def chunk_generator(X_orig, y_orig, filenames, nodules_df, thickness=0, batch_size=32, is_training=True):
 
 
     while 1:
@@ -116,10 +120,10 @@ def chunk_generator(X, y, filenames, nodules_df, thickness=0, batch_size=32, is_
         #     X.extend(X_single)
         #     y.extend(y_single)
 
-        logging.info("Loaded batch of patients with %d/%d positives" % (np.sum(y), len(y)))
-        idx_sel = [i for i in range(len(X)) if y[i]==1 or random.uniform(0,1) < 1.2*np.mean(y)]
-        X = [X[i] for i in idx_sel]
-        y = [y[i] for i in idx_sel]
+        logging.info("Loaded batch of patients with %d/%d positives" % (np.sum(y_orig), len(y_orig)))
+        idx_sel = [i for i in range(len(X_orig)) if y_orig[i]==1 or random.uniform(0,1) < 1.2*np.mean(y_orig)]
+        X = [X_orig[i] for i in idx_sel]
+        y = [y_orig[i] for i in idx_sel]
         logging.info("Downsampled to %d/%d positives" % (np.sum(y), len(y)))
 
         # convert to np array and add extra axis (needed for keras)
