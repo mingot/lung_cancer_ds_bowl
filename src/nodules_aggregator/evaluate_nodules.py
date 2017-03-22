@@ -18,11 +18,10 @@ NODULES_FILE = "/home/mingot/lung_cancer_ds_bowl/output/noduls_patches_v06.csv" 
 OUTPUT_FILE = "/home/mingot/lung_cancer_ds_bowl/output/noduls_patches_v06_output.csv"  # NODULES_FILE = wp + 'personal/noduls_patches_v04_dsb.csv'
 
 ## File loading
+file_list = os.listdir(DATA_PATH) #+ os.listdir(VALIDATION_DATA_PATH)
 df_node = pd.read_csv(NODULES_FILE)
-file_list = os.listdir(DATA_PATH) + os.listdir(VALIDATION_DATA_PATH)
-pp = df_node['patientid'] #TODO: remove
-pp = [p.split('/')[-1] for p in pp]
-df_node['patientid'] = pp
+aux = [p.split('/')[-1] for p in df_node['patientid']]  #TODO: remove
+df_node['patientid'] = aux
 filenames_scored = set(df_node['patientid'])
 
 
