@@ -43,7 +43,7 @@ annotated = list(set(['luna_%s.npz' % p.split('.')[-1] for p in luna_df['seriesu
 # filter TP and FP of the suggested by DL1
 SCORE_TH = 0.7
 nodules_df = pd.read_csv(OUTPUT_DL1)
-nodules_df = nodules_df[nodules_df['score'] > SCORE_TH]
+#nodules_df = nodules_df[nodules_df['score'] > SCORE_TH]  # TODO: this filter should include the TN through the label
 nodules_df['patientid'] = [f.split('/')[-1] for f in nodules_df['patientid']]  # TODO: remove when fixed the patient id without whole path
 nodules_df['nslice'] = nodules_df['nslice'].astype(int)
 
@@ -75,16 +75,22 @@ def load_patient_with_candidates(patient_filename, patient_nodules_df, thickness
 
     X, y = [], []
     for nslice in nslices:
-        regions_pred = extract_regions_from_patient(patient, patient_nodules_df[patient_nodules_df['nslice']==nslice])
+        sel_patient_nodules_df = patient_nodules_df[patient_nodules_df['nslice']==nslice]
+        regions_pred = extract_regions_from_patient(patient, sel_patient_nodules_df)
+        regions_real = common.get_regions(patient[2,nslice], threshold=np.mean(patient[2,nslice]))
+        labels, stats = common.get_labels_from_regions(regions_real, regions_pred)
+
+        # TODO: remove when filtering good candidates is done in the begining
+        idx_sel = [i for i in range(len(regions_pred)) if labels[i]==1 or sel_patient_nodules_df.iloc[i]['score']>SCORE_TH]
+        regions_pred = [regions_pred[i] for i in idx_sel]
+        labels = [labels[i] for i in idx_sel]
+
         lung_image = patient[0, nslice]
         if thickness>0:  # add extra images as channels for thick resnet
             lung_image = patient[0,(nslice - thickness):(nslice + thickness + 1),:,:]
             if lung_image.shape[0] != 2*thickness + 1:  # skip the extremes
                 continue
         cropped_images = common.extract_crops_from_regions(img=lung_image, regions=regions_pred)
-
-        regions_real = common.get_regions(patient[2,nslice], threshold=np.mean(patient[2,nslice]))
-        labels, stats = common.get_labels_from_regions(regions_real, regions_pred)
 
         X.extend(cropped_images)
         y.extend(labels)
@@ -123,17 +129,18 @@ def chunk_generator(filenames, nodules_df, thickness=0, batch_size=32, is_traini
         # generator: if testing, do not augment data
         data_generator = train_datagen if is_training else test_datagen
 
-        i = 0
+        i, good = 0, 0
         for X_batch, y_batch in data_generator.flow(X, y, batch_size=batch_size, shuffle=is_training):
             logging.info("Data augmentaton iteration %d" % i)
-            if i*batch_size > len(X)*2:  # stop when we have augmented enough the batch
+            i += 1
+            if good*batch_size > len(X)*2 or i>10:  # stop when we have augmented enough the batch
                 #print 'leaving because augment'
                 break
             if X_batch.shape[0] != batch_size:  # ensure correct batch size
                 #print 'continue because batch sixe'
                 #print X_batch.shape, y_batch.shape
                 continue
-            i += 1
+            good += 1
             yield X_batch, y_batch
 
 
