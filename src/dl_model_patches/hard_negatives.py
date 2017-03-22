@@ -109,7 +109,7 @@ def chunk_generator(filenames, nodules_df, thickness=0, batch_size=32, is_traini
             y.extend(y_single)
 
         logging.info("Loaded batch of patients with %d/%d positives" % (np.sum(y), len(y)))
-        idx_sel = [i for i in range(len(X)) if y[i]==1 or random.uniform(0,1) < 1.1*np.mean(y)]
+        idx_sel = [i for i in range(len(X)) if y[i]==1 or random.uniform(0,1) < 1.2*np.mean(y)]
         X = [X[i] for i in idx_sel]
         y = [y[i] for i in idx_sel]
         logging.info("Downsampled to %d/%d positives" % (np.sum(y), len(y)))
@@ -126,7 +126,7 @@ def chunk_generator(filenames, nodules_df, thickness=0, batch_size=32, is_traini
         i = 0
         for X_batch, y_batch in data_generator.flow(X, y, batch_size=batch_size, shuffle=is_training):
             logging.info("Data augmentaton iteration %d" % i)
-            if i*len(batch_size) > len(X)*2:  # stop when we have augmented enough the batch
+            if i*batch_size > len(X)*2:  # stop when we have augmented enough the batch
                 #print 'leaving because augment'
                 break
             if X_batch.shape[0] != batch_size:  # ensure correct batch size
