@@ -16,7 +16,7 @@ DATA_PATH = '/mnt/hd2/preprocessed5/'  # DATA_PATH = wp + 'data/preprocessed5_sa
 VALIDATION_DATA_PATH = '/mnt/hd2/preprocessed5_validation_luna/'
 NODULES_FILE = "/home/mingot/lung_cancer_ds_bowl/output/noduls_patches_v06.csv"  # NODULES_FILE = wp + 'personal/noduls_patches_v04_dsb.csv'
 
-## File loadgin
+## File loading
 df_node = pd.read_csv(NODULES_FILE)
 file_list = [g for g in os.listdir(DATA_PATH) if g.startswith('luna_')]
 pp = df_node['patientid'] #TODO: remove
@@ -47,10 +47,6 @@ def intersection_regions(r1, r2):
     overlapArea = intersectionArea*1.0/unionArea  # This should be greater than 0.5 to consider it as a valid detection.
     return overlapArea
 
-
-# Results TP:25, FP:1420, TN:141532, FN:112 with 180 FNNI for 33 patients evaluated with 143089 patches
-# Precision:1.7, Accuracy:98.9, Sensitivity:18.2, Specificity:99.0
-# AUC: 0.4999
 
 
 # FINAL CSV LOADING -----------------------------------------------------------------
