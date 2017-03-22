@@ -28,6 +28,7 @@ filenames_scored_full = set(df_node['patientid'])
 SCORE_THRESHOLD = 0.8
 # df_node = df_node[df_node['score']>SCORE_THRESHOLD]
 filenames_scored = set(df_node['patientid'])
+print filenames_scored_full
 
 ## Auxiliar functions
 class AuxRegion():
