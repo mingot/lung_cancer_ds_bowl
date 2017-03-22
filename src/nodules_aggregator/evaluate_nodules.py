@@ -15,19 +15,16 @@ wp = os.environ['LUNG_PATH']
 DATA_PATH = '/mnt/hd2/preprocessed5/'  # DATA_PATH = wp + 'data/preprocessed5_sample/'
 VALIDATION_DATA_PATH = '/mnt/hd2/preprocessed5_validation_luna/'
 NODULES_FILE = "/home/mingot/lung_cancer_ds_bowl/output/noduls_patches_v06.csv"  # NODULES_FILE = wp + 'personal/noduls_patches_v04_dsb.csv'
+OUTPUT_FILE = "/home/mingot/lung_cancer_ds_bowl/output/noduls_patches_v06_output.csv"  # NODULES_FILE = wp + 'personal/noduls_patches_v04_dsb.csv'
 
 ## File loading
 df_node = pd.read_csv(NODULES_FILE)
-file_list = [g for g in os.listdir(DATA_PATH) if g.startswith('luna_')]
+file_list = os.listdir(DATA_PATH) + os.listdir(VALIDATION_DATA_PATH)
 pp = df_node['patientid'] #TODO: remove
 pp = [p.split('/')[-1] for p in pp]
 df_node['patientid'] = pp
-filenames_scored_full = set(df_node['patientid'])
-
-## Filter nodules
-SCORE_THRESHOLD = 0.8
-# df_node = df_node[df_node['score']>SCORE_THRESHOLD]
 filenames_scored = set(df_node['patientid'])
+
 
 ## Auxiliar functions
 class AuxRegion():
@@ -58,18 +55,14 @@ PREDICTION_TH = 0.8         # prediction threshold
 tp, fp, fn, tn = 0, 0, 0, 0
 total_nodules, fnni, patients_scored, total_rois = 0, 0, 0, 0
 real, pred = [], []  # for auc predictions
-with open(NODULES_FILE+'_output', 'w') as output_file:
+with open(OUTPUT_FILE, 'w') as output_file:
     output_file.write('patientid,nslice,x,y,diameter,score,intersection_area\n')
 
     for idx, filename in enumerate(file_list):  # to extract form .csv
         print "Patient %s (%d/%d)" % (filename, idx, len(file_list))
 
         if filename not in filenames_scored:
-            if filename not in filenames_scored_full:
-                print "++ Patient not scored"
-                continue
-            else:
-                print "++ Patient with no acceptable candidates"
+            print "++ Patient with no acceptable candidates"
 
         # load patient
         patient = np.load(DATA_PATH + filename)['arr_0']
