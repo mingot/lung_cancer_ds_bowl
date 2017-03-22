@@ -137,7 +137,6 @@ def chunk_generator(X_orig, y_orig, filenames, nodules_df, thickness=0, batch_si
 
         i, good = 0, 0
         for X_batch, y_batch in data_generator.flow(X, y, batch_size=batch_size, shuffle=is_training):
-            logging.info("Data augmentaton iteration %d" % i)
             i += 1
             if good*batch_size > len(X)*2 or i>100:  # stop when we have augmented enough the batch
                 #print 'leaving because augment'
@@ -151,7 +150,7 @@ def chunk_generator(X_orig, y_orig, filenames, nodules_df, thickness=0, batch_si
 
 
 X_train, y_train = [], []
-for filename in filenames_train[1:20]:
+for filename in filenames_train:
     patientid = filename.split('/')[-1]
     X_single, y_single = load_patient_with_candidates(filename, nodules_df[nodules_df['patientid']==patientid], thickness=1)
     X_train.extend(X_single)
@@ -159,7 +158,7 @@ for filename in filenames_train[1:20]:
 
 
 X_test, y_test = [], []
-for filename in filenames_test[1:10]:
+for filename in filenames_test:
     patientid = filename.split('/')[-1]
     X_single, y_single = load_patient_with_candidates(filename, nodules_df[nodules_df['patientid']==patientid], thickness=1)
     X_test.extend(X_single)
@@ -179,7 +178,7 @@ model_checkpoint = ModelCheckpoint(OUTPUT_MODEL, monitor='loss', save_best_only=
 
 
 model.fit_generator(generator=chunk_generator(X_train, y_train, filenames_train, nodules_df, batch_size=16, thickness=1),
-                    samples_per_epoch=128,  # make it small to update TB and CHECKPOINT frequently
+                    samples_per_epoch=1280,  # make it small to update TB and CHECKPOINT frequently
                     nb_epoch=500,
                     verbose=1,
                     callbacks=[tb, model_checkpoint],
