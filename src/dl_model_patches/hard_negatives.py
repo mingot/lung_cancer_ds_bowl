@@ -150,16 +150,18 @@ def chunk_generator(X_orig, y_orig, filenames, nodules_df, thickness=0, batch_si
 
 
 X_train, y_train = [], []
-for filename in filenames_train:
+for idx,filename in enumerate(filenames_train):
     patientid = filename.split('/')[-1]
+    logging.info("Progress %d/%d" % (idx,len(filenames_train)))
     X_single, y_single = load_patient_with_candidates(filename, nodules_df[nodules_df['patientid']==patientid], thickness=1)
     X_train.extend(X_single)
     y_train.extend(y_single)
 
 
 X_test, y_test = [], []
-for filename in filenames_test:
+for idx,filename in enumerate(filenames_test):
     patientid = filename.split('/')[-1]
+    logging.info("Progress %d/%d" % (idx,len(filenames_test)))
     X_single, y_single = load_patient_with_candidates(filename, nodules_df[nodules_df['patientid']==patientid], thickness=1)
     X_test.extend(X_single)
     y_test.extend(y_single)
