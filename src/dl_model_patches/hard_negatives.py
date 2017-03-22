@@ -52,13 +52,11 @@ filenames_train = [os.path.join(INPUT_PATH,f) for f in set(nodules_df['patientid
 filenames_test = [os.path.join(VALIDATION_PATH,f) for f in set(nodules_df['patientid']) if f[0:4]=='luna' and f in os.listdir(VALIDATION_PATH) and f in annotated]
 
 
-
-
 def extract_regions_from_patient(patient, nodules_df):
     regions = []
     for idx, row in nodules_df.iterrows():
         x, y, d = int(row['x']), int(row['y']), int(row['diameter']+10)
-        a = common.AuxRegion(bbox = [x-d/2, y-d/2, x+d/2, y+d/2])
+        a = common.AuxRegion(bbox = [max(0,x-d/2), max(0,y-d/2), x+d/2, y+d/2])
         regions.append(a)
     return regions
 
@@ -71,6 +69,7 @@ def load_patient_with_candidates(patient_filename, patient_nodules_df, thickness
     patient = np.load(patient_filename)['arr_0']
     nslices = list(set(patient_nodules_df['nslice']))
 
+
     logging.info("Loading patient: %s" % patient_filename)
     X, y = [], []
     for nslice in nslices:
@@ -81,12 +80,10 @@ def load_patient_with_candidates(patient_filename, patient_nodules_df, thickness
         labels, stats = common.get_labels_from_regions(regions_real, regions_pred)
 
 
-
         # TODO: remove when filtering good candidates is done in the begining
         idx_sel = [i for i in range(len(regions_pred)) if labels[i]==1 or sel_patient_nodules_df.iloc[i]['score']>SCORE_TH]
         regions_pred = [regions_pred[i] for i in idx_sel]
         labels = [labels[i] for i in idx_sel]
-
 
         lung_image = patient[0, nslice]
         if thickness>0:  # add extra images as channels for thick resnet
@@ -114,7 +111,7 @@ def chunk_generator(X_orig, y_orig, filenames, nodules_df, thickness=0, batch_si
 
         # X, y = [], []
         # random.shuffle(filenames)
-        # for filename in filenames[0:10]:
+        # for filename in filenames[0:30]:
         #     patientid = filename.split('/')[-1]
         #     X_single, y_single = load_patient_with_candidates(filename, nodules_df[nodules_df['patientid']==patientid], thickness=thickness)
         #     X.extend(X_single)
@@ -149,6 +146,7 @@ def chunk_generator(X_orig, y_orig, filenames, nodules_df, thickness=0, batch_si
             yield X_batch, y_batch
 
 
+
 X_train, y_train = [], []
 for idx,filename in enumerate(filenames_train):
     patientid = filename.split('/')[-1]
@@ -167,7 +165,6 @@ for idx,filename in enumerate(filenames_test):
     y_test.extend(y_single)
 
 ### TRAINING -----------------------------------------------------------------
-
 
 
 # Load model
