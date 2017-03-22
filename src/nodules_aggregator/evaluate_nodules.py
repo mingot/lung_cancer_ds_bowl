@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 ## PATHS AND FILES
 wp = os.environ['LUNG_PATH']
 DATA_PATH = '/mnt/hd2/preprocessed5/'  # DATA_PATH = wp + 'data/preprocessed5_sample/'
-DATA_PATH = '/mnt/hd2/preprocessed5_validation_luna/'
+VALIDATION_DATA_PATH = '/mnt/hd2/preprocessed5_validation_luna/'
 NODULES_FILE = "/home/mingot/output/noduls_patches_v06.csv"  # NODULES_FILE = wp + 'personal/noduls_patches_v04_dsb.csv'
 
 ## File loadgin
