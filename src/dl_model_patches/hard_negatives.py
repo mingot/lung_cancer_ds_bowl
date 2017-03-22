@@ -105,9 +105,9 @@ test_datagen = ImageDataGenerator(dim_ordering="th")  # dummy for testing to hav
 
 def chunk_generator(filenames, nodules_df, thickness=0, batch_size=32, is_training=True):
 
-    
+
     X, y = [], []
-    for filename in filenames:
+    for filename in filenames[1:20]:
         patientid = filename.split('/')[-1]
         X_single, y_single = load_patient_with_candidates(filename, nodules_df[nodules_df['patientid']==patientid], thickness=thickness)
         X.extend(X_single)
