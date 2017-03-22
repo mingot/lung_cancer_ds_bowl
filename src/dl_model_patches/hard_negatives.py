@@ -103,15 +103,8 @@ train_datagen = ImageDataGenerator(dim_ordering="th", horizontal_flip=True, vert
 test_datagen = ImageDataGenerator(dim_ordering="th")  # dummy for testing to have the same structure
 
 
-def chunk_generator(filenames, nodules_df, thickness=0, batch_size=32, is_training=True):
+def chunk_generator(X, y, filenames, nodules_df, thickness=0, batch_size=32, is_training=True):
 
-
-    X, y = [], []
-    for filename in filenames[1:20]:
-        patientid = filename.split('/')[-1]
-        X_single, y_single = load_patient_with_candidates(filename, nodules_df[nodules_df['patientid']==patientid], thickness=thickness)
-        X.extend(X_single)
-        y.extend(y_single)
 
     while 1:
 
@@ -153,6 +146,20 @@ def chunk_generator(filenames, nodules_df, thickness=0, batch_size=32, is_traini
             yield X_batch, y_batch
 
 
+X_train, y_train = [], []
+for filename in filenames_train[1:20]:
+    patientid = filename.split('/')[-1]
+    X_single, y_single = load_patient_with_candidates(filename, nodules_df[nodules_df['patientid']==patientid], thickness=thickness)
+    X_train.extend(X_single)
+    y_train.extend(y_single)
+
+
+X_test, y_test = [], []
+for filename in filenames_test[1:10]:
+    patientid = filename.split('/')[-1]
+    X_single, y_single = load_patient_with_candidates(filename, nodules_df[nodules_df['patientid']==patientid], thickness=thickness)
+    X_test.extend(X_single)
+    y_test.extend(y_single)
 
 ### TRAINING -----------------------------------------------------------------
 
@@ -167,12 +174,12 @@ model_checkpoint = ModelCheckpoint(OUTPUT_MODEL, monitor='loss', save_best_only=
 #     model.load_weights(OUTPUT_MODEL)
 
 
-model.fit_generator(generator=chunk_generator(filenames_train, nodules_df, batch_size=16, thickness=1),
+model.fit_generator(generator=chunk_generator(X_train, y_train, filenames_train, nodules_df, batch_size=16, thickness=1),
                     samples_per_epoch=128,  # make it small to update TB and CHECKPOINT frequently
                     nb_epoch=500,
                     verbose=1,
                     callbacks=[tb, model_checkpoint],
-                    validation_data=chunk_generator(filenames_test, nodules_df, batch_size=16, thickness=1, is_training=False),
+                    validation_data=chunk_generator(X_test, y_test, filenames_test, nodules_df, batch_size=16, thickness=1, is_training=False),
                     nb_val_samples=16*2,
                     max_q_size=64,
                     nb_worker=1)  # a locker is needed if increased the number of parallel workers
