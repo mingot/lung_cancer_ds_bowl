@@ -149,7 +149,7 @@ def chunk_generator(X, y, filenames, nodules_df, thickness=0, batch_size=32, is_
 X_train, y_train = [], []
 for filename in filenames_train[1:20]:
     patientid = filename.split('/')[-1]
-    X_single, y_single = load_patient_with_candidates(filename, nodules_df[nodules_df['patientid']==patientid], thickness=thickness)
+    X_single, y_single = load_patient_with_candidates(filename, nodules_df[nodules_df['patientid']==patientid], thickness=1)
     X_train.extend(X_single)
     y_train.extend(y_single)
 
@@ -157,7 +157,7 @@ for filename in filenames_train[1:20]:
 X_test, y_test = [], []
 for filename in filenames_test[1:10]:
     patientid = filename.split('/')[-1]
-    X_single, y_single = load_patient_with_candidates(filename, nodules_df[nodules_df['patientid']==patientid], thickness=thickness)
+    X_single, y_single = load_patient_with_candidates(filename, nodules_df[nodules_df['patientid']==patientid], thickness=1)
     X_test.extend(X_single)
     y_test.extend(y_single)
 
