@@ -64,7 +64,7 @@ with open(OUTPUT_FILE, 'w') as output_file:
             print "++ Patient with no acceptable candidates"
 
         # load patient
-        patient = np.load(DATA_PATH + filename)['arr_0']
+        patient = np.load(VALIDATION_DATA_PATH + filename)['arr_0']
         if patient.shape[0]!=3:  # skip labels without ground truth
             print "++ Patient without ground truth"
             continue
