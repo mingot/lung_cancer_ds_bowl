@@ -104,15 +104,24 @@ test_datagen = ImageDataGenerator(dim_ordering="th")  # dummy for testing to hav
 
 
 def chunk_generator(filenames, nodules_df, thickness=0, batch_size=32, is_training=True):
+
+    
+    X, y = [], []
+    for filename in filenames:
+        patientid = filename.split('/')[-1]
+        X_single, y_single = load_patient_with_candidates(filename, nodules_df[nodules_df['patientid']==patientid], thickness=thickness)
+        X.extend(X_single)
+        y.extend(y_single)
+
     while 1:
 
-        X, y = [], []
-        random.shuffle(filenames)
-        for filename in filenames[0:10]:
-            patientid = filename.split('/')[-1]
-            X_single, y_single = load_patient_with_candidates(filename, nodules_df[nodules_df['patientid']==patientid], thickness=thickness)
-            X.extend(X_single)
-            y.extend(y_single)
+        # X, y = [], []
+        # random.shuffle(filenames)
+        # for filename in filenames[0:10]:
+        #     patientid = filename.split('/')[-1]
+        #     X_single, y_single = load_patient_with_candidates(filename, nodules_df[nodules_df['patientid']==patientid], thickness=thickness)
+        #     X.extend(X_single)
+        #     y.extend(y_single)
 
         logging.info("Loaded batch of patients with %d/%d positives" % (np.sum(y), len(y)))
         idx_sel = [i for i in range(len(X)) if y[i]==1 or random.uniform(0,1) < 1.2*np.mean(y)]
@@ -133,7 +142,7 @@ def chunk_generator(filenames, nodules_df, thickness=0, batch_size=32, is_traini
         for X_batch, y_batch in data_generator.flow(X, y, batch_size=batch_size, shuffle=is_training):
             logging.info("Data augmentaton iteration %d" % i)
             i += 1
-            if good*batch_size > len(X)*2 or i>10:  # stop when we have augmented enough the batch
+            if good*batch_size > len(X)*2 or i>100:  # stop when we have augmented enough the batch
                 #print 'leaving because augment'
                 break
             if X_batch.shape[0] != batch_size:  # ensure correct batch size
