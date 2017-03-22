@@ -152,7 +152,7 @@ model_checkpoint = ModelCheckpoint(OUTPUT_MODEL, monitor='loss', save_best_only=
 
 
 model.fit_generator(generator=chunk_generator(filenames_train, nodules_df, batch_size=16, thickness=1),
-                    samples_per_epoch=1280,  # make it small to update TB and CHECKPOINT frequently
+                    samples_per_epoch=128,  # make it small to update TB and CHECKPOINT frequently
                     nb_epoch=500,
                     verbose=1,
                     callbacks=[tb, model_checkpoint],
