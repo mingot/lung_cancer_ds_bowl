@@ -105,18 +105,7 @@ test_datagen = ImageDataGenerator(dim_ordering="th")  # dummy for testing to hav
 
 
 def chunk_generator(X_orig, y_orig, filenames, nodules_df, thickness=0, batch_size=32, is_training=True):
-
-
     while 1:
-
-        # X, y = [], []
-        # random.shuffle(filenames)
-        # for filename in filenames[0:30]:
-        #     patientid = filename.split('/')[-1]
-        #     X_single, y_single = load_patient_with_candidates(filename, nodules_df[nodules_df['patientid']==patientid], thickness=thickness)
-        #     X.extend(X_single)
-        #     y.extend(y_single)
-
         logging.info("Loaded batch of patients with %d/%d positives" % (np.sum(y_orig), len(y_orig)))
         idx_sel = [i for i in range(len(X_orig)) if y_orig[i]==1 or random.uniform(0,1) < 1.2*np.mean(y_orig)]
         X = [X_orig[i] for i in idx_sel]
@@ -136,11 +125,8 @@ def chunk_generator(X_orig, y_orig, filenames, nodules_df, thickness=0, batch_si
         for X_batch, y_batch in data_generator.flow(X, y, batch_size=batch_size, shuffle=is_training):
             i += 1
             if good*batch_size > len(X)*2 or i>100:  # stop when we have augmented enough the batch
-                #print 'leaving because augment'
                 break
             if X_batch.shape[0] != batch_size:  # ensure correct batch size
-                #print 'continue because batch sixe'
-                #print X_batch.shape, y_batch.shape
                 continue
             good += 1
             yield X_batch, y_batch
@@ -171,9 +157,8 @@ for idx,filename in enumerate(filenames_test):
 model = ResnetBuilder().build_resnet_34((3,40,40),1)
 model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['accuracy','fmeasure'])
 model_checkpoint = ModelCheckpoint(OUTPUT_MODEL, monitor='loss', save_best_only=True)
-# if USE_EXISTING:
-#     logging.info('Loading exiting model...')
-#     model.load_weights(OUTPUT_MODEL)
+# logging.info('Loading exiting model...')
+# model.load_weights(OUTPUT_MODEL)
 
 
 model.fit_generator(generator=chunk_generator(X_train, y_train, filenames_train, nodules_df, batch_size=16, thickness=1),
@@ -182,7 +167,7 @@ model.fit_generator(generator=chunk_generator(X_train, y_train, filenames_train,
                     verbose=1,
                     callbacks=[tb, model_checkpoint],
                     validation_data=chunk_generator(X_test, y_test, filenames_test, nodules_df, batch_size=16, thickness=1, is_training=False),
-                    nb_val_samples=16*2,
+                    nb_val_samples=len(y_test),
                     max_q_size=64,
                     nb_worker=1)  # a locker is needed if increased the number of parallel workers
 

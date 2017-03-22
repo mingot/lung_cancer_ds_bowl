@@ -15,10 +15,10 @@ wp = os.environ['LUNG_PATH']
 DATA_PATH = '/mnt/hd2/preprocessed5/'  # DATA_PATH = wp + 'data/preprocessed5_sample/'
 VALIDATION_DATA_PATH = '/mnt/hd2/preprocessed5_validation_luna/'
 NODULES_FILE = "/home/mingot/lung_cancer_ds_bowl/output/noduls_patches_v06.csv"  # NODULES_FILE = wp + 'personal/noduls_patches_v04_dsb.csv'
-OUTPUT_FILE = "/home/mingot/lung_cancer_ds_bowl/output/noduls_patches_v06_output.csv"  # NODULES_FILE = wp + 'personal/noduls_patches_v04_dsb.csv'
+OUTPUT_FILE = "/home/mingot/lung_cancer_ds_bowl/output/noduls_patches_v06_validation_output.csv"  # NODULES_FILE = wp + 'personal/noduls_patches_v04_dsb.csv'
 
 ## File loading
-file_list = os.listdir(DATA_PATH) #+ os.listdir(VALIDATION_DATA_PATH)
+file_list = os.listdir(VALIDATION_DATA_PATH) # os.listdir(DATA_PATH) #+ os.listdir(VALIDATION_DATA_PATH)
 df_node = pd.read_csv(NODULES_FILE)
 aux = [p.split('/')[-1] for p in df_node['patientid']]  #TODO: remove
 df_node['patientid'] = aux
