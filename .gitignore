@@ -9,6 +9,8 @@
 *.pyc
 .idea/
 
+*.tiff/
+
 # Manual saves of Jupyter notebooks
 .ipynb_checkpoints/
 

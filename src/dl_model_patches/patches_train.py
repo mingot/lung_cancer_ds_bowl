@@ -6,8 +6,7 @@ import pandas as pd
 from time import time
 import matplotlib.pyplot as plt
 from utils import plotting
-from skimage import measure
-from skimage import transform
+from dl_model_patches.common import  *
 from sklearn import metrics
 from keras import backend as K
 from keras.preprocessing.image import ImageDataGenerator
@@ -15,137 +14,6 @@ from keras.optimizers import Adam
 from keras.callbacks import ModelCheckpoint, Callback
 from dl_networks.sample_resnet import ResnetBuilder
 from dl_utils.tb_callback import TensorBoard
-
-
-
-def normalize(image, MIN_BOUND=-1000.0, MAX_BOUND=400.0):
-    # hard coded normalization as in https://www.kaggle.com/gzuidhof/data-science-bowl-2017/full-preprocessing-tutorial
-    image = (image - MIN_BOUND) / (MAX_BOUND - MIN_BOUND)
-    image[image>1] = 1.
-    image[image<0] = 0.
-    return image
-
-
-def get_regions(mask, threshold=None):
-    if threshold is None:
-        threshold = np.mean(mask)
-
-    thr = np.where(mask < threshold, 0., 1.0)
-    label_image = measure.label(thr)  # label them
-    labels = label_image.astype(int)
-    regions = measure.regionprops(labels)
-    return regions
-
-
-def intersection_regions(r1, r2):
-    h = min(r1.bbox[2], r2.bbox[2]) - max(r1.bbox[0], r2.bbox[0])
-    w = min(r1.bbox[3], r2.bbox[3]) - max(r1.bbox[1], r2.bbox[1])
-    intersectionArea = w*h
-    if h<0 or w<0:
-        return 0.0
-
-    area1 = (r1.bbox[2] - r1.bbox[0])*(r1.bbox[3] - r1.bbox[1])
-    area2 = (r2.bbox[2] - r2.bbox[0])*(r2.bbox[3] - r2.bbox[1])
-    unionArea = area1 + area2 - intersectionArea
-    overlapArea = intersectionArea*1.0/unionArea # This should be greater than 0.5 to consider it as a valid detection.
-    return overlapArea
-
-
-class AuxRegion():
-    """Auxiliar class to change the bbox of regions props."""
-    def __init__(self, region):
-        self.bbox = region.bbox
-        self.centroid = region.centroid
-        self.equivalent_diameter = region.equivalent_diameter
-
-
-def calc_area(r):
-    return (r.bbox[2]-r.bbox[0])*(r.bbox[3]-r.bbox[1])
-
-
-def calc_ratio(r):
-    return (r.bbox[2]-r.bbox[0])*1.0/(r.bbox[3]-r.bbox[1])
-
-
-def augment_bbox(r, margin=5):
-    """Increase pixels by margin."""
-    r.bbox = (max(r.bbox[0]-margin,0), max(r.bbox[1]-margin,0), r.bbox[2]+margin, r.bbox[3]+margin)
-    return r
-
-
-def extract_rois_from_lungs(lung_image, lung_mask):
-    """
-        Given a lung image,  generate ROIs based on HU filtering.
-        Reduce the candidates by discarding smalls and very rectangular regions.
-    """
-    mask = lung_image.copy()
-    mask[lung_mask!=1] = -2000
-    mask[mask<-500] = -2000  # based on LUNA examination ()
-
-    # generate regions
-    regions_pred = get_regions(mask, threshold=np.mean(mask))
-
-    # discard small regions or long connected regions
-    sel_regions = []
-    for region in regions_pred:
-        area, ratio = calc_area(region), calc_ratio(region)
-        if 3*3<=area and area<=55*55 and 1.0/3<=ratio and ratio<=3:  # regions in [2.1mm, 40mm]
-            sel_regions.append(region)
-    regions_pred = sel_regions
-
-
-    # increase the padding of the regions by 5px
-    regions_pred_augmented = []
-    for region in regions_pred:
-        region = AuxRegion(region)
-        region = augment_bbox(region, margin=5)
-        regions_pred_augmented.append(region)
-
-    return regions_pred_augmented
-
-
-def extract_crops_from_regions(img, regions, output_size=(40,40)):
-    # Crop img given a vector of regions.
-    # If img have depth (1 dim of 3), generate the depth cropped image
-    cropped_images = []
-    for region in regions:
-        x1,y1,x2,y2 = region.bbox
-        if len(img.shape)==2:  # a single image to be cropped
-            cropped = img[x1:x2,y1:y2]
-            cropped_images.append(transform.resize(cropped, output_size))
-
-        elif len(img.shape)==3:  #
-            stack_crops = []
-            cropped = img[:,x1:x2,y1:y2]
-            for nslice in range(img.shape[0]):
-                stack_crops.append(transform.resize(cropped[nslice], output_size))
-            cropped_images.append(np.stack(stack_crops))
-
-
-
-    return cropped_images
-
-
-def get_labels_from_regions(regions_real, regions_pred):
-    """Extract labels (0/1) from regions."""
-    labels = [0]*len(regions_pred)
-    stats = {'fn': 0, 'tp': 0, 'fp': 0}
-    for region_real in regions_real:
-        is_detected = False
-        for idx,region_pred in enumerate(regions_pred):
-            # discard regions that occupy everything
-            if region_real.bbox[0]==0 or region_pred.bbox[0]==0:
-                continue
-            score = intersection_regions(r1=region_pred, r2=region_real)
-            if score>.1:
-                labels[idx] = 1
-                is_detected = True
-        if not is_detected:
-            stats['fn'] += 1
-
-    stats['tp'] = np.sum(labels)
-    stats['fp'] = len(labels) - np.sum(labels)
-    return labels, stats
 
 
 
@@ -180,7 +48,7 @@ train_datagen = ImageDataGenerator(
 test_datagen = ImageDataGenerator(dim_ordering="th")  # dummy for testing to have the same structure
 
 
-def load_patient(filename, discard_empty_nodules=True, output_rois=False, thickness=0):
+def load_patient(filename, discard_empty_nodules=True, output_rois=False, generate_labels=True, thickness=0):
     """
     Returns images generated for each patient.
      - thickness: number of slices up and down to be taken
@@ -204,14 +72,6 @@ def load_patient(filename, discard_empty_nodules=True, output_rois=False, thickn
             aux[0] = b[0]
             aux[1] = b[1]
             b = aux
-
-    for j in range(b.shape[1]):
-        if np.sum(b[2,j])!=0:
-            print j
-
-    plotting.plot_mask(b[0,94], b[1,94])
-    plt.imshow(b[1,75])
-    plt.show()
 
     last_slice = -1e3  # big initialization
     slices = []
@@ -249,7 +109,7 @@ def load_patient(filename, discard_empty_nodules=True, output_rois=False, thickn
 
         # Generate labels
         labels = []
-        if not output_rois:  # when not testing, compute labels
+        if generate_labels:  # when not testing, compute labels
             regions_real = get_regions(nodules_mask, threshold=np.mean(nodules_mask))
             labels, stats = get_labels_from_regions(regions_real, regions_pred)
             logging.info('++ ROIs stats for slice %d: %s' % (j, str(stats)))
@@ -314,10 +174,6 @@ def chunks(file_list=[], batch_size=32, augmentation_times=4, concurrent_patient
 ### MODEL LOADING -----------------------------------------------------------------
 
 
-# PARAMETERS
-USE_EXISTING = True  # load previous model to continue training or test
-
-
 # PATHS
 wp = os.environ['LUNG_PATH']
 INPUT_PATH = '/mnt/hd2/preprocessed5'  # INPUT_PATH = wp + 'data/preprocessed5_sample'
@@ -347,18 +203,17 @@ logging.basicConfig(level=logging.INFO,
 # Load model
 model = ResnetBuilder().build_resnet_34((3,40,40),1)
 model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['accuracy','fmeasure'])
-if USE_EXISTING:
-    logging.info('Loading exiting model...')
-    model.load_weights(OUTPUT_MODEL)
+# logging.info('Loading exiting model...')
+# model.load_weights(OUTPUT_MODEL)
 
 
 ### TRAINING -----------------------------------------------------------------
 
-# ## PATIENTS FILE LIST
+## PATIENTS FILE LIST
 # patients_with_annotations = pd.read_csv(NODULES_PATH)  # filter patients with no annotations to avoid having to read them
 # patients_with_annotations = list(set(patients_with_annotations['seriesuid']))
 # patients_with_annotations = ["luna_%s.npz" % p.split('.')[-1] for p in patients_with_annotations]
-#
+
 # file_list = os.listdir(INPUT_PATH)
 # file_list = [g for g in file_list if g.startswith('luna_')]
 # random.shuffle(file_list)
@@ -395,52 +250,52 @@ if USE_EXISTING:
 ## Params and filepaths
 THICKNESS = 1
 write_method = 'w'
-file_list = [os.path.join(INPUT_PATH, fp) for fp in os.listdir(INPUT_PATH)]
-file_list += [os.path.join(VALIDATION_PATH, fp) for fp in os.listdir(VALIDATION_PATH)]
+file_list = [os.path.join(VALIDATION_PATH, fp) for fp in os.listdir(VALIDATION_PATH)]
+file_list += [os.path.join(INPUT_PATH, fp) for fp in os.listdir(INPUT_PATH)]
+
 #file_list = [g for g in file_list if g.startswith('dsb_')]
 
 
-## if the OUTPUT_CSV file already exists, continue it
-previous_filenames = set()
-if os.path.exists(OUTPUT_CSV):
-    write_method = 'a'
-    with open(OUTPUT_CSV) as file:
-        for l in file:
-            previous_filenames.add(l.split(',')[0])
-
-
-with open(OUTPUT_CSV, write_method) as file:
-
-    # write the header if the file is new
-    if write_method=='w':
-        file.write('patientid,nslice,x,y,diameter,score\n')
-
-    for idx, filename in enumerate(file_list):
-        if filename in previous_filenames:
-            continue
-
-        logging.info("Patient %s (%d/%d)" % (filename, idx, len(file_list)))
-        try:
-            X, y, rois = load_patient(filename, discard_empty_nodules=False, output_rois=True, thickness=THICKNESS)
-
-            if len(X)==0:
-                continue
-
-            X = np.asarray(X)
-            if THICKNESS==0:
-                X = np.expand_dims(X, axis=1)
-            preds = model.predict(X, verbose=1)
-        except:
-            logging.info("Error in patient %s, skipping" % filename)
-            continue
-
-        for i in range(len(preds)):
-            nslice, r = rois[i]
-            # TODO: also output label
-            file.write('%s,%d,%d,%d,%.3f,%.5f\n' % (filename.split('/')[-1], nslice, r.centroid[0], r.centroid[1], r.equivalent_diameter,preds[i]))
-
-            if preds[i]>0.8:
-                logging.info("++ Good candidate found with (nslice,x,y,diam,score): %d,%d,%d,%.2f,%.2f" % (nslice,r.centroid[0], r.centroid[1], r.equivalent_diameter,preds[i]))
+# ## if the OUTPUT_CSV file already exists, continue it
+# previous_filenames = set()
+# if os.path.exists(OUTPUT_CSV):
+#     write_method = 'a'
+#     with open(OUTPUT_CSV) as file:
+#         for l in file:
+#             previous_filenames.add(l.split(',')[0])
+#
+#
+# with open(OUTPUT_CSV, write_method) as file:
+#
+#     # write the header if the file is new
+#     if write_method=='w':
+#         file.write('patientid,nslice,x,y,diameter,score,label\n')
+#
+#     for idx, filename in enumerate(file_list):
+#         if filename in previous_filenames:
+#             continue
+#
+#         logging.info("Patient %s (%d/%d)" % (filename, idx, len(file_list)))
+#         try:
+#             X, y, rois = load_patient(filename, discard_empty_nodules=False, output_rois=True, generate_labels=False, thickness=THICKNESS)
+#
+#             if len(X)==0:
+#                 continue
+#
+#             X = np.asarray(X)
+#             if THICKNESS==0:
+#                 X = np.expand_dims(X, axis=1)
+#             preds = model.predict(X, verbose=1)
+#         except:
+#             logging.info("Error in patient %s, skipping" % filename)
+#             continue
+#
+#         for i in range(len(preds)):
+#             nslice, r = rois[i]
+#             file.write('%s,%d,%d,%d,%.3f,%.5f,%d\n' % (filename.split('/')[-1], nslice, r.centroid[0], r.centroid[1], r.equivalent_diameter,preds[i],y[i]))
+#
+#             if preds[i]>0.8:
+#                 logging.info("++ Good candidate found with (nslice,x,y,diam,score): %d,%d,%d,%.2f,%.2f" % (nslice,r.centroid[0], r.centroid[1], r.equivalent_diameter,preds[i]))
 
 
 
@@ -473,13 +328,25 @@ with open(OUTPUT_CSV, write_method) as file:
 # scored_rois = [sel_rois[i] for i in range(len(sel_rois)) if preds[i]>0.9]
 # plotting.plot_bb(b[0,nslice], )
 
-#
-#
-# ### quality checks for ROIs detection
-# for filename in file_list:
-#     X, y = load_patient(filename, discard_empty_nodules=True, output_rois=False, thickness=0)
 
 
+### quality checks for ROIs detection
+for filename in file_list:
+    X, y = load_patient(filename, discard_empty_nodules=True, output_rois=False, thickness=0)
+
+filename = 'luna_122914038048856168343065566972.npz'
+p = np.load(os.path.join(INPUT_PATH,filename))['arr_0']
+X, y, rois = load_patient(os.path.join(INPUT_PATH,filename), discard_empty_nodules=True, output_rois=True, thickness=0)
+
+nslice = 49
+regions = [r[1] for r in rois if r[0]==nslice]
+lung_image, lung_mask = p[0,nslice], p[1,nslice]
+plotting.plot_mask(p[0,nslice], p[2,nslice])
+plotting.plot_bb(p[0,nslice], regions)
+
+plotting.plot_mask(p[0,nslice], p[1,nslice])
+plt.imshow(p[1,nslice])
+plt.show()
 
 # ## Calculate area regions of luna
 # for idx, filename in enumerate(file_list):
