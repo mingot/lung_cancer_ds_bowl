@@ -137,7 +137,7 @@ def load_patient(filename, discard_empty_nodules=True, output_rois=False, genera
     return (X, Y, rois, total_stats) if output_rois else (X, Y)
 
 
-def chunks(file_list=[], batch_size=32, augmentation_times=4, concurrent_patients=10, thickness=0, is_training=True):
+def chunks(X, y, file_list=[], batch_size=32, augmentation_times=4, concurrent_patients=10, thickness=0, is_training=True):
     """
     Batches generator for keras fit_generator. Returns batches of patches 40x40px
      - augmentation_times: number of time to return the data augmented
@@ -145,39 +145,39 @@ def chunks(file_list=[], batch_size=32, augmentation_times=4, concurrent_patient
      - thickness: number of slices up and down to add as a channel to the patch
     """
     while 1:
-        for j in range(0,len(file_list),concurrent_patients):
-            filenames = file_list[j:(j+concurrent_patients)]
-            X, y = [], []
-            for filename in filenames:
-                X_single, y_single = load_patient(filename, thickness=thickness)
-                if len(X_single)==0:
-                    continue
-                X.extend(X_single)
-                y.extend(y_single)
+        # for j in range(0,len(file_list),concurrent_patients):
+        #     filenames = file_list[j:(j+concurrent_patients)]
+        #     X, y = [], []
+        #     for filename in filenames:
+        #         X_single, y_single = load_patient(filename, thickness=thickness)
+        #         if len(X_single)==0:
+        #             continue
+        #         X.extend(X_single)
+        #         y.extend(y_single)
 
-            # downsample negatives (reduce 90%)
-            selected_samples  = [i for i in range(len(y)) if y[i]==1 or random.randint(0,9)==0]
-            X = [X[i] for i in selected_samples]
-            y = [y[i] for i in selected_samples]
-            logging.info("Final downsampled dataset stats: TP:%d, FP:%d" % (sum(y), len(y)-sum(y)))
+        # downsample negatives (reduce 90%)
+        selected_samples  = [i for i in range(len(y)) if y[i]==1 or random.randint(0,9)==0]
+        X = [X[i] for i in selected_samples]
+        y = [y[i] for i in selected_samples]
+        logging.info("Final downsampled dataset stats: TP:%d, FP:%d" % (sum(y), len(y)-sum(y)))
 
-            # convert to np array and add extra axis (needed for keras)
-            X, y = np.asarray(X), np.asarray(y)
-            y = np.expand_dims(y, axis=1)
-            if thickness==0:
-                X = np.expand_dims(X, axis=1)
+        # convert to np array and add extra axis (needed for keras)
+        X, y = np.asarray(X), np.asarray(y)
+        y = np.expand_dims(y, axis=1)
+        if thickness==0:
+            X = np.expand_dims(X, axis=1)
 
-            # generator: if testing, do not augment data
-            data_generator = train_datagen if is_training else test_datagen
+        # generator: if testing, do not augment data
+        data_generator = train_datagen if is_training else test_datagen
 
-            i = 0
-            for X_batch, y_batch in data_generator.flow(X, y, batch_size=batch_size, shuffle=True):
-                i += 1
-                if i*len(X_batch) > len(X)*augmentation_times:  # stop when we have augmented enough the batch
-                    break
-                if X_batch.shape[0] != batch_size:  # ensure correct batch size
-                    continue
-                yield X_batch, y_batch
+        i = 0
+        for X_batch, y_batch in data_generator.flow(X, y, batch_size=batch_size, shuffle=True):
+            i += 1
+            if i*len(X_batch) > len(X)*augmentation_times:  # stop when we have augmented enough the batch
+                break
+            if X_batch.shape[0] != batch_size:  # ensure correct batch size
+                continue
+            yield X_batch, y_batch
 
 
 
@@ -189,8 +189,9 @@ wp = os.environ['LUNG_PATH']
 INPUT_PATH = '/mnt/hd2/preprocessed5'  # INPUT_PATH = wp + 'data/preprocessed5_sample'
 VALIDATION_PATH = '/mnt/hd2/preprocessed5_validation_luna'
 NODULES_PATH = wp + 'data/luna/annotations.csv'
-OUTPUT_MODEL = wp + 'models/jm_patches_train_v06.hdf5'  # OUTPUT_MODEL = wp + 'personal/jm_patches_train_v06_local.hdf5'
-OUTPUT_CSV = wp + 'output/noduls_patches_v06.csv'
+OUTPUT_MODEL = wp + 'models/jm_patches_train_v07.hdf5'  # OUTPUT_MODEL = wp + 'personal/jm_patches_train_v06_local.hdf5'
+OUTPUT_CSV = wp + 'output/noduls_patches_v07.csv'
+PATCHES_PATH = '/mnt/hd2/patches'
 LOGS_PATH = wp + 'logs/%s' % str(int(time()))
 if not os.path.exists(LOGS_PATH):
     os.makedirs(LOGS_PATH)
@@ -250,35 +251,44 @@ file_list_test = [os.path.join(VALIDATION_PATH, fp) for fp in os.listdir(VALIDAT
 # np.savez_compressed('/mnt/hd2/patches/x_train.npz', np.asarray(X_train))
 # np.savez_compressed('/mnt/hd2/patches/y_train.npz', np.asarray(y_train))
 # print "Time saving: %f", time() - tstart
+#
+# total_stats = {}
+# X_test, y_test = [], []
+# for idx,filename in enumerate(file_list_test):
+#     patientid = filename.split('/')[-1]
+#     logging.info("Progress %d/%d" % (idx,len(file_list_test)))
+#     X_single, y_single, rois, stats = load_patient(filename, output_rois=True, thickness=1)
+#     total_stats = add_stats(stats, total_stats)
+#     X_test.extend(X_single)
+#     y_test.extend(y_single)
+# print "Total stats:", total_stats
+#
+#
+# tstart = time()
+# print "Saving file..."
+# np.savez_compressed('/mnt/hd2/patches/x_test.npz', np.asarray(X_test))
+# np.savez_compressed('/mnt/hd2/patches/y_test.npz', np.asarray(y_test))
+# print "Time saving: %f", time() - tstart
 
-total_stats = {}
-X_test, y_test = [], []
-for idx,filename in enumerate(file_list_test):
-    patientid = filename.split('/')[-1]
-    logging.info("Progress %d/%d" % (idx,len(file_list_test)))
-    X_single, y_single, rois, stats = load_patient(filename, output_rois=True, thickness=1)
-    total_stats = add_stats(stats, total_stats)
-    X_test.extend(X_single)
-    y_test.extend(y_single)
-print "Total stats:", total_stats
+
+x_train = np.load(os.path.join(PATCHES_PATH, 'x_train.npz'))['arr_0']
+y_train = np.load(os.path.join(PATCHES_PATH, 'y_train.npz'))['arr_0']
+x_test = np.load(os.path.join(PATCHES_PATH, 'x_test.npz'))['arr_0']
+y_test = np.load(os.path.join(PATCHES_PATH, 'y_test.npz'))['arr_0']
+
+logging.info("Training set: %d" % len(y_train))
+logging.info("Test set: %d" % len(y_test))
 
 
-tstart = time()
-print "Saving file..."
-np.savez_compressed('/mnt/hd2/patches/x_test.npz', np.asarray(X_test))
-np.savez_compressed('/mnt/hd2/patches/y_test.npz', np.asarray(y_test))
-print "Time saving: %f", time() - tstart
-
-
-# model.fit_generator(generator=chunks(file_list_train, batch_size=32, thickness=1),
-#                     samples_per_epoch=1280,  # make it small to update TB and CHECKPOINT frequently
-#                     nb_epoch=500,
-#                     verbose=1,
-#                     callbacks=[tb, model_checkpoint],
-#                     validation_data=chunks(file_list_test, batch_size=32, thickness=1, is_training=False),
-#                     nb_val_samples=32*40,
-#                     max_q_size=64,
-#                     nb_worker=1)  # a locker is needed if increased the number of parallel workers
+model.fit_generator(generator=chunks(x_train, y_train, batch_size=32, thickness=1),
+                    samples_per_epoch=1280,  # make it small to update TB and CHECKPOINT frequently
+                    nb_epoch=500,
+                    verbose=1,
+                    #callbacks=[tb, model_checkpoint],
+                    validation_data=chunks(x_test, y_test, batch_size=32, thickness=1, is_training=False),
+                    nb_val_samples=len(y_test),
+                    max_q_size=64,
+                    nb_worker=1)  # a locker is needed if increased the number of parallel workers
 
 # ## CHECKS GENERATOR
 # for i in range(10):
