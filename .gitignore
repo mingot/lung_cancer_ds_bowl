@@ -27,3 +27,5 @@ src/logs/
 nohup.out
 
 logs/
+output/
+

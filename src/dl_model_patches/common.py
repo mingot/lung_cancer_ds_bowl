@@ -95,7 +95,7 @@ def extract_rois_from_lungs(lung_image, lung_mask):
     sel_regions = []
     for region in regions_pred:
         area, ratio = calc_area(region), calc_ratio(region)
-        if 4*4<=area and area<=55*55 and 1.0/3<=ratio and ratio<=3:  # regions in [2.1mm, 40mm]
+        if 3*3<=area and area<=55*55 and 1.0/3<=ratio and ratio<=3:  # regions in [2.1mm, 40mm]
             sel_regions.append(region)
     regions_pred = sel_regions
 

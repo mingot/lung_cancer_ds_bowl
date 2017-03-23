@@ -79,11 +79,11 @@ def load_patient_with_candidates(patient_filename, patient_nodules_df, thickness
         labels, stats = common.get_labels_from_regions(regions_real, regions_pred)
 
 
-        # # TODO: remove when filtering good candidates is done in the begining
-        # # Select just regions that are nodules (TPs and FNs) and regions with high socre (FPs)
-        # idx_sel = [i for i in range(len(regions_pred)) if labels[i]==1 or sel_patient_nodules_df.iloc[i]['score']>SCORE_TH]
-        # regions_pred = [regions_pred[i] for i in idx_sel]
-        # labels = [labels[i] for i in idx_sel]
+        # TODO: remove when filtering good candidates is done in the begining
+        # Select just regions that are nodules (TPs and FNs) and regions with high socre (FPs)
+        idx_sel = [i for i in range(len(regions_pred)) if labels[i]==1 or sel_patient_nodules_df.iloc[i]['score']>SCORE_TH]
+        regions_pred = [regions_pred[i] for i in idx_sel]
+        labels = [labels[i] for i in idx_sel]
 
         lung_image = patient[0, nslice]
         if thickness>0:  # add extra images as channels for thick resnet
