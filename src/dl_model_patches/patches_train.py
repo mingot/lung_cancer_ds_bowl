@@ -241,7 +241,7 @@ total_stats = {}
 for idx,filename in enumerate(file_list_train):
     patientid = filename.split('/')[-1]
     logging.info("Progress %d/%d" % (idx,len(file_list_train)))
-    X_single, y_single, rois, stats = load_patient(filename, thickness=1)
+    X_single, y_single, rois, stats = load_patient(filename, output_rois=True, thickness=1)
     total_stats = add_stats(stats, total_stats)
     X_train.extend(X_single)
     y_train.extend(y_single)
