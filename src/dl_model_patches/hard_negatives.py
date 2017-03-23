@@ -16,7 +16,6 @@ import matplotlib.pyplot as plt
 from skimage import transform
 
 
-
 # PATHS
 wp = os.environ['LUNG_PATH']
 LUNA_ANNOTATIONS = wp + 'data/luna/annotations.csv'
@@ -135,6 +134,8 @@ def chunk_generator(X_orig, y_orig, filenames, nodules_df, thickness=0, batch_si
 
 ### CROP GENERATION -------------------------------------------------------------------------------------------------
 
+# Load all chunks
+
 X_train, y_train = [], []
 for idx,filename in enumerate(filenames_train):
     patientid = filename.split('/')[-1]
@@ -143,7 +144,6 @@ for idx,filename in enumerate(filenames_train):
     X_train.extend(X_single)
     y_train.extend(y_single)
 
-np.savez_compressed('/Users/mingot/Projectes/kaggle/ds_bowl_lung/data/prova/p.npz', X_single)
 
 X_test, y_test = [], []
 for idx,filename in enumerate(filenames_test):

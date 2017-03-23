@@ -220,20 +220,47 @@ model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['acc
 ### TRAINING -----------------------------------------------------------------
 
 ## PATIENTS FILE LIST
-# patients_with_annotations = pd.read_csv(NODULES_PATH)  # filter patients with no annotations to avoid having to read them
-# patients_with_annotations = list(set(patients_with_annotations['seriesuid']))
-# patients_with_annotations = ["luna_%s.npz" % p.split('.')[-1] for p in patients_with_annotations]
+patients_with_annotations = pd.read_csv(NODULES_PATH)  # filter patients with no annotations to avoid having to read them
+patients_with_annotations = list(set(patients_with_annotations['seriesuid']))
+patients_with_annotations = ["luna_%s.npz" % p.split('.')[-1] for p in patients_with_annotations]
 
-# file_list = os.listdir(INPUT_PATH)
-# file_list = [g for g in file_list if g.startswith('luna_')]
+file_list = os.listdir(INPUT_PATH)
+file_list = [g for g in file_list if g.startswith('luna_')]
 # random.shuffle(file_list)
-# file_list_train = [os.path.join(INPUT_PATH, fp) for fp in file_list if fp in patients_with_annotations]
-# file_list_test = [os.path.join(VALIDATION_PATH, fp) for fp in os.listdir(VALIDATION_PATH) if fp in patients_with_annotations]
-# #PATIENTS_VALIDATION = 20  # number of patients to validate the model on
-# #file_list_test = file_list[-PATIENTS_VALIDATION:]
-# #file_list_train = file_list[:-PATIENTS_VALIDATION]
-#
-# #ival = IntervalEvaluation(validation_data=(X_test, y_test), interval=10)
+file_list_train = [os.path.join(INPUT_PATH, fp) for fp in file_list if fp in patients_with_annotations]
+file_list_test = [os.path.join(VALIDATION_PATH, fp) for fp in os.listdir(VALIDATION_PATH) if fp in patients_with_annotations]
+#PATIENTS_VALIDATION = 20  # number of patients to validate the model on
+#file_list_test = file_list[-PATIENTS_VALIDATION:]
+#file_list_train = file_list[:-PATIENTS_VALIDATION]
+
+#ival = IntervalEvaluation(validation_data=(X_test, y_test), interval=10)
+
+tstart = time()
+X_train, y_train = [], []
+for idx,filename in enumerate(file_list_train[0:10]):
+    patientid = filename.split('/')[-1]
+    logging.info("Progress %d/%d" % (idx,len(file_list_train)))
+    X_single, y_single = load_patient(filename, thickness=1)
+    X_train.extend(X_single)
+    y_train.extend(y_single)
+print "Time generating: %f", time() - tstart
+
+
+tstart = time()
+print "Saving file..."
+np.savez_compressed('/mnt/hd2/patches/x_train.npz', np.asarray(X_train))
+np.savez_compressed('/mnt/hd2/patches/y_train.npz', np.asarray(y_train))
+print "Time saving: %f", time() - tstart
+
+# X_test, y_test = [], []
+# for idx,filename in enumerate(file_list_test):
+#     patientid = filename.split('/')[-1]
+#     logging.info("Progress %d/%d" % (idx,len(file_list_test)))
+#     X_single, y_single = load_patient(filename, thickness=1)
+#     X_test.extend(X_single)
+#     y_test.extend(y_single)
+
+
 
 # model.fit_generator(generator=chunks(file_list_train, batch_size=32, thickness=1),
 #                     samples_per_epoch=1280,  # make it small to update TB and CHECKPOINT frequently
@@ -309,6 +336,11 @@ model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['acc
 
 
 
+
+
+### CHECKS -----------------------------------------------------------------
+
+
 # ## Checking predictions
 # filename = file_list[2]
 # b = np.load(os.path.join(INPUT_PATH, filename))['arr_0']
@@ -339,38 +371,36 @@ model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['acc
 # plotting.plot_bb(b[0,nslice], )
 
 
-INPUT_PATH = wp + 'data/preprocessed5_sample'
-INPUT_PATH = wp + 'data/preprocessed5_sample_watershed'
-INPUT_PATH = wp + 'data/preprocessed5_sample_th2'
-file_list = [os.path.join(INPUT_PATH, fp) for fp in os.listdir(INPUT_PATH)]
+
+# ### Quality checks for ROIs detection
+# INPUT_PATH = wp + 'data/preprocessed5_sample'
+# INPUT_PATH = wp + 'data/preprocessed5_sample_watershed'
+# INPUT_PATH = wp + 'data/preprocessed5_sample_th2'
+# file_list = [os.path.join(INPUT_PATH, fp) for fp in os.listdir(INPUT_PATH)]
+#
+# total_stats = {}
+# for filename in file_list:
+#     X, y, rois, stats = load_patient(filename, discard_empty_nodules=True, output_rois=True, thickness=0)
+#     print stats
+#     total_stats = add_stats(stats, total_stats)
+#     print "TOTAL STATS:", filename.split('/')[-1], total_stats
+#
+# filename = 'luna_127965161564033605177803085629.npz'
+# p = np.load(os.path.join(INPUT_PATH,filename))['arr_0']
+# X, y, rois, stats = load_patient(os.path.join(INPUT_PATH,filename), discard_empty_nodules=True, output_rois=True, thickness=0)
+# print stats
+#
+# nslice = 80
+# regions = [r[1] for r in rois if r[0]==nslice]
+# lung_image, lung_mask = p[0,nslice], p[1,nslice]
+# plotting.plot_mask(p[0,nslice], p[2,nslice])
+# plotting.plot_bb(p[0,nslice], regions)
+#
+# plotting.plot_mask(p[0,nslice], p[1,nslice])
+# plt.imshow(p[1,nslice])
+# plt.show()
 
 
-
-### quality checks for ROIs detection
-total_stats = {}
-for filename in file_list:
-    X, y, rois, stats = load_patient(filename, discard_empty_nodules=True, output_rois=True, thickness=0)
-    print stats
-    total_stats = add_stats(stats, total_stats)
-    print "TOTAL STATS:", filename.split('/')[-1], total_stats
-
-
-filename = 'luna_127965161564033605177803085629.npz'
-p = np.load(os.path.join(INPUT_PATH,filename))['arr_0']
-X, y, rois, stats = load_patient(os.path.join(INPUT_PATH,filename), discard_empty_nodules=True, output_rois=True, thickness=0)
-print stats
-
-
-
-nslice = 80
-regions = [r[1] for r in rois if r[0]==nslice]
-lung_image, lung_mask = p[0,nslice], p[1,nslice]
-plotting.plot_mask(p[0,nslice], p[2,nslice])
-plotting.plot_bb(p[0,nslice], regions)
-
-plotting.plot_mask(p[0,nslice], p[1,nslice])
-plt.imshow(p[1,nslice])
-plt.show()
 
 # ## Calculate area regions of luna
 # for idx, filename in enumerate(file_list):
