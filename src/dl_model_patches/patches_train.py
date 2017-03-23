@@ -237,7 +237,7 @@ file_list_test = [os.path.join(VALIDATION_PATH, fp) for fp in os.listdir(VALIDAT
 
 tstart = time()
 X_train, y_train = [], []
-for idx,filename in enumerate(file_list_train[0:10]):
+for idx,filename in enumerate(file_list_train):
     patientid = filename.split('/')[-1]
     logging.info("Progress %d/%d" % (idx,len(file_list_train)))
     X_single, y_single = load_patient(filename, thickness=1)
