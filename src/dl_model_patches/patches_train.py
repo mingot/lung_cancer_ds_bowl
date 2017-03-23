@@ -229,40 +229,44 @@ file_list = [g for g in file_list if g.startswith('luna_')]
 # random.shuffle(file_list)
 file_list_train = [os.path.join(INPUT_PATH, fp) for fp in file_list if fp in patients_with_annotations]
 file_list_test = [os.path.join(VALIDATION_PATH, fp) for fp in os.listdir(VALIDATION_PATH) if fp in patients_with_annotations]
-#PATIENTS_VALIDATION = 20  # number of patients to validate the model on
-#file_list_test = file_list[-PATIENTS_VALIDATION:]
-#file_list_train = file_list[:-PATIENTS_VALIDATION]
 
-#ival = IntervalEvaluation(validation_data=(X_test, y_test), interval=10)
 
-tstart = time()
-X_train, y_train = [], []
+# tstart = time()
+# X_train, y_train = [], []
+# total_stats = {}
+# for idx,filename in enumerate(file_list_train):
+#     patientid = filename.split('/')[-1]
+#     logging.info("Progress %d/%d" % (idx,len(file_list_train)))
+#     X_single, y_single, rois, stats = load_patient(filename, output_rois=True, thickness=1)
+#     total_stats = add_stats(stats, total_stats)
+#     X_train.extend(X_single)
+#     y_train.extend(y_single)
+# print "Total stats:", total_stats
+# print "Time generating: %f", time() - tstart
+#
+#
+# tstart = time()
+# print "Saving file..."
+# np.savez_compressed('/mnt/hd2/patches/x_train.npz', np.asarray(X_train))
+# np.savez_compressed('/mnt/hd2/patches/y_train.npz', np.asarray(y_train))
+# print "Time saving: %f", time() - tstart
+
 total_stats = {}
-for idx,filename in enumerate(file_list_train):
+X_test, y_test = [], []
+for idx,filename in enumerate(file_list_test):
     patientid = filename.split('/')[-1]
-    logging.info("Progress %d/%d" % (idx,len(file_list_train)))
+    logging.info("Progress %d/%d" % (idx,len(file_list_test)))
     X_single, y_single, rois, stats = load_patient(filename, output_rois=True, thickness=1)
     total_stats = add_stats(stats, total_stats)
-    X_train.extend(X_single)
-    y_train.extend(y_single)
-print "Total stats:", total_stats
-print "Time generating: %f", time() - tstart
+    X_test.extend(X_single)
+    y_test.extend(y_single)
 
 
 tstart = time()
 print "Saving file..."
-np.savez_compressed('/mnt/hd2/patches/x_train.npz', np.asarray(X_train))
-np.savez_compressed('/mnt/hd2/patches/y_train.npz', np.asarray(y_train))
+np.savez_compressed('/mnt/hd2/patches/x_test.npz', np.asarray(X_test))
+np.savez_compressed('/mnt/hd2/patches/y_test.npz', np.asarray(y_test))
 print "Time saving: %f", time() - tstart
-
-# X_test, y_test = [], []
-# for idx,filename in enumerate(file_list_test):
-#     patientid = filename.split('/')[-1]
-#     logging.info("Progress %d/%d" % (idx,len(file_list_test)))
-#     X_single, y_single = load_patient(filename, thickness=1)
-#     X_test.extend(X_single)
-#     y_test.extend(y_single)
-
 
 
 # model.fit_generator(generator=chunks(file_list_train, batch_size=32, thickness=1),
