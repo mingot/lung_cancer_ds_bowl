@@ -1,5 +1,5 @@
 import numpy as np
-from skimage import measure, transform
+from skimage import measure, transform, morphology
 
 
 
@@ -88,13 +88,14 @@ def extract_rois_from_lungs(lung_image, lung_mask):
     mask[mask<-500] = -2000  # based on LUNA examination ()
 
     # generate regions
+    #mask = morphology.opening(mask)
     regions_pred = get_regions(mask, threshold=np.mean(mask))
 
     # discard small regions or long connected regions
     sel_regions = []
     for region in regions_pred:
         area, ratio = calc_area(region), calc_ratio(region)
-        if 3*3<=area and area<=55*55 and 1.0/3<=ratio and ratio<=3:  # regions in [2.1mm, 40mm]
+        if 4*4<=area and area<=55*55 and 1.0/3<=ratio and ratio<=3:  # regions in [2.1mm, 40mm]
             sel_regions.append(region)
     regions_pred = sel_regions
 
@@ -147,7 +148,7 @@ def get_labels_from_regions(regions_real, regions_pred):
         if not is_detected:
             stats['fn'] += 1
 
-    stats['tp'] = np.sum(labels)
+    stats['tp'] = len(regions_real) - stats['fn'] # int(np.sum(labels))
     stats['fp'] = len(labels) - np.sum(labels)
     return labels, stats
 

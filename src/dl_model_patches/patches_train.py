@@ -6,7 +6,7 @@ import pandas as pd
 from time import time
 import matplotlib.pyplot as plt
 from utils import plotting
-from dl_model_patches.common import  *
+from dl_model_patches import  common
 from sklearn import metrics
 from keras import backend as K
 from keras.preprocessing.image import ImageDataGenerator
@@ -47,6 +47,14 @@ train_datagen = ImageDataGenerator(
 
 test_datagen = ImageDataGenerator(dim_ordering="th")  # dummy for testing to have the same structure
 
+def add_stats(stat1, stat2):
+    stat_res = {}
+    stat_master = stat1 if len(stat1)>0 else stat2
+    for k in stat_master:
+        stat_res[k] = stat1.get(k,0) + stat2.get(k,0)
+
+    return stat_res
+
 
 def load_patient(filename, discard_empty_nodules=True, output_rois=False, generate_labels=True, thickness=0):
     """
@@ -75,6 +83,7 @@ def load_patient(filename, discard_empty_nodules=True, output_rois=False, genera
 
     last_slice = -1e3  # big initialization
     slices = []
+    total_stats = {}
     for j in range(b.shape[1]):
 
         lung_image, lung_mask, nodules_mask = b[0,j,:,:], b[1,j,:,:], b[2,j,:,:]
@@ -94,7 +103,7 @@ def load_patient(filename, discard_empty_nodules=True, output_rois=False, genera
         #     continue
 
         # Filter ROIs to discard small and connected
-        regions_pred = extract_rois_from_lungs(lung_image, lung_mask)
+        regions_pred = common.extract_rois_from_lungs(lung_image, lung_mask)
 
         ## visualize regions
         # plotting.plot_bb(lung_image, regions_real)
@@ -105,13 +114,14 @@ def load_patient(filename, discard_empty_nodules=True, output_rois=False, genera
             lung_image = b[0,(j - thickness):(j + thickness + 1),:,:]
             if lung_image.shape[0] != 2*thickness + 1:  # skip the extremes
                 continue
-        cropped_images = extract_crops_from_regions(lung_image, regions_pred)
+        cropped_images = common.extract_crops_from_regions(lung_image, regions_pred)
 
         # Generate labels
         labels = []
         if generate_labels:  # when not testing, compute labels
-            regions_real = get_regions(nodules_mask, threshold=np.mean(nodules_mask))
-            labels, stats = get_labels_from_regions(regions_real, regions_pred)
+            regions_real = common.get_regions(nodules_mask, threshold=np.mean(nodules_mask))
+            labels, stats = common.get_labels_from_regions(regions_real, regions_pred)
+            total_stats = add_stats(stats, total_stats)
             logging.info('++ ROIs stats for slice %d: %s' % (j, str(stats)))
 
         # if ok append
@@ -124,7 +134,7 @@ def load_patient(filename, discard_empty_nodules=True, output_rois=False, genera
 
     logging.info('Finished in %.2f s! Added %d slices: %s' % (time()-t_start, len(slices), str(slices)))
 
-    return (X, Y, rois) if output_rois else (X, Y)
+    return (X, Y, rois, total_stats) if output_rois else (X, Y)
 
 
 def chunks(file_list=[], batch_size=32, augmentation_times=4, concurrent_patients=10, thickness=0, is_training=True):
@@ -247,11 +257,11 @@ model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['acc
 ### TESTING -----------------------------------------------------------------
 
 
-## Params and filepaths
-THICKNESS = 1
-write_method = 'w'
-file_list = [os.path.join(VALIDATION_PATH, fp) for fp in os.listdir(VALIDATION_PATH)]
-file_list += [os.path.join(INPUT_PATH, fp) for fp in os.listdir(INPUT_PATH)]
+# ## Params and filepaths
+# THICKNESS = 1
+# write_method = 'w'
+# file_list = [os.path.join(VALIDATION_PATH, fp) for fp in os.listdir(VALIDATION_PATH)]
+# file_list += [os.path.join(INPUT_PATH, fp) for fp in os.listdir(INPUT_PATH)]
 
 #file_list = [g for g in file_list if g.startswith('dsb_')]
 
@@ -329,16 +339,30 @@ file_list += [os.path.join(INPUT_PATH, fp) for fp in os.listdir(INPUT_PATH)]
 # plotting.plot_bb(b[0,nslice], )
 
 
+INPUT_PATH = wp + 'data/preprocessed5_sample'
+INPUT_PATH = wp + 'data/preprocessed5_sample_watershed'
+INPUT_PATH = wp + 'data/preprocessed5_sample_th2'
+file_list = [os.path.join(INPUT_PATH, fp) for fp in os.listdir(INPUT_PATH)]
+
+
 
 ### quality checks for ROIs detection
+total_stats = {}
 for filename in file_list:
-    X, y = load_patient(filename, discard_empty_nodules=True, output_rois=False, thickness=0)
+    X, y, rois, stats = load_patient(filename, discard_empty_nodules=True, output_rois=True, thickness=0)
+    print stats
+    total_stats = add_stats(stats, total_stats)
+    print "TOTAL STATS:", filename.split('/')[-1], total_stats
 
-filename = 'luna_122914038048856168343065566972.npz'
+
+filename = 'luna_127965161564033605177803085629.npz'
 p = np.load(os.path.join(INPUT_PATH,filename))['arr_0']
-X, y, rois = load_patient(os.path.join(INPUT_PATH,filename), discard_empty_nodules=True, output_rois=True, thickness=0)
+X, y, rois, stats = load_patient(os.path.join(INPUT_PATH,filename), discard_empty_nodules=True, output_rois=True, thickness=0)
+print stats
 
-nslice = 49
+
+
+nslice = 80
 regions = [r[1] for r in rois if r[0]==nslice]
 lung_image, lung_mask = p[0,nslice], p[1,nslice]
 plotting.plot_mask(p[0,nslice], p[2,nslice])

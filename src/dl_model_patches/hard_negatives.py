@@ -80,10 +80,11 @@ def load_patient_with_candidates(patient_filename, patient_nodules_df, thickness
         labels, stats = common.get_labels_from_regions(regions_real, regions_pred)
 
 
-        # TODO: remove when filtering good candidates is done in the begining
-        idx_sel = [i for i in range(len(regions_pred)) if labels[i]==1 or sel_patient_nodules_df.iloc[i]['score']>SCORE_TH]
-        regions_pred = [regions_pred[i] for i in idx_sel]
-        labels = [labels[i] for i in idx_sel]
+        # # TODO: remove when filtering good candidates is done in the begining
+        # # Select just regions that are nodules (TPs and FNs) and regions with high socre (FPs)
+        # idx_sel = [i for i in range(len(regions_pred)) if labels[i]==1 or sel_patient_nodules_df.iloc[i]['score']>SCORE_TH]
+        # regions_pred = [regions_pred[i] for i in idx_sel]
+        # labels = [labels[i] for i in idx_sel]
 
         lung_image = patient[0, nslice]
         if thickness>0:  # add extra images as channels for thick resnet
@@ -132,6 +133,7 @@ def chunk_generator(X_orig, y_orig, filenames, nodules_df, thickness=0, batch_si
             yield X_batch, y_batch
 
 
+### CROP GENERATION -------------------------------------------------------------------------------------------------
 
 X_train, y_train = [], []
 for idx,filename in enumerate(filenames_train):
@@ -141,6 +143,7 @@ for idx,filename in enumerate(filenames_train):
     X_train.extend(X_single)
     y_train.extend(y_single)
 
+np.savez_compressed('/Users/mingot/Projectes/kaggle/ds_bowl_lung/data/prova/p.npz', X_single)
 
 X_test, y_test = [], []
 for idx,filename in enumerate(filenames_test):
@@ -150,7 +153,7 @@ for idx,filename in enumerate(filenames_test):
     X_test.extend(X_single)
     y_test.extend(y_single)
 
-### TRAINING -----------------------------------------------------------------
+### TRAINING -------------------------------------------------------------------------------------------------------
 
 
 # Load model
