@@ -260,6 +260,7 @@ for idx,filename in enumerate(file_list_test):
     total_stats = add_stats(stats, total_stats)
     X_test.extend(X_single)
     y_test.extend(y_single)
+print "Total stats:", total_stats
 
 
 tstart = time()
