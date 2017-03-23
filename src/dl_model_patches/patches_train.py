@@ -137,7 +137,7 @@ def load_patient(filename, discard_empty_nodules=True, output_rois=False, genera
     return (X, Y, rois, total_stats) if output_rois else (X, Y)
 
 
-def chunks(X, y, file_list=[], batch_size=32, augmentation_times=4, concurrent_patients=10, thickness=0, is_training=True):
+def chunks(X_orig, y_orig, file_list=[], batch_size=32, augmentation_times=4, concurrent_patients=10, thickness=0, is_training=True):
     """
     Batches generator for keras fit_generator. Returns batches of patches 40x40px
      - augmentation_times: number of time to return the data augmented
@@ -156,9 +156,9 @@ def chunks(X, y, file_list=[], batch_size=32, augmentation_times=4, concurrent_p
         #         y.extend(y_single)
 
         # downsample negatives (reduce 90%)
-        selected_samples  = [i for i in range(len(y)) if y[i]==1 or random.randint(0,9)==0]
-        X = [X[i] for i in selected_samples]
-        y = [y[i] for i in selected_samples]
+        selected_samples  = [i for i in range(len(y_orig)) if y_orig[i]==1 or random.randint(0,9)==0]
+        X = [X_orig[i] for i in selected_samples]
+        y = [y_orig[i] for i in selected_samples]
         logging.info("Final downsampled dataset stats: TP:%d, FP:%d" % (sum(y), len(y)-sum(y)))
 
         # convert to np array and add extra axis (needed for keras)
@@ -178,6 +178,7 @@ def chunks(X, y, file_list=[], batch_size=32, augmentation_times=4, concurrent_p
             if X_batch.shape[0] != batch_size:  # ensure correct batch size
                 continue
             yield X_batch, y_batch
+
 
 
 
@@ -271,13 +272,14 @@ file_list_test = [os.path.join(VALIDATION_PATH, fp) for fp in os.listdir(VALIDAT
 # print "Time saving: %f", time() - tstart
 
 
+logging.info("Loading training and test sets")
 x_train = np.load(os.path.join(PATCHES_PATH, 'x_train.npz'))['arr_0']
 y_train = np.load(os.path.join(PATCHES_PATH, 'y_train.npz'))['arr_0']
 x_test = np.load(os.path.join(PATCHES_PATH, 'x_test.npz'))['arr_0']
 y_test = np.load(os.path.join(PATCHES_PATH, 'y_test.npz'))['arr_0']
 
-logging.info("Training set: %d" % len(y_train))
-logging.info("Test set: %d" % len(y_test))
+logging.info("Training set (1s/total): %d/%d" % (sum(y_train),len(y_train)))
+logging.info("Test set (1s/total): %d/%d" % (sum(y_test), len(y_test)))
 
 
 model.fit_generator(generator=chunks(x_train, y_train, batch_size=32, thickness=1),
