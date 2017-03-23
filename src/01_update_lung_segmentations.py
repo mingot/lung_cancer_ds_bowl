@@ -48,7 +48,7 @@ def calc_segmentation(filename):
 
 pool = multiprocessing.Pool(4)
 tstart = time()
-pool.map(calc_segmentation, filenames[0:4])
+pool.map(calc_segmentation, filenames)
 print time() - tstart
 
 
