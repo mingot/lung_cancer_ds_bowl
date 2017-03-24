@@ -181,7 +181,7 @@ def __load_and_store(filename):
     logging.info("Patient: %s, stats: %s" % (filename.split('/')[-1], stats))
     return X, y, stats
 
-common.multiproc_crop_generator(filenames_train,
+common.multiproc_crop_generator(filenames_train[0:5],
                                 os.path.join(PATCHES_PATH,'x_train_dl2.npz'),
                                 os.path.join(PATCHES_PATH,'y_train_dl2.npz'),
                                 __load_and_store)
