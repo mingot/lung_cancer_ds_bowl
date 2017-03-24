@@ -227,7 +227,8 @@ with open(OUTPUT_CSV, write_method) as file:
         tstart = time()
         logging.info("Patient %s (%d/%d)" % (filename, idx, len(file_list)))
         try:
-            X, y, rois = common.load_patient(filename, output_rois=True, thickness=THICKNESS)
+            patient_data = np.load(filename)['arr_0']
+            X, y, rois = common.load_patient(patient_data, output_rois=True, thickness=THICKNESS)
 
             if len(X)==0:
                 continue
