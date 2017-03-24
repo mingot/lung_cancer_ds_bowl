@@ -38,10 +38,9 @@ vars_nodules <- merge(vars_nodules,patients,all.x=T,by = "patientid")
 
 ## RESNET Data -------------------------------------------------------------------------------------
 #vars_nodules_patches <- fread(paste0("D:/dsb/nodules_patches_v05_augmented.csv"))
-vars_nodules_patches <- data.table(read.csv(paste0("D:/dsb/noduls_patches_v05_backup3.csv"))) ## PATH
-vars_nodules_patches <- vars_nodules_patches[grep("dsb_",filename)][!is.na(x)]
-vars_nodules_patches[,patientid:=gsub(".npz|dsb_","",filename)]
-vars_nodules_patches[,filename := NULL]
+vars_nodules_patches <- fread(paste0("D:/dsb/noduls_patches_v06_rectif.csv")) ## PATH
+vars_nodules_patches <- vars_nodules_patches[grep("dsb_",patientid)][!is.na(x)]
+vars_nodules_patches[,patientid:=gsub(".npz|dsb_","",patientid)]
 ### Filter by score
 vars_nodules_patches = vars_nodules_patches[score>0.9]
 names_change <- c("x","y","diameter","score")
@@ -72,12 +71,19 @@ dataset_final <- na_to_zeros(dataset_final,names(dataset_final))
 vars_train <- c(
   "max_intensity",
   "max_diameter",
+  "big_nodules_patches",
+  #"max_diameter_patches",
   "num_slices_patches",
   "max_score",
-  "max_score_patches",
-  "patient_min",
-  "patient_mean",
-  "patient_std"
+  #"max_score_patches",
+  "nslice_nodule_patch"
+  #"diameter_nodule_patch",
+  #"patient_min",
+  #"patient_mean",
+  #"patient_std"
+  #"diameter_nodule"
+  #"max_intensity_nodule",
+  #"mean_intensity_nodule"
   )
 #vars_train <- names(dataset_final)
 dataset_final_f <- dataset_final[,.SD,.SDcols = unique(c(vars_train,"patientid","cancer"))]
@@ -104,7 +110,7 @@ rdesc = makeResampleDesc("CV", iters = k_folds, stratify = TRUE)
 
 parallelStartSocket(5)
 tr_cv = resample(lrn, train_task, rdesc, models = TRUE, measures = list(auc,logloss,fpr,fnr))
-ctrlF = makeFeatSelControlGA(maxit = 2000)
+ctrlF = makeFeatSelControlGA(maxit = 3000)
 # sfeats = selectFeatures(
 #   learner = lrn,
 #   task = train_task,
@@ -129,7 +135,7 @@ LogLossBinary(target,preds)
 preds = predictCv(final_model, scoring)
 
 submission = data.table(id=patients_scoring, cancer=preds)
-write.csv(submission, paste0(path_repo,"data/submissions/02_submission.csv"), quote=F, row.names=F)
+write.csv(submission, paste0(path_repo,"data/submissions/03_submission.csv"), quote=F, row.names=F)
 
 
 
@@ -137,105 +143,3 @@ write.csv(submission, paste0(path_repo,"data/submissions/02_submission.csv"), qu
 
 #---------------------------------------------------------------------------------------------------
 
-
-
-## EXTRA FUNCTIONS----------------------------------------------------------------------------------
-aggregate_patient <- function(dt) {
-  dt <- na_to_zeros(dt,c(
-    "diameter",
-    "max_intensity",
-    "min_intensity",
-    "mean_intensity",
-    "nodule_pred",
-    "diameter_patches",
-    "score_patches")
-    )
-
-  final_df = dt[,.(total_nodules_unet=sum(!is.na(x)), 
-                   total_nodules_patches = sum(!is.na(x_patches)),
-                   big_nodules_unet = sum(diameter > 20,na.rm=T),
-                   big_nodules_patches = sum(diameter_patches > 20,na.rm = T),
-                   max_diameter = max(diameter,na.rm = T),
-                   max_diameter_patches = max(diameter_patches,na.rm = T),
-                   num_slices_unet = uniqueN(nslice[!is.na(x)]),
-                   num_slices_patches = uniqueN(nslice[!is.na(x_patches)]),
-                   nodules_per_slice_unet = sum(!is.na(x))/uniqueN(nslice[!is.na(x)]),
-                   nodules_per_slice_patches = sum(!is.na(x_patches))/uniqueN(nslice[!is.na(x_patches)]),
-                   max_intensity = max(max_intensity, na.rm=T), 
-                   max_mean_intensity = max(mean_intensity, na.rm=T),
-                   min_intensity = min(min_intensity,na.rm=T),
-                   max_score = max(nodule_pred, na.rm=T),
-                   mean_score = mean(nodule_pred),
-                   max_score_patches = max(score_patches,na.rm=T),
-                   mean_score_patches = mean(score_patches,na.rm=T)
-                   
-  ),
-  by=.(patientid)]
-  
-  final_df[!is.finite(max_intensity), max_intensity:=0]
-  final_df[!is.finite(min_intensity), min_intensity:=0]
-  final_df[!is.finite(max_mean_intensity), max_mean_intensity:=0]
-  final_df[is.na(final_df)] <- 0
-  final_df[max_score < 0,max_score := 0]
-  
-  # Computing if the patient has consecutive nodules 
-  dt_2d <- dt[
-    nodule_pred > 0.2 & max_intensity > 0.96,
-    .(patientid,nslice,x,y,x_patches,y_patches)]
-  dt_2d_bis <- dt[
-    nodule_pred > 0.2 & max_intensity > 0.96,
-    .(patientid,nslice2 = nslice,x2 = x,y2 = y,x_patches2 = x_patches,y_patches2 = y_patches)]
-  dt_3d <- merge(dt_2d,dt_2d_bis,all.x = T, by = "patientid",allow.cartesian = TRUE)
-  dt_3d <- dt_3d[nslice2 > nslice]
-  setkey(dt_3d,patientid,nslice,nslice2)
-  dt_3d <- dt_3d[,.SD[1],c("patientid","nslice")]
-  dt_3d <- dt_3d[nslice2-nslice < 4]
-  dt_3d[,d_nodule := abs(x-x2)+abs(y-y2) < 10]
-  nodules_consec <- dt_3d[,.(consec_nods = sum(d_nodule)),patientid]
-  
-  final_df <- merge(final_df,nodules_consec,all.x = T, by = "patientid")
-  final_df[is.na(consec_nods),consec_nods := 0]
-  
-  # Computing the variables of the nodules with highter score for patient
-  dt[,`:=`(
-    max_score = max(nodule_pred,na.rm=T),
-    max_score_patches=max(score_patches,na.rm=T)),patientid]
-  max_score <- dt[
-    (max_score == nodule_pred & max_score > 0),
-    .(patientid,
-      diameter_nodule = diameter,
-      max_intensity_nodule = max_intensity,
-      nslice_nodule = nslice,
-      mean_intensity_nodule = mean_intensity)
-    ]
-  
-  max_score_nodule <- dt[
-    max_score_patches == score_patches & max_score_patches > 0,
-    .(patientid,
-      nslice_nodule_patch = nslice,
-      diameter_nodule_patch = diameter_patches)
-    ]
-  max_score_nodule <- max_score_nodule[,.SD[1],patientid]
-  final_df <- merge(final_df,max_score,all.x = T, by="patientid")
-  final_df <- merge(final_df,max_score_nodule,all.x=T,by = "patientid")
-  final_df <- na_to_zeros(
-    final_df,
-    c("diameter_nodule",
-      "max_intensity_nodule",
-      "nslice_nodule",
-      "mean_intensity_nodule",
-      "nslice_nodule_patch",
-      "diameter_nodule_patch")
-    )
-  return(final_df)
-}
-na_to_zeros <- function(dt,name_vars) {
-  for(name_var in name_vars) {
-    setnames(dt,name_var,"id")
-    if(nrow(dt[is.na(id)]) > 0) {
-      dt[is.na(id),id := 0]
-    }
-    setnames(dt,"id",name_var)
-  }
-  return(dt)
-}
