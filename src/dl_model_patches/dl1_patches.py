@@ -200,7 +200,7 @@ file_list += [os.path.join(INPUT_PATH, fp) for fp in os.listdir(INPUT_PATH) if f
 
 
 # ## if the OUTPUT_CSV file already exists, continue it
-# previous_filenames = set()
+previous_filenames = set()
 # if os.path.exists(OUTPUT_CSV):
 #     write_method = 'a'
 #     with open(OUTPUT_CSV) as file:
