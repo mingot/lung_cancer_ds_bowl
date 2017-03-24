@@ -1,7 +1,7 @@
 import numpy as np
 import logging
 import multiprocessing
-import time
+from time import time
 from skimage import measure, transform, morphology
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s  %(levelname)-8s %(message)s',
