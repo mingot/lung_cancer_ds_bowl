@@ -1,6 +1,11 @@
 import numpy as np
-from skimage import measure, transform
-
+import logging
+import multiprocessing
+from time import time
+from skimage import measure, transform, morphology
+logging.basicConfig(level=logging.INFO,
+                    format='%(asctime)s  %(levelname)-8s %(message)s',
+                    datefmt='%m-%d %H:%M:%S')
 
 
 def normalize(image, MIN_BOUND=-1000.0, MAX_BOUND=400.0):
@@ -78,7 +83,7 @@ def augment_bbox(r, margin=5):
     return r
 
 
-def extract_rois_from_lungs(lung_image, lung_mask):
+def extract_rois_from_lung_mask(lung_image, lung_mask):
     """
         Given a lung image,  generate ROIs based on HU filtering.
         Reduce the candidates by discarding smalls and very rectangular regions.
@@ -88,6 +93,7 @@ def extract_rois_from_lungs(lung_image, lung_mask):
     mask[mask<-500] = -2000  # based on LUNA examination ()
 
     # generate regions
+    #mask = morphology.opening(mask)
     regions_pred = get_regions(mask, threshold=np.mean(mask))
 
     # discard small regions or long connected regions
@@ -147,7 +153,125 @@ def get_labels_from_regions(regions_real, regions_pred):
         if not is_detected:
             stats['fn'] += 1
 
-    stats['tp'] = np.sum(labels)
+    stats['tp'] = len(regions_real) - stats['fn'] # int(np.sum(labels))
     stats['fp'] = len(labels) - np.sum(labels)
     return labels, stats
 
+
+def extract_rois_from_df(patient, nodules_df):
+    regions = []
+    for idx, row in nodules_df.iterrows():
+        x, y, d = int(row['x']), int(row['y']), int(row['diameter']+10)
+        a = AuxRegion(bbox = [max(0,x-d/2), max(0,y-d/2), x+d/2, y+d/2])
+        regions.append(a)
+    return regions
+
+
+def add_stats(stat1, stat2):
+    stat_res = {}
+    stat_master = stat1 if len(stat1)>0 else stat2
+    for k in stat_master:
+        stat_res[k] = stat1.get(k,0) + stat2.get(k,0)
+
+    return stat_res
+
+
+def load_patient(patient_data, patient_nodules_df=None, discard_empty_nodules=False,
+                 output_rois=False, debug=False, thickness=0):
+    """
+    Returns images generated for each patient.
+     - patient_nodules_df: pd dataframe with at least: x, y, nslice, diameter
+     - thickness: number of slices up and down to be taken
+    """
+    X, Y, rois = [], [], []
+    total_stats = {}
+
+    # load the slices to swipe
+    if patient_nodules_df is not None:
+        nslices = list(set(patient_nodules_df['nslice']))
+    else:
+        nslices = range(patient_data.shape[1])
+
+    # Check if it has nodules annotated
+    if patient_data.shape[0]!=3:
+        aux = np.zeros((3,patient_data.shape[1], patient_data.shape[2], patient_data.shape[3]))
+        aux[0] = patient_data[0]
+        aux[1] = patient_data[1]
+        patient_data = aux
+
+
+    for nslice in nslices:
+        lung_image, lung_mask, nodules_mask = patient_data[0,nslice,:,:], patient_data[1,nslice,:,:], patient_data[2,nslice,:,:]
+
+        if patient_nodules_df is None:
+            # Discard if no nodules
+            if nodules_mask.sum() == 0 and discard_empty_nodules:
+                continue
+
+            # Discard if bad segmentation
+            voxel_volume_l = 2*0.7*0.7/(1000000.0)
+            lung_volume_l = np.sum(lung_mask)*voxel_volume_l
+            if lung_volume_l < 0.02 or lung_volume_l > 0.1:
+                continue  # skip slices with bad lung segmentation
+
+            # Filter ROIs to discard small and connected
+            regions_pred = extract_rois_from_lung_mask(lung_image, lung_mask)
+
+        else:
+            sel_patient_nodules_df = patient_nodules_df[patient_nodules_df['nslice']==nslice]
+            regions_pred = extract_rois_from_df(patient_data, sel_patient_nodules_df)
+
+        # Extract cropped images
+        if thickness>0:  # add extra images as channels for thick resnet
+            lung_image = patient_data[0,(nslice - thickness):(nslice + thickness + 1),:,:]
+            if lung_image.shape[0] != 2*thickness + 1:  # skip the extremes
+                continue
+        cropped_images = extract_crops_from_regions(lung_image, regions_pred)
+
+        # Generate labels
+        if np.sum(nodules_mask)!=0:
+            regions_real = get_regions(nodules_mask, threshold=np.mean(nodules_mask))
+            labels, stats = get_labels_from_regions(regions_real, regions_pred)
+        else:
+            stats = {'fp':len(regions_pred), 'tp': 0, 'fn':0}
+            labels = [0]*len(regions_pred)
+
+        if patient_nodules_df is not None:
+                # TODO: remove when filtering good candidates is done in the begining
+                # Select just regions that are nodules (TPs and FNs) and regions with high socre (FPs)
+                idx_sel = [i for i in range(len(regions_pred)) if labels[i]==1 or sel_patient_nodules_df.iloc[i]['score']>0.3]
+                regions_pred = [regions_pred[i] for i in idx_sel]
+                if sum(labels)!=0:
+                    labels, stats = get_labels_from_regions(regions_real, regions_pred)
+                else:
+                    stats = {'fp':len(regions_pred), 'tp': 0, 'fn':0}
+                    labels = [0]*len(regions_pred)
+                # labels = [labels[i] for i in idx_sel]
+
+        total_stats = add_stats(stats, total_stats)
+        if debug: logging.info("++ Slice %d, stats: %s" % (nslice, str(stats)))
+
+        X.extend(cropped_images)
+        Y.extend(labels)  # nodules_mask
+        rois.extend([(nslice, r) for r in regions_pred])  # extend regions with the slice index
+
+    return (X, Y, rois, total_stats) if output_rois else (X, Y)
+
+
+
+def multiproc_crop_generator(filenames, out_x_filename, out_y_filename, load_patient_func):
+    """loads patches in parallel and stores the results."""
+    pool = multiprocessing.Pool(4)
+    tstart = time()
+    x, y, stats = zip(*pool.map(load_patient_func, filenames))
+
+    xf, yf, total_stats = [], [], {}
+    for i in range(len(x)):
+        xf.extend(x[i])
+        yf.extend(y[i])
+        total_stats = add_stats(total_stats, stats[i])
+
+    logging.info('Total time: %.2f, total patients:%d, stats: %s' % (time() - tstart, len(x), total_stats))
+    np.savez_compressed(out_x_filename, np.asarray(xf))
+    np.savez_compressed(out_y_filename, np.asarray(yf))
+    logging.info('Finished saving files')
