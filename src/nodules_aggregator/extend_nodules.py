@@ -7,6 +7,10 @@ import pandas as pd
 import scipy.misc as spm
 from scipy import ndimage as ndi
 import collections
+import re #regex
+
+# pca
+import sklearn.decomposition as skd
 
 import os
 import pdb # debug
@@ -183,8 +187,15 @@ def process_img(img, lung_mask, return_images=False):
     
     # 5 remove border
     #  this can clear everything if the node is ON the border
+    # If we lose more than 40% of the area just undo it
+    area_4 = ex_4.sum()
+    if area_4 == 0:
+        return None
+    
     ex_5 = sks.clear_border(ex_4)
-    if ex_5.sum() == 0:
+    area_5 = ex_5.sum()
+    
+    if float(area_4 - area_5)/area_4 > .4:
         ex_5 = ex_4
     # plt.imshow(ex_5)
     
@@ -319,6 +330,27 @@ def process_lbp(img_hu):
     
     return ans_bins
     
+
+def compress_feature(df, feature, n_components=3):
+    REGEX = '[0-9]+_' + feature + '.+'
+    
+    # subset
+    df_feat = df.filter(regex=REGEX)
+    
+    # PCA
+    pca_feat = skd.PCA(n_components=n_components, copy=False)
+    df_feat_pca = pca_feat.fit_transform(df_feat)
+    
+    # New colnames and new data frame
+    names_feat = ['PC' + str(x) + '_' + feature for x in range(1, n_components+1)]
+    df_feat_pca = pd.DataFrame(
+        data = df_feat_pca, 
+        index = df_feat.index, 
+        columns = names_feat)
+    
+    # Drop old columns
+    return pd.concat([df.select(lambda x: not re.search(REGEX, x), axis=1), df_feat_pca], axis=1)
+  
     
 # def process_pipeline_patient(**kwargs):
 def process_pipeline_patient(
@@ -411,6 +443,7 @@ def process_pipeline_csv(
     csv_in, 
     patient_path, 
     csv_out, 
+    compress={'hog':3, 'lbp':3, 'hu':2},
     nCores=1,
     patient_colname='patientid',
     verbose=False):
@@ -420,6 +453,8 @@ def process_pipeline_csv(
     csv_in: csv file from dl
     patient_path: path where the .npz files are stored
     csv_out: csv file to write
+    compress: dictionary, features as keys and number of principal 
+    components as values
     nCores: number of cores to use 
     patient_colname: name of the patient column
     verbose: show debug messages
@@ -491,8 +526,19 @@ def process_pipeline_csv(
     #         verbose=False)
     #     df_out.append(df_all)
     
+    df_list = pd.concat(df_list)
+    if len(compress):
+        for key, value in compress.iteritems():
+            print 'Compressing feature: {} using {} PCs ...'.format(key, value)
+            df_list = compress_feature(df_list, feature=key, n_components=value)
+    
+    print 'Filtered data frame shape: {}'.format(df_dl_filter.shape)
+    print 'Final shape (rows whose nodes were not found were dropped): {}'.format(df_list.shape)
+    
     print 'Done! Writing csv...'
-    pd.concat(df_list).to_csv(csv_out, index=False)
+    df_list.to_csv(csv_out, index=False)
+
+
 # END CSV AUGMENTATION -----------------------------------------------------------------
 
 class AuxRegion():
