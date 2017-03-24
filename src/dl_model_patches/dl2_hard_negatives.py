@@ -177,7 +177,7 @@ filenames_test = [os.path.join(VALIDATION_PATH,f) for f in set(nodules_df['patie
 def __load_and_store(filename):
     patient_data = np.load(filename)['arr_0']
     ndf = nodules_df[nodules_df['patientid']==filename.split('/')[-1]]
-    X, y, rois, stats = common.load_patient(patient_data, ndf, output_rois=True, debug=True, thickness=1)
+    X, y, rois, stats = common.load_patient(patient_data, ndf, output_rois=True, thickness=1)
     logging.info("Patient: %s, stats: %s" % (filename.split('/')[-1], stats))
     return X, y, stats
 
