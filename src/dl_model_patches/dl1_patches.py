@@ -1,6 +1,7 @@
 import os
 import random
 import logging
+import multiprocessing
 import numpy as np
 import pandas as pd
 from time import time
@@ -16,20 +17,6 @@ from dl_networks.sample_resnet import ResnetBuilder
 from dl_utils.tb_callback import TensorBoard
 
 
-
-class IntervalEvaluation(Callback):
-    """Keras callback to compute auc."""
-    def __init__(self, validation_data=(), interval=10):
-        super(Callback, self).__init__()
-
-        self.interval = interval
-        self.X_val, self.y_val = validation_data
-
-    def on_epoch_end(self, epoch, logs={}):
-        if epoch % self.interval == 0:
-            y_pred = self.model.predict_proba(self.X_val, verbose=0)
-            score = metrics.roc_auc_score(self.y_val, y_pred)
-            logging.info("interval evaluation - epoch: {:d} - AUC score: {:.6f}".format(epoch, score))
 
 ### LOADING DATA -----------------------------------------------------------------
 
@@ -47,94 +34,6 @@ train_datagen = ImageDataGenerator(
 
 test_datagen = ImageDataGenerator(dim_ordering="th")  # dummy for testing to have the same structure
 
-def add_stats(stat1, stat2):
-    stat_res = {}
-    stat_master = stat1 if len(stat1)>0 else stat2
-    for k in stat_master:
-        stat_res[k] = stat1.get(k,0) + stat2.get(k,0)
-
-    return stat_res
-
-
-def load_patient(filename, discard_empty_nodules=True, output_rois=False, generate_labels=True, thickness=0):
-    """
-    Returns images generated for each patient.
-     - thickness: number of slices up and down to be taken
-    """
-
-    X, Y, rois = [], [], []
-    logging.info('Loading patient %s' % filename.split('/')[-1])
-
-    # filename = 'luna_121805476976020513950614465787.npz'
-    # j = 46
-    t_start = time()
-    # b = np.load(os.path.join(INPUT_PATH, filename))['arr_0']
-    b = np.load(filename)['arr_0']
-
-    # Check if it has nodules annotated
-    if b.shape[0]!=3:
-        if discard_empty_nodules:
-            return X, Y  # return empty
-        else:  # create a dummy zero nodules mask (for testing)
-            aux = np.zeros((3,b.shape[1], b.shape[2], b.shape[3]))
-            aux[0] = b[0]
-            aux[1] = b[1]
-            b = aux
-
-    last_slice = -1e3  # big initialization
-    slices = []
-    total_stats = {}
-    for j in range(b.shape[1]):
-
-        lung_image, lung_mask, nodules_mask = b[0,j,:,:], b[1,j,:,:], b[2,j,:,:]
-
-        # Discard if no nodules
-        if nodules_mask.sum() == 0 and discard_empty_nodules:
-            continue
-
-        # Discard if bad segmentation
-        voxel_volume_l = 2*0.7*0.7/(1000000.0)
-        lung_volume_l = np.sum(lung_mask)*voxel_volume_l
-        if lung_volume_l < 0.02 or lung_volume_l > 0.1:
-            continue  # skip slices with bad lung segmentation
-
-        # # Discard if consecutive slices
-        # if j<last_slice + 5:
-        #     continue
-
-        # Filter ROIs to discard small and connected
-        regions_pred = common.extract_rois_from_lungs(lung_image, lung_mask)
-
-        ## visualize regions
-        # plotting.plot_bb(lung_image, regions_real)
-        # plotting.plot_bb(lung_image, regions_pred)
-
-        # Extract cropped images
-        if thickness>0:  # add extra images as channels for thick resnet
-            lung_image = b[0,(j - thickness):(j + thickness + 1),:,:]
-            if lung_image.shape[0] != 2*thickness + 1:  # skip the extremes
-                continue
-        cropped_images = common.extract_crops_from_regions(lung_image, regions_pred)
-
-        # Generate labels
-        labels = []
-        if generate_labels:  # when not testing, compute labels
-            regions_real = common.get_regions(nodules_mask, threshold=np.mean(nodules_mask))
-            labels, stats = common.get_labels_from_regions(regions_real, regions_pred)
-            total_stats = add_stats(stats, total_stats)
-            logging.info('++ ROIs stats for slice %d: %s' % (j, str(stats)))
-
-        # if ok append
-        last_slice = j
-        slices.append(j)
-
-        X.extend(cropped_images)
-        Y.extend(labels)  # nodules_mask
-        rois.extend([(j,r) for r in regions_pred])  # extend regions with the slice index
-
-    logging.info('Finished in %.2f s! Added %d slices: %s' % (time()-t_start, len(slices), str(slices)))
-
-    return (X, Y, rois, total_stats) if output_rois else (X, Y)
 
 
 def chunks(X_orig, y_orig, file_list=[], batch_size=32, augmentation_times=4, concurrent_patients=10, thickness=0, is_training=True):
@@ -181,125 +80,120 @@ def chunks(X_orig, y_orig, file_list=[], batch_size=32, augmentation_times=4, co
 
 
 
-
 ### MODEL LOADING -----------------------------------------------------------------
 
 
-# PATHS
+# # PATHS
+# wp = os.environ['LUNG_PATH']
+# INPUT_PATH = '/mnt/hd2/preprocessed5'  # INPUT_PATH = wp + 'data/preprocessed5_sample'
+# VALIDATION_PATH = '/mnt/hd2/preprocessed5_validation_luna'
+# NODULES_PATH = wp + 'data/luna/annotations.csv'
+# OUTPUT_MODEL = wp + 'models/jm_patches_train_v07.hdf5'  # OUTPUT_MODEL = wp + 'personal/jm_patches_train_v06_local.hdf5'
+# OUTPUT_CSV = wp + 'output/noduls_patches_v07.csv'
+# PATCHES_PATH = '/mnt/hd2/patches'  # PATCHES_PATH = wp + 'data/preprocessed5_patches'
+# LOGS_PATH = wp + 'logs/%s' % str(int(time()))
+# if not os.path.exists(LOGS_PATH):
+#     os.makedirs(LOGS_PATH)
+
+
+
 wp = os.environ['LUNG_PATH']
-INPUT_PATH = '/mnt/hd2/preprocessed5'  # INPUT_PATH = wp + 'data/preprocessed5_sample'
-VALIDATION_PATH = '/mnt/hd2/preprocessed5_validation_luna'
+INPUT_PATH = wp + 'data/preprocessed5_sample'
+VALIDATION_PATH = INPUT_PATH
 NODULES_PATH = wp + 'data/luna/annotations.csv'
-OUTPUT_MODEL = wp + 'models/jm_patches_train_v07.hdf5'  # OUTPUT_MODEL = wp + 'personal/jm_patches_train_v06_local.hdf5'
-OUTPUT_CSV = wp + 'output/noduls_patches_v07.csv'
-PATCHES_PATH = '/mnt/hd2/patches'
-LOGS_PATH = wp + 'logs/%s' % str(int(time()))
-if not os.path.exists(LOGS_PATH):
-    os.makedirs(LOGS_PATH)
+OUTPUT_MODEL = wp + 'personal/jm_patches_train_v06.hdf5'
+PATCHES_PATH = wp + 'data/preprocessed5_patches'
 
 
 # OTHER INITIALIZATIONS: tensorboard, model checkpoint and logging
-tb = TensorBoard(log_dir=LOGS_PATH, histogram_freq=1, write_graph=False, write_images=False)  # replace keras.callbacks.TensorBoard
-model_checkpoint = ModelCheckpoint(OUTPUT_MODEL, monitor='loss', save_best_only=True)
+# tb = TensorBoard(log_dir=LOGS_PATH, histogram_freq=1, write_graph=False, write_images=False)  # replace keras.callbacks.TensorBoard
+# model_checkpoint = ModelCheckpoint(OUTPUT_MODEL, monitor='loss', save_best_only=True)
 K.set_image_dim_ordering('th')
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s  %(levelname)-8s %(message)s',
                     datefmt='%m-%d %H:%M:%S')
 
-# # Visualize a batch
-# X_batch, y_batch  = chunks(file_list_train, batch_size=32).next()
-# plotting.multiplot([X_batch[i,0] for i in range(X_batch.shape[0])],
-#                    [y_batch[i,0] for i in range(y_batch.shape[0])])
 
+### PATCHES GENERATION -----------------------------------------------------------------
 
-# Load model
-model = ResnetBuilder().build_resnet_34((3,40,40),1)
-model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['accuracy','fmeasure'])
-# logging.info('Loading exiting model...')
-# model.load_weights(OUTPUT_MODEL)
-
-
-### TRAINING -----------------------------------------------------------------
-
-## PATIENTS FILE LIST
-patients_with_annotations = pd.read_csv(NODULES_PATH)  # filter patients with no annotations to avoid having to read them
-patients_with_annotations = list(set(patients_with_annotations['seriesuid']))
-patients_with_annotations = ["luna_%s.npz" % p.split('.')[-1] for p in patients_with_annotations]
-
-file_list = os.listdir(INPUT_PATH)
-file_list = [g for g in file_list if g.startswith('luna_')]
-# random.shuffle(file_list)
-file_list_train = [os.path.join(INPUT_PATH, fp) for fp in file_list if fp in patients_with_annotations]
-file_list_test = [os.path.join(VALIDATION_PATH, fp) for fp in os.listdir(VALIDATION_PATH) if fp in patients_with_annotations]
-
-
-# tstart = time()
+# ## PATIENTS FILE LIST
+# patients_with_annotations = pd.read_csv(NODULES_PATH)  # filter patients with no annotations to avoid having to read them
+# patients_with_annotations = list(set(patients_with_annotations['seriesuid']))
+# patients_with_annotations = ["luna_%s.npz" % p.split('.')[-1] for p in patients_with_annotations]
+#
+# file_list = os.listdir(INPUT_PATH)
+# file_list = [g for g in file_list if g.startswith('luna_')]
+# file_list_train = [os.path.join(INPUT_PATH, fp) for fp in file_list if fp in patients_with_annotations]
+# file_list_test = [os.path.join(VALIDATION_PATH, fp) for fp in os.listdir(VALIDATION_PATH) if fp in patients_with_annotations]
+#
+#
+# ## STORING PATCHES IN DISK
+# print "Generating and saving training set..."
+# tstart, total_stats = time(), {}
 # X_train, y_train = [], []
-# total_stats = {}
 # for idx,filename in enumerate(file_list_train):
 #     patientid = filename.split('/')[-1]
-#     logging.info("Progress %d/%d" % (idx,len(file_list_train)))
-#     X_single, y_single, rois, stats = load_patient(filename, output_rois=True, thickness=1)
-#     total_stats = add_stats(stats, total_stats)
+#     logging.info("Loading patient %s %d/%d" % (patientid, idx,len(file_list_train)))
+#     patient_data = np.load(os.path.join(INPUT_PATH, filename))['arr_0']
+#     X_single, y_single, rois, stats = common.load_patient(patient_data, discard_empty_nodules=True, output_rois=True, debug=True, thickness=1)
+#     total_stats = common.add_stats(stats, total_stats)
 #     X_train.extend(X_single)
 #     y_train.extend(y_single)
-# print "Total stats:", total_stats
-# print "Time generating: %f", time() - tstart
-#
-#
-# tstart = time()
+# print "Time generating: %.2f, Total stats: %s" % (time() - tstart, str(total_stats))
 # print "Saving file..."
-# np.savez_compressed('/mnt/hd2/patches/x_train.npz', np.asarray(X_train))
-# np.savez_compressed('/mnt/hd2/patches/y_train.npz', np.asarray(y_train))
-# print "Time saving: %f", time() - tstart
+# np.savez_compressed(os.path.join(PATCHES_PATH,'x_train.npz'), np.asarray(X_train))
+# np.savez_compressed(os.path.join(PATCHES_PATH,'y_train.npz'), np.asarray(y_train))
 #
-# total_stats = {}
+#
+# print "Generating and saving test set..."
+# tstart, total_stats = time(), {}
 # X_test, y_test = [], []
 # for idx,filename in enumerate(file_list_test):
 #     patientid = filename.split('/')[-1]
-#     logging.info("Progress %d/%d" % (idx,len(file_list_test)))
-#     X_single, y_single, rois, stats = load_patient(filename, output_rois=True, thickness=1)
-#     total_stats = add_stats(stats, total_stats)
+#     logging.info("Loading patient %s %d/%d" % (patientid, idx,len(file_list_train)))
+#     patient_data = np.load(os.path.join(INPUT_PATH, filename))['arr_0']
+#     X_single, y_single, rois, stats = common.load_patient(patient_data, discard_empty_nodules=True, output_rois=True, debug=True, thickness=1)
+#     total_stats = common.add_stats(stats, total_stats)
 #     X_test.extend(X_single)
 #     y_test.extend(y_single)
-# print "Total stats:", total_stats
-#
-#
-# tstart = time()
+# print "Time generating: %.2f, Total stats: %s" % (time() - tstart, str(total_stats))
 # print "Saving file..."
-# np.savez_compressed('/mnt/hd2/patches/x_test.npz', np.asarray(X_test))
-# np.savez_compressed('/mnt/hd2/patches/y_test.npz', np.asarray(y_test))
-# print "Time saving: %f", time() - tstart
+# np.savez_compressed(os.path.join(PATCHES_PATH,'x_test.npz'), np.asarray(X_test))
+# np.savez_compressed(os.path.join(PATCHES_PATH,'y_test.npz'), np.asarray(y_test))
 
+### TRAINING -----------------------------------------------------------------
 
-logging.info("Loading training and test sets")
-x_train = np.load(os.path.join(PATCHES_PATH, 'x_train.npz'))['arr_0']
-y_train = np.load(os.path.join(PATCHES_PATH, 'y_train.npz'))['arr_0']
-x_test = np.load(os.path.join(PATCHES_PATH, 'x_test.npz'))['arr_0']
-y_test = np.load(os.path.join(PATCHES_PATH, 'y_test.npz'))['arr_0']
-
-logging.info("Training set (1s/total): %d/%d" % (sum(y_train),len(y_train)))
-logging.info("Test set (1s/total): %d/%d" % (sum(y_test), len(y_test)))
-
-
-model.fit_generator(generator=chunks(x_train, y_train, batch_size=32, thickness=1),
-                    samples_per_epoch=1280,  # make it small to update TB and CHECKPOINT frequently
-                    nb_epoch=500,
-                    verbose=1,
-                    class_weight={0:1., 1:4.},
-                    callbacks=[tb, model_checkpoint],
-                    validation_data=chunks(x_test, y_test, batch_size=32, thickness=1, is_training=False),
-                    nb_val_samples=len(y_test),
-                    max_q_size=64,
-                    nb_worker=1)  # a locker is needed if increased the number of parallel workers
+# # LOADING PATCHES FROM DISK
+# logging.info("Loading training and test sets")
+# x_train = np.load(os.path.join(PATCHES_PATH, 'x_train.npz'))['arr_0']
+# y_train = np.load(os.path.join(PATCHES_PATH, 'y_train.npz'))['arr_0']
+# x_test = np.load(os.path.join(PATCHES_PATH, 'x_test.npz'))['arr_0']
+# y_test = np.load(os.path.join(PATCHES_PATH, 'y_test.npz'))['arr_0']
+# logging.info("Training set (1s/total): %d/%d" % (sum(y_train),len(y_train)))
+# logging.info("Test set (1s/total): %d/%d" % (sum(y_test), len(y_test)))
+#
+#
+# # Load model
+# model = ResnetBuilder().build_resnet_34((3,40,40),1)
+# model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['accuracy','fmeasure'])
+# # logging.info('Loading exiting model...')
+# # model.load_weights(OUTPUT_MODEL)
+#
+# model.fit_generator(generator=chunks(x_train, y_train, batch_size=32, thickness=1),
+#                     samples_per_epoch=1280,  # make it small to update TB and CHECKPOINT frequently
+#                     nb_epoch=500,
+#                     verbose=1,
+#                     class_weight={0:1., 1:4.},
+#                     callbacks=[tb, model_checkpoint],
+#                     validation_data=chunks(x_test, y_test, batch_size=32, thickness=1, is_training=False),
+#                     nb_val_samples=len(y_test),
+#                     max_q_size=64,
+#                     nb_worker=1)  # a locker is needed if increased the number of parallel workers
 
 # ## CHECKS GENERATOR
 # for i in range(10):
 #     X, y = next(chunks(file_list_train[1:3], batch_size=4, thickness=1))
 #     print X.shape, y.shape
-
-
-
 
 
 ### EVALUATE -----------------------------------------------------------------
@@ -310,10 +204,10 @@ model.fit_generator(generator=chunks(x_train, y_train, batch_size=32, thickness=
 # write_method = 'w'
 # file_list = [os.path.join(VALIDATION_PATH, fp) for fp in os.listdir(VALIDATION_PATH)]
 # file_list += [os.path.join(INPUT_PATH, fp) for fp in os.listdir(INPUT_PATH)]
-
-#file_list = [g for g in file_list if g.startswith('dsb_')]
-
-
+#
+# file_list = [g for g in file_list if g.startswith('dsb_')]
+#
+#
 # ## if the OUTPUT_CSV file already exists, continue it
 # previous_filenames = set()
 # if os.path.exists(OUTPUT_CSV):
@@ -321,8 +215,8 @@ model.fit_generator(generator=chunks(x_train, y_train, batch_size=32, thickness=
 #     with open(OUTPUT_CSV) as file:
 #         for l in file:
 #             previous_filenames.add(l.split(',')[0])
-#
-#
+
+
 # with open(OUTPUT_CSV, write_method) as file:
 #
 #     # write the header if the file is new
@@ -335,7 +229,7 @@ model.fit_generator(generator=chunks(x_train, y_train, batch_size=32, thickness=
 #
 #         logging.info("Patient %s (%d/%d)" % (filename, idx, len(file_list)))
 #         try:
-#             X, y, rois = load_patient(filename, discard_empty_nodules=False, output_rois=True, generate_labels=False, thickness=THICKNESS)
+#             X, y, rois = common.load_patient(filename, output_rois=True, thickness=THICKNESS)
 #
 #             if len(X)==0:
 #                 continue
@@ -356,8 +250,34 @@ model.fit_generator(generator=chunks(x_train, y_train, batch_size=32, thickness=
 #                 logging.info("++ Good candidate found with (nslice,x,y,diam,score): %d,%d,%d,%.2f,%.2f" % (nslice,r.centroid[0], r.centroid[1], r.equivalent_diameter,preds[i]))
 
 
+# file_list = [os.path.join(VALIDATION_PATH, fp) for fp in os.listdir(VALIDATION_PATH)]
+file_list = [os.path.join(INPUT_PATH, fp) for fp in os.listdir(INPUT_PATH)][0:5]
+# file_list = [g for g in file_list if g.startswith('dsb_')]
+
+# Load model
+model = ResnetBuilder().build_resnet_34((3,40,40),1)
+model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['accuracy','fmeasure'])
+logging.info('Loading exiting model...')
+model.load_weights(OUTPUT_MODEL)
+
+def load_and_store(filename):
+    patient_data = np.load(filename)['arr_0']
+    X, y, rois, stats = common.load_patient(patient_data, output_rois=True, thickness=1)
+    logging.info(stats)
+    X = np.asarray(X)
+    preds = model.predict(X, verbose=1)
+    return rois, preds
+
+pool = multiprocessing.Pool(4)
+tstart = time()
+rois, preds = zip(*pool.map(load_and_store, file_list[0:5]))
+print "Total time:",time() - tstart
 
 
+with open(wp + 'output/parallel_test.csv', 'w') as file:
+    for i in range(len(file_list)):
+        nslice, r = rois[i]
+        file.write('%s,%d,%d,%d,%.3f,%.5f,%d\n' % (file_list[i].split('/')[-1], nslice, r.centroid[0], r.centroid[1], r.equivalent_diameter,preds[i], preds[i]))
 
 ### CHECKS -----------------------------------------------------------------
 

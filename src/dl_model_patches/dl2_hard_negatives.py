@@ -23,6 +23,7 @@ OUTPUT_DL1 =  wp + 'output/noduls_patches_v06.csv'  # OUTPUT_DL1 = wp + 'persona
 OUTPUT_MODEL =  wp + 'models/jm_patches_hardnegative_v01.hdf5'  # OUTPUT_MODEL = wp + 'personal/jm_patches_train_v06_local.hdf5'
 INPUT_PATH = '/mnt/hd2/preprocessed5/' # INPUT_PATH = wp + 'data/preprocessed5_sample'
 VALIDATION_PATH = '/mnt/hd2/preprocessed5_validation_luna/' # VALIDATION_PATH = wp + 'data/preprocessed5_sample'
+PATCHES_PATH = '/mnt/hd2/patches'  # PATCHES_PATH = wp + 'data/preprocessed5_patches'
 LOGS_PATH = wp + 'logs/%s' % str(int(time()))
 if not os.path.exists(LOGS_PATH):
     os.makedirs(LOGS_PATH)
@@ -35,20 +36,6 @@ logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s  %(levelname)-8s %(message)s',
                     datefmt='%m-%d %H:%M:%S')
 
-# luna annotated samples (do not train over the samples not annotated)
-luna_df = pd.read_csv(LUNA_ANNOTATIONS)
-annotated = list(set(['luna_%s.npz' % p.split('.')[-1] for p in luna_df['seriesuid']]))
-
-# filter TP and FP of the suggested by DL1
-SCORE_TH = 0.7
-nodules_df = pd.read_csv(OUTPUT_DL1)
-#nodules_df = nodules_df[nodules_df['score'] > SCORE_TH]  # TODO: this filter should include the TN through the label
-nodules_df['patientid'] = [f.split('/')[-1] for f in nodules_df['patientid']]  # TODO: remove when fixed the patient id without whole path
-nodules_df['nslice'] = nodules_df['nslice'].astype(int)
-
-# Construction of training and testsets
-filenames_train = [os.path.join(INPUT_PATH,f) for f in set(nodules_df['patientid']) if f[0:4]=='luna' and f in os.listdir(INPUT_PATH) and f in annotated]
-filenames_test = [os.path.join(VALIDATION_PATH,f) for f in set(nodules_df['patientid']) if f[0:4]=='luna' and f in os.listdir(VALIDATION_PATH) and f in annotated]
 
 
 def extract_regions_from_patient(patient, nodules_df):
@@ -104,7 +91,7 @@ train_datagen = ImageDataGenerator(dim_ordering="th", horizontal_flip=True, vert
 test_datagen = ImageDataGenerator(dim_ordering="th")  # dummy for testing to have the same structure
 
 
-def chunk_generator(X_orig, y_orig, filenames, nodules_df, thickness=0, batch_size=32, is_training=True):
+def chunk_generator(X_orig, y_orig, thickness=0, batch_size=32, is_training=True):
     while 1:
         logging.info("Loaded batch of patients with %d/%d positives" % (np.sum(y_orig), len(y_orig)))
         idx_sel = [i for i in range(len(X_orig)) if y_orig[i]==1 or random.uniform(0,1) < 1.2*np.mean(y_orig)]
@@ -132,29 +119,70 @@ def chunk_generator(X_orig, y_orig, filenames, nodules_df, thickness=0, batch_si
             yield X_batch, y_batch
 
 
-### CROP GENERATION -------------------------------------------------------------------------------------------------
+### PATCHES GENERATION -----------------------------------------------------------------
+# Load the output of DL-I and load just the 1's (TP or FN's) and the FP's for a given score
+# to train DL-II
 
-# Load all chunks
+# luna annotated samples (do not train over the samples not annotated)
+luna_df = pd.read_csv(LUNA_ANNOTATIONS)
+annotated = list(set(['luna_%s.npz' % p.split('.')[-1] for p in luna_df['seriesuid']]))
 
+# filter TP and FP of the suggested by DL1
+SCORE_TH = 0.7
+nodules_df = pd.read_csv(OUTPUT_DL1)
+#nodules_df = nodules_df[nodules_df['score'] > SCORE_TH]  # TODO: IMPORTANT!! this filter should include the TN through the label. Now there is no filtering in place
+nodules_df['patientid'] = [f.split('/')[-1] for f in nodules_df['patientid']]  # TODO: remove when fixed the patient id without whole path
+nodules_df['nslice'] = nodules_df['nslice'].astype(int)
+
+# Construction of training and testsets
+filenames_train = [os.path.join(INPUT_PATH,f) for f in set(nodules_df['patientid']) if f[0:4]=='luna' and f in os.listdir(INPUT_PATH) and f in annotated]
+filenames_test = [os.path.join(VALIDATION_PATH,f) for f in set(nodules_df['patientid']) if f[0:4]=='luna' and f in os.listdir(VALIDATION_PATH) and f in annotated]
+
+
+print "Generating and saving training set..."
+tstart, total_stats = time(), {}
 X_train, y_train = [], []
 for idx,filename in enumerate(filenames_train):
     patientid = filename.split('/')[-1]
-    logging.info("Progress %d/%d" % (idx,len(filenames_train)))
-    X_single, y_single = load_patient_with_candidates(filename, nodules_df[nodules_df['patientid']==patientid], thickness=1)
+    logging.info("Loading patient %s %d/%d" % (patientid, idx,len(filenames_train)))
+    patient_data = np.load(os.path.join(INPUT_PATH, filename))['arr_0']
+    X_single, y_single, rois, stats = common.load_patient(patient_data, nodules_df[nodules_df['patientid']==patientid], output_rois=True, debug=True, thickness=1)
+    total_stats = common.add_stats(stats, total_stats)
     X_train.extend(X_single)
     y_train.extend(y_single)
+print "Time generating: %.2f, Total stats: %s" % (time() - tstart, str(total_stats))
+print "Saving file..."
+np.savez_compressed(os.path.join(PATCHES_PATH,'x_train_dl2.npz'), np.asarray(X_train))
+np.savez_compressed(os.path.join(PATCHES_PATH,'y_train_dl2.npz'), np.asarray(y_train))
 
 
+print "Generating and saving test set..."
+tstart, total_stats = time(), {}
 X_test, y_test = [], []
 for idx,filename in enumerate(filenames_test):
     patientid = filename.split('/')[-1]
-    logging.info("Progress %d/%d" % (idx,len(filenames_test)))
-    X_single, y_single = load_patient_with_candidates(filename, nodules_df[nodules_df['patientid']==patientid], thickness=1)
+    logging.info("Loading patient %s %d/%d" % (patientid, idx,len(filenames_test)))
+    patient_data = np.load(os.path.join(INPUT_PATH, filename))['arr_0']
+    X_single, y_single, rois, stats = common.load_patient(patient_data, nodules_df[nodules_df['patientid']==patientid], output_rois=True, debug=True, thickness=1)
+    total_stats = common.add_stats(stats, total_stats)
     X_test.extend(X_single)
     y_test.extend(y_single)
+print "Time generating: %.2f, Total stats: %s" % (time() - tstart, str(total_stats))
+print "Saving file..."
+np.savez_compressed(os.path.join(PATCHES_PATH,'x_test_dl2.npz'), np.asarray(X_test))
+np.savez_compressed(os.path.join(PATCHES_PATH,'y_test_dl2.npz'), np.asarray(y_test))
+
 
 ### TRAINING -------------------------------------------------------------------------------------------------------
 
+# LOADING PATCHES FROM DISK
+logging.info("Loading training and test sets")
+x_train = np.load(os.path.join(PATCHES_PATH, 'x_train_dl2.npz'))['arr_0']
+y_train = np.load(os.path.join(PATCHES_PATH, 'y_train_dl2.npz'))['arr_0']
+x_test = np.load(os.path.join(PATCHES_PATH, 'x_test_dl2.npz'))['arr_0']
+y_test = np.load(os.path.join(PATCHES_PATH, 'y_test_dl2.npz'))['arr_0']
+logging.info("Training set (1s/total): %d/%d" % (sum(y_train),len(y_train)))
+logging.info("Test set (1s/total): %d/%d" % (sum(y_test), len(y_test)))
 
 # Load model
 model = ResnetBuilder().build_resnet_34((3,40,40),1)
@@ -164,12 +192,12 @@ model_checkpoint = ModelCheckpoint(OUTPUT_MODEL, monitor='loss', save_best_only=
 # model.load_weights(OUTPUT_MODEL)
 
 
-model.fit_generator(generator=chunk_generator(X_train, y_train, filenames_train, nodules_df, batch_size=16, thickness=1),
+model.fit_generator(generator=chunk_generator(x_train, y_train, batch_size=16, thickness=1),
                     samples_per_epoch=1280,  # make it small to update TB and CHECKPOINT frequently
                     nb_epoch=500,
                     verbose=1,
                     callbacks=[tb, model_checkpoint],
-                    validation_data=chunk_generator(X_test, y_test, filenames_test, nodules_df, batch_size=16, thickness=1, is_training=False),
+                    validation_data=chunk_generator(x_test, y_test, batch_size=16, thickness=1, is_training=False),
                     nb_val_samples=len(y_test),
                     max_q_size=64,
                     nb_worker=1)  # a locker is needed if increased the number of parallel workers
@@ -178,3 +206,15 @@ model.fit_generator(generator=chunk_generator(X_train, y_train, filenames_train,
 # # check generator
 # for X,y in chunk_generator(filenames_train, nodules_df, batch_size=16):
 #     print 'RESULT:', X.shape, y.shape
+
+
+### EVALUATING -------------------------------------------------------------------------------------------------------
+
+nodules_df = pd.read_csv(OUTPUT_DL1)
+#nodules_df = nodules_df[nodules_df['score'] > SCORE_TH]  # TODO: this filter should include the TN through the label
+nodules_df['patientid'] = [f.split('/')[-1] for f in nodules_df['patientid']]  # TODO: remove when fixed the patient id without whole path
+nodules_df['nslice'] = nodules_df['nslice'].astype(int)
+
+# Construction of training and testsets
+filenames_train = [os.path.join(INPUT_PATH,f) for f in set(nodules_df['patientid']) if f[0:4]=='luna' and f in os.listdir(INPUT_PATH) and f in annotated]
+filenames_test = [os.path.join(VALIDATION_PATH,f) for f in set(nodules_df['patientid']) if f[0:4]=='luna' and f in os.listdir(VALIDATION_PATH) and f in annotated]
