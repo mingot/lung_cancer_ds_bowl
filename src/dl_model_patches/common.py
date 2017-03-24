@@ -260,6 +260,7 @@ def load_patient(patient_data, patient_nodules_df=None, discard_empty_nodules=Fa
 
 
 def multiproc_crop_generator(filenames, out_x_filename, out_y_filename, load_patient_func):
+    """loads patches in parallel and stores the results."""
     pool = multiprocessing.Pool(4)
     tstart = time()
     x, y, stats = zip(*pool.map(load_patient_func, filenames[0:5]))
@@ -273,3 +274,4 @@ def multiproc_crop_generator(filenames, out_x_filename, out_y_filename, load_pat
     logging.info('Total time: %.2f, stats: %s' % (time() - tstart, total_stats))
     np.savez_compressed(out_x_filename, np.asarray(xf))
     np.savez_compressed(out_y_filename, np.asarray(yf))
+    logging.info('Finished saving files')

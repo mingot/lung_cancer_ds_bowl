@@ -139,41 +139,6 @@ filenames_train = [os.path.join(INPUT_PATH,f) for f in set(nodules_df['patientid
 filenames_test = [os.path.join(VALIDATION_PATH,f) for f in set(nodules_df['patientid']) if f[0:4]=='luna' and f in os.listdir(VALIDATION_PATH) and f in annotated]
 
 
-# print "Generating and saving training set..."
-# tstart, total_stats = time(), {}
-# X_train, y_train = [], []
-# for idx,filename in enumerate(filenames_train[0:2]):
-#     patientid = filename.split('/')[-1]
-#     logging.info("Loading patient %s %d/%d" % (patientid, idx,len(filenames_train)))
-#     patient_data = np.load(os.path.join(INPUT_PATH, filename))['arr_0']
-#     X_single, y_single, rois, stats = common.load_patient(patient_data, nodules_df[nodules_df['patientid']==patientid], output_rois=True, debug=False, thickness=1)
-#     print stats
-#     total_stats = common.add_stats(stats, total_stats)
-#     X_train.extend(X_single)
-#     y_train.extend(y_single)
-# print "Time generating: %.2f, Total stats: %s" % (time() - tstart, str(total_stats))
-# print "Saving file..."
-# np.savez_compressed(os.path.join(PATCHES_PATH,'x_train_dl2.npz'), np.asarray(X_train))
-# np.savez_compressed(os.path.join(PATCHES_PATH,'y_train_dl2.npz'), np.asarray(y_train))
-
-
-# print "Generating and saving test set..."
-# tstart, total_stats = time(), {}
-# X_test, y_test = [], []
-# for idx,filename in enumerate(filenames_test):
-#     patientid = filename.split('/')[-1]
-#     logging.info("Loading patient %s %d/%d" % (patientid, idx,len(filenames_test)))
-#     patient_data = np.load(os.path.join(INPUT_PATH, filename))['arr_0']
-#     X_single, y_single, rois, stats = common.load_patient(patient_data, nodules_df[nodules_df['patientid']==patientid], output_rois=True, debug=True, thickness=1)
-#     total_stats = common.add_stats(stats, total_stats)
-#     X_test.extend(X_single)
-#     y_test.extend(y_single)
-# print "Time generating: %.2f, Total stats: %s" % (time() - tstart, str(total_stats))
-# print "Saving file..."
-# np.savez_compressed(os.path.join(PATCHES_PATH,'x_test_dl2.npz'), np.asarray(X_test))
-# np.savez_compressed(os.path.join(PATCHES_PATH,'y_test_dl2.npz'), np.asarray(y_test))
-
-
 def __load_and_store(filename):
     patient_data = np.load(filename)['arr_0']
     ndf = nodules_df[nodules_df['patientid']==filename.split('/')[-1]]
@@ -181,15 +146,15 @@ def __load_and_store(filename):
     logging.info("Patient: %s, stats: %s" % (filename.split('/')[-1], stats))
     return X, y, stats
 
-common.multiproc_crop_generator(filenames_train[0:5],
+common.multiproc_crop_generator(filenames_train,
                                 os.path.join(PATCHES_PATH,'x_train_dl2.npz'),
                                 os.path.join(PATCHES_PATH,'y_train_dl2.npz'),
                                 __load_and_store)
 
-# common.multiproc_crop_generator(filenames_test,
-#                                 os.path.join(PATCHES_PATH,'x_test_dl2.npz'),
-#                                 os.path.join(PATCHES_PATH,'y_test_dl2.npz'),
-#                                 __load_and_store)
+common.multiproc_crop_generator(filenames_test,
+                                os.path.join(PATCHES_PATH,'x_test_dl2.npz'),
+                                os.path.join(PATCHES_PATH,'y_test_dl2.npz'),
+                                __load_and_store)
 
 
 ### TRAINING -------------------------------------------------------------------------------------------------------
