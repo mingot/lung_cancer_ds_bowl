@@ -156,21 +156,21 @@ np.savez_compressed(os.path.join(PATCHES_PATH,'x_train_dl2.npz'), np.asarray(X_t
 np.savez_compressed(os.path.join(PATCHES_PATH,'y_train_dl2.npz'), np.asarray(y_train))
 
 
-print "Generating and saving test set..."
-tstart, total_stats = time(), {}
-X_test, y_test = [], []
-for idx,filename in enumerate(filenames_test):
-    patientid = filename.split('/')[-1]
-    logging.info("Loading patient %s %d/%d" % (patientid, idx,len(filenames_test)))
-    patient_data = np.load(os.path.join(INPUT_PATH, filename))['arr_0']
-    X_single, y_single, rois, stats = common.load_patient(patient_data, nodules_df[nodules_df['patientid']==patientid], output_rois=True, debug=True, thickness=1)
-    total_stats = common.add_stats(stats, total_stats)
-    X_test.extend(X_single)
-    y_test.extend(y_single)
-print "Time generating: %.2f, Total stats: %s" % (time() - tstart, str(total_stats))
-print "Saving file..."
-np.savez_compressed(os.path.join(PATCHES_PATH,'x_test_dl2.npz'), np.asarray(X_test))
-np.savez_compressed(os.path.join(PATCHES_PATH,'y_test_dl2.npz'), np.asarray(y_test))
+# print "Generating and saving test set..."
+# tstart, total_stats = time(), {}
+# X_test, y_test = [], []
+# for idx,filename in enumerate(filenames_test):
+#     patientid = filename.split('/')[-1]
+#     logging.info("Loading patient %s %d/%d" % (patientid, idx,len(filenames_test)))
+#     patient_data = np.load(os.path.join(INPUT_PATH, filename))['arr_0']
+#     X_single, y_single, rois, stats = common.load_patient(patient_data, nodules_df[nodules_df['patientid']==patientid], output_rois=True, debug=True, thickness=1)
+#     total_stats = common.add_stats(stats, total_stats)
+#     X_test.extend(X_single)
+#     y_test.extend(y_single)
+# print "Time generating: %.2f, Total stats: %s" % (time() - tstart, str(total_stats))
+# print "Saving file..."
+# np.savez_compressed(os.path.join(PATCHES_PATH,'x_test_dl2.npz'), np.asarray(X_test))
+# np.savez_compressed(os.path.join(PATCHES_PATH,'y_test_dl2.npz'), np.asarray(y_test))
 
 
 ### TRAINING -------------------------------------------------------------------------------------------------------
