@@ -19,7 +19,7 @@ from skimage import transform
 # PATHS
 wp = os.environ['LUNG_PATH']
 LUNA_ANNOTATIONS = wp + 'data/luna/annotations.csv'
-OUTPUT_DL1 =  wp + 'output/noduls_patches_v06.csv'  # OUTPUT_DL1 = wp + 'personal/noduls_patches_v06.csv'
+OUTPUT_DL1 = '/home/mingot/output/noduls_patches_v06.csv'  # OUTPUT_DL1 = wp + 'personal/noduls_patches_v06.csv'
 OUTPUT_MODEL =  wp + 'models/jm_patches_hardnegative_v01.hdf5'  # OUTPUT_MODEL = wp + 'personal/jm_patches_train_v06_local.hdf5'
 INPUT_PATH = '/mnt/hd2/preprocessed5/' # INPUT_PATH = wp + 'data/preprocessed5_sample'
 VALIDATION_PATH = '/mnt/hd2/preprocessed5_validation_luna/' # VALIDATION_PATH = wp + 'data/preprocessed5_sample'
