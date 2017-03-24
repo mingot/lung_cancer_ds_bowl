@@ -37,88 +37,6 @@ logging.basicConfig(level=logging.INFO,
                     datefmt='%m-%d %H:%M:%S')
 
 
-
-def extract_regions_from_patient(patient, nodules_df):
-    regions = []
-    for idx, row in nodules_df.iterrows():
-        x, y, d = int(row['x']), int(row['y']), int(row['diameter']+10)
-        a = common.AuxRegion(bbox = [max(0,x-d/2), max(0,y-d/2), x+d/2, y+d/2])
-        regions.append(a)
-    return regions
-
-
-def load_patient_with_candidates(patient_filename, patient_nodules_df, thickness=0):
-    """
-    Provides the crops of the different images suggested at patient_nodules_df
-    (ideally TP and FPs hard negatives).
-    """
-    patient = np.load(patient_filename)['arr_0']
-    nslices = list(set(patient_nodules_df['nslice']))
-
-
-    logging.info("Loading patient: %s" % patient_filename)
-    X, y = [], []
-    for nslice in nslices:
-
-        sel_patient_nodules_df = patient_nodules_df[patient_nodules_df['nslice']==nslice]
-        regions_pred = extract_regions_from_patient(patient, sel_patient_nodules_df)
-        regions_real = common.get_regions(patient[2,nslice], threshold=np.mean(patient[2,nslice]))
-        labels, stats = common.get_labels_from_regions(regions_real, regions_pred)
-
-
-        # TODO: remove when filtering good candidates is done in the begining
-        # Select just regions that are nodules (TPs and FNs) and regions with high socre (FPs)
-        idx_sel = [i for i in range(len(regions_pred)) if labels[i]==1 or sel_patient_nodules_df.iloc[i]['score']>SCORE_TH]
-        regions_pred = [regions_pred[i] for i in idx_sel]
-        labels = [labels[i] for i in idx_sel]
-
-        lung_image = patient[0, nslice]
-        if thickness>0:  # add extra images as channels for thick resnet
-            lung_image = patient[0,(nslice - thickness):(nslice + thickness + 1),:,:]
-            if lung_image.shape[0] != 2*thickness + 1:  # skip the extremes
-                continue
-        cropped_images = common.extract_crops_from_regions(img=lung_image, regions=regions_pred)
-
-
-        X.extend(cropped_images)
-        y.extend(labels)
-
-    return X, y
-
-
-# Data augmentation generator
-train_datagen = ImageDataGenerator(dim_ordering="th", horizontal_flip=True, vertical_flip=True)
-test_datagen = ImageDataGenerator(dim_ordering="th")  # dummy for testing to have the same structure
-
-
-def chunk_generator(X_orig, y_orig, thickness=0, batch_size=32, is_training=True):
-    while 1:
-        logging.info("Loaded batch of patients with %d/%d positives" % (np.sum(y_orig), len(y_orig)))
-        idx_sel = [i for i in range(len(X_orig)) if y_orig[i]==1 or random.uniform(0,1) < 1.2*np.mean(y_orig)]
-        X = [X_orig[i] for i in idx_sel]
-        y = [y_orig[i] for i in idx_sel]
-        logging.info("Downsampled to %d/%d positives" % (np.sum(y), len(y)))
-
-        # convert to np array and add extra axis (needed for keras)
-        X, y = np.asarray(X), np.asarray(y)
-        y = np.expand_dims(y, axis=1)
-        if thickness==0:
-            X = np.expand_dims(X, axis=1)
-
-        # generator: if testing, do not augment data
-        data_generator = train_datagen if is_training else test_datagen
-
-        i, good = 0, 0
-        for X_batch, y_batch in data_generator.flow(X, y, batch_size=batch_size, shuffle=is_training):
-            i += 1
-            if good*batch_size > len(X)*2 or i>100:  # stop when we have augmented enough the batch
-                break
-            if X_batch.shape[0] != batch_size:  # ensure correct batch size
-                continue
-            good += 1
-            yield X_batch, y_batch
-
-
 ### PATCHES GENERATION -----------------------------------------------------------------
 # Load the output of DL-I and load just the 1's (TP or FN's) and the FP's for a given score
 # to train DL-II
@@ -159,6 +77,40 @@ common.multiproc_crop_generator(filenames_test,
 
 ### TRAINING -------------------------------------------------------------------------------------------------------
 
+
+# # Data augmentation generator
+# train_datagen = ImageDataGenerator(dim_ordering="th", horizontal_flip=True, vertical_flip=True)
+# test_datagen = ImageDataGenerator(dim_ordering="th")  # dummy for testing to have the same structure
+#
+#
+# def chunk_generator(X_orig, y_orig, thickness=0, batch_size=32, is_training=True):
+#     while 1:
+#         logging.info("Loaded batch of patients with %d/%d positives" % (np.sum(y_orig), len(y_orig)))
+#         idx_sel = [i for i in range(len(X_orig)) if y_orig[i]==1 or random.uniform(0,1) < 1.2*np.mean(y_orig)]
+#         X = [X_orig[i] for i in idx_sel]
+#         y = [y_orig[i] for i in idx_sel]
+#         logging.info("Downsampled to %d/%d positives" % (np.sum(y), len(y)))
+#
+#         # convert to np array and add extra axis (needed for keras)
+#         X, y = np.asarray(X), np.asarray(y)
+#         y = np.expand_dims(y, axis=1)
+#         if thickness==0:
+#             X = np.expand_dims(X, axis=1)
+#
+#         # generator: if testing, do not augment data
+#         data_generator = train_datagen if is_training else test_datagen
+#
+#         i, good = 0, 0
+#         for X_batch, y_batch in data_generator.flow(X, y, batch_size=batch_size, shuffle=is_training):
+#             i += 1
+#             if good*batch_size > len(X)*2 or i>100:  # stop when we have augmented enough the batch
+#                 break
+#             if X_batch.shape[0] != batch_size:  # ensure correct batch size
+#                 continue
+#             good += 1
+#             yield X_batch, y_batch
+#
+#
 # # LOADING PATCHES FROM DISK
 # logging.info("Loading training and test sets")
 # x_train = np.load(os.path.join(PATCHES_PATH, 'x_train_dl2.npz'))['arr_0']
@@ -185,11 +137,11 @@ common.multiproc_crop_generator(filenames_test,
 #                     nb_val_samples=len(y_test),
 #                     max_q_size=64,
 #                     nb_worker=1)  # a locker is needed if increased the number of parallel workers
-
-
-# # check generator
-# for X,y in chunk_generator(filenames_train, nodules_df, batch_size=16):
-#     print 'RESULT:', X.shape, y.shape
+#
+#
+# # # check generator
+# # for X,y in chunk_generator(filenames_train, nodules_df, batch_size=16):
+# #     print 'RESULT:', X.shape, y.shape
 
 
 ### EVALUATING -------------------------------------------------------------------------------------------------------
