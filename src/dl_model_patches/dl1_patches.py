@@ -83,26 +83,17 @@ def chunks(X_orig, y_orig, file_list=[], batch_size=32, augmentation_times=4, co
 ### MODEL LOADING -----------------------------------------------------------------
 
 
-# # PATHS
-# wp = os.environ['LUNG_PATH']
-# INPUT_PATH = '/mnt/hd2/preprocessed5'  # INPUT_PATH = wp + 'data/preprocessed5_sample'
-# VALIDATION_PATH = '/mnt/hd2/preprocessed5_validation_luna'
-# NODULES_PATH = wp + 'data/luna/annotations.csv'
-# OUTPUT_MODEL = wp + 'models/jm_patches_train_v07.hdf5'  # OUTPUT_MODEL = wp + 'personal/jm_patches_train_v06_local.hdf5'
-# OUTPUT_CSV = wp + 'output/noduls_patches_v07.csv'
-# PATCHES_PATH = '/mnt/hd2/patches'  # PATCHES_PATH = wp + 'data/preprocessed5_patches'
-# LOGS_PATH = wp + 'logs/%s' % str(int(time()))
-# if not os.path.exists(LOGS_PATH):
-#     os.makedirs(LOGS_PATH)
-
-
-
+# PATHS
 wp = os.environ['LUNG_PATH']
-INPUT_PATH = wp + 'data/preprocessed5_sample'
-VALIDATION_PATH = INPUT_PATH
+INPUT_PATH = '/mnt/hd2/preprocessed5'  # INPUT_PATH = wp + 'data/preprocessed5_sample'
+VALIDATION_PATH = '/mnt/hd2/preprocessed5_validation_luna'
 NODULES_PATH = wp + 'data/luna/annotations.csv'
-OUTPUT_MODEL = wp + 'personal/jm_patches_train_v06.hdf5'
-PATCHES_PATH = wp + 'data/preprocessed5_patches'
+OUTPUT_MODEL = wp + 'models/jm_patches_train_v07.hdf5'  # OUTPUT_MODEL = wp + 'personal/jm_patches_train_v06_local.hdf5'
+OUTPUT_CSV = wp + 'output/noduls_patches_v07.csv'
+PATCHES_PATH = '/mnt/hd2/patches'  # PATCHES_PATH = wp + 'data/preprocessed5_patches'
+LOGS_PATH = wp + 'logs/%s' % str(int(time()))
+if not os.path.exists(LOGS_PATH):
+    os.makedirs(LOGS_PATH)
 
 
 # OTHER INITIALIZATIONS: tensorboard, model checkpoint and logging
