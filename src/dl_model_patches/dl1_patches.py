@@ -89,7 +89,7 @@ INPUT_PATH = '/mnt/hd2/preprocessed5'  # INPUT_PATH = wp + 'data/preprocessed5_s
 VALIDATION_PATH = '/mnt/hd2/preprocessed5_validation_luna'
 NODULES_PATH = wp + 'data/luna/annotations.csv'
 # OUTPUT_MODEL = wp + 'models/jm_patches_train_v07.hdf5'  # OUTPUT_MODEL = wp + 'personal/jm_patches_train_v06_local.hdf5'
-OUTPUT_MODEL = wp + 'models/jm_patches_hardnegative_v01.hdf5'
+OUTPUT_MODEL = wp + 'models/jm_patches_hardnegative_v01_bu01.hdf5'
 OUTPUT_CSV = wp + 'output/noduls_patches_hardnegative_v01.csv'
 PATCHES_PATH = '/mnt/hd2/patches'  # PATCHES_PATH = wp + 'data/preprocessed5_patches'
 LOGS_PATH = wp + 'logs/%s' % str(int(time()))
@@ -199,13 +199,13 @@ file_list = [os.path.join(VALIDATION_PATH, fp) for fp in os.listdir(VALIDATION_P
 file_list += [os.path.join(INPUT_PATH, fp) for fp in os.listdir(INPUT_PATH) if fp.startswith('dsb_')]
 
 
-## if the OUTPUT_CSV file already exists, continue it
-previous_filenames = set()
-if os.path.exists(OUTPUT_CSV):
-    write_method = 'a'
-    with open(OUTPUT_CSV) as file:
-        for l in file:
-            previous_filenames.add(l.split(',')[0])
+# ## if the OUTPUT_CSV file already exists, continue it
+# previous_filenames = set()
+# if os.path.exists(OUTPUT_CSV):
+#     write_method = 'a'
+#     with open(OUTPUT_CSV) as file:
+#         for l in file:
+#             previous_filenames.add(l.split(',')[0])
 
 
 # Load model

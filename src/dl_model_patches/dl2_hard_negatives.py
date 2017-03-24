@@ -175,32 +175,32 @@ np.savez_compressed(os.path.join(PATCHES_PATH,'y_test_dl2.npz'), np.asarray(y_te
 
 ### TRAINING -------------------------------------------------------------------------------------------------------
 
-# LOADING PATCHES FROM DISK
-logging.info("Loading training and test sets")
-x_train = np.load(os.path.join(PATCHES_PATH, 'x_train_dl2.npz'))['arr_0']
-y_train = np.load(os.path.join(PATCHES_PATH, 'y_train_dl2.npz'))['arr_0']
-x_test = np.load(os.path.join(PATCHES_PATH, 'x_test_dl2.npz'))['arr_0']
-y_test = np.load(os.path.join(PATCHES_PATH, 'y_test_dl2.npz'))['arr_0']
-logging.info("Training set (1s/total): %d/%d" % (sum(y_train),len(y_train)))
-logging.info("Test set (1s/total): %d/%d" % (sum(y_test), len(y_test)))
-
-# Load model
-model = ResnetBuilder().build_resnet_34((3,40,40),1)
-model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['accuracy','fmeasure'])
-model_checkpoint = ModelCheckpoint(OUTPUT_MODEL, monitor='loss', save_best_only=True)
-# logging.info('Loading exiting model...')
-# model.load_weights(OUTPUT_MODEL)
-
-
-model.fit_generator(generator=chunk_generator(x_train, y_train, batch_size=16, thickness=1),
-                    samples_per_epoch=1280,  # make it small to update TB and CHECKPOINT frequently
-                    nb_epoch=500,
-                    verbose=1,
-                    callbacks=[tb, model_checkpoint],
-                    validation_data=chunk_generator(x_test, y_test, batch_size=16, thickness=1, is_training=False),
-                    nb_val_samples=len(y_test),
-                    max_q_size=64,
-                    nb_worker=1)  # a locker is needed if increased the number of parallel workers
+# # LOADING PATCHES FROM DISK
+# logging.info("Loading training and test sets")
+# x_train = np.load(os.path.join(PATCHES_PATH, 'x_train_dl2.npz'))['arr_0']
+# y_train = np.load(os.path.join(PATCHES_PATH, 'y_train_dl2.npz'))['arr_0']
+# x_test = np.load(os.path.join(PATCHES_PATH, 'x_test_dl2.npz'))['arr_0']
+# y_test = np.load(os.path.join(PATCHES_PATH, 'y_test_dl2.npz'))['arr_0']
+# logging.info("Training set (1s/total): %d/%d" % (sum(y_train),len(y_train)))
+# logging.info("Test set (1s/total): %d/%d" % (sum(y_test), len(y_test)))
+#
+# # Load model
+# model = ResnetBuilder().build_resnet_34((3,40,40),1)
+# model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['accuracy','fmeasure'])
+# model_checkpoint = ModelCheckpoint(OUTPUT_MODEL, monitor='loss', save_best_only=True)
+# # logging.info('Loading exiting model...')
+# # model.load_weights(OUTPUT_MODEL)
+#
+#
+# model.fit_generator(generator=chunk_generator(x_train, y_train, batch_size=16, thickness=1),
+#                     samples_per_epoch=1280,  # make it small to update TB and CHECKPOINT frequently
+#                     nb_epoch=500,
+#                     verbose=1,
+#                     callbacks=[tb, model_checkpoint],
+#                     validation_data=chunk_generator(x_test, y_test, batch_size=16, thickness=1, is_training=False),
+#                     nb_val_samples=len(y_test),
+#                     max_q_size=64,
+#                     nb_worker=1)  # a locker is needed if increased the number of parallel workers
 
 
 # # check generator
