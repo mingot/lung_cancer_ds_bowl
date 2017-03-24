@@ -16,20 +16,30 @@ filenames = os.listdir(INPUT_PATH)
 filenames = [os.path.join(INPUT_PATH, f) for f in filenames]
 
 
-def load_and_store(filename):
+def __load_and_store(filename):
     patient_data = np.load(filename)['arr_0']
     X, y, rois, stats = common.load_patient(patient_data, output_rois=True, thickness=1)
-    logging.info(stats)
-    X = np.asarray(X)
-    preds = model.predict(X, verbose=1)
-    return rois, preds
+    logging.info("Patient: %s, stats: %s" % (filename.split('/')[-1], stats))
+    return X, y, stats
 
-pool = multiprocessing.Pool(4)
-tstart = time()
-rois, preds = zip(*pool.map(load_and_store, filenames[0:5]))
-print "Total time:",time() - tstart
 
-print len(rois)
+def multiproc_crop_generator(filenames, out_x_filename, out_y_filename, load_patient_func):
+    pool = multiprocessing.Pool(4)
+    tstart = time()
+    x, y, stats = zip(*pool.map(load_patient_func, filenames[0:5]))
+    print "Total time:",time() - tstart
+
+    xf, yf, total_stats = [], [], {}
+    for i in range(len(x)):
+        xf.extend(x[i])
+        yf.extend(y[i])
+        total_stats = common.add_stats(total_stats, stats[i])
+
+
+    np.savez_compressed(out_x_filename, np.asarray(xf))
+    np.savez_compressed(out_y_filename, np.asarray(yf))
+
+
 
 
 

@@ -1,5 +1,7 @@
 import numpy as np
 import logging
+import multiprocessing
+import time
 from skimage import measure, transform, morphology
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s  %(levelname)-8s %(message)s',
@@ -230,15 +232,22 @@ def load_patient(patient_data, patient_nodules_df=None, discard_empty_nodules=Fa
         if np.sum(nodules_mask)!=0:
             regions_real = get_regions(nodules_mask, threshold=np.mean(nodules_mask))
             labels, stats = get_labels_from_regions(regions_real, regions_pred)
-            if patient_nodules_df is not None:
-                # TODO: remove when filtering good candidates is done in the begining
-                # Select just regions that are nodules (TPs and FNs) and regions with high socre (FPs)
-                idx_sel = [i for i in range(len(regions_pred)) if labels[i]==1 or sel_patient_nodules_df.iloc[i]['score']>0.7]
-                regions_pred = [regions_pred[i] for i in idx_sel]
-                labels = [labels[i] for i in idx_sel]
         else:
             stats = {'fp':len(regions_pred), 'tp': 0, 'fn':0}
             labels = [0]*len(regions_pred)
+
+        if patient_nodules_df is not None:
+                # TODO: remove when filtering good candidates is done in the begining
+                # Select just regions that are nodules (TPs and FNs) and regions with high socre (FPs)
+                idx_sel = [i for i in range(len(regions_pred)) if labels[i]==1 or sel_patient_nodules_df.iloc[i]['score']>0.3]
+                regions_pred = [regions_pred[i] for i in idx_sel]
+                if sum(labels)!=0:
+                    labels, stats = get_labels_from_regions(regions_real, regions_pred)
+                else:
+                    stats = {'fp':len(regions_pred), 'tp': 0, 'fn':0}
+                    labels = [0]*len(regions_pred)
+                # labels = [labels[i] for i in idx_sel]
+
         total_stats = add_stats(stats, total_stats)
         if debug: logging.info("++ Slice %d, stats: %s" % (nslice, str(stats)))
 
@@ -248,3 +257,19 @@ def load_patient(patient_data, patient_nodules_df=None, discard_empty_nodules=Fa
 
     return (X, Y, rois, total_stats) if output_rois else (X, Y)
 
+
+
+def multiproc_crop_generator(filenames, out_x_filename, out_y_filename, load_patient_func):
+    pool = multiprocessing.Pool(4)
+    tstart = time()
+    x, y, stats = zip(*pool.map(load_patient_func, filenames[0:5]))
+
+    xf, yf, total_stats = [], [], {}
+    for i in range(len(x)):
+        xf.extend(x[i])
+        yf.extend(y[i])
+        total_stats = add_stats(total_stats, stats[i])
+
+    logging.info('Total time: %.2f, stats: %s' % (time() - tstart, total_stats))
+    np.savez_compressed(out_x_filename, np.asarray(xf))
+    np.savez_compressed(out_y_filename, np.asarray(yf))

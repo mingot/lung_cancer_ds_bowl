@@ -153,6 +153,24 @@ logging.basicConfig(level=logging.INFO,
 # np.savez_compressed(os.path.join(PATCHES_PATH,'x_test.npz'), np.asarray(X_test))
 # np.savez_compressed(os.path.join(PATCHES_PATH,'y_test.npz'), np.asarray(y_test))
 
+
+# def __load_and_store(filename):
+#     patient_data = np.load(filename)['arr_0']
+#     X, y, rois, stats = common.load_patient(patient_data, discard_empty_nodules=True, output_rois=True, thickness=1)
+#     logging.info("Patient: %s, stats: %s" % (filename.split('/')[-1], stats))
+#     return X, y, stats
+#
+# common.multiproc_crop_generator(file_list_train,
+#                                 os.path.join(PATCHES_PATH,'x_test.npz'),
+#                                 os.path.join(PATCHES_PATH,'y_test.npz'),
+#                                 __load_and_store)
+#
+# common.multiproc_crop_generator(file_list_test,
+#                                 os.path.join(PATCHES_PATH,'x_test.npz'),
+#                                 os.path.join(PATCHES_PATH,'y_test.npz'),
+#                                 __load_and_store)
+
+
 ### TRAINING -----------------------------------------------------------------
 
 # # LOADING PATCHES FROM DISK
