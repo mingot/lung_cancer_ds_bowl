@@ -267,14 +267,15 @@ def multiproc_crop_generator(filenames, out_x_filename, out_y_filename, load_pat
     for idx,j in enumerate(range(0,len(filenames),100)):
         xf, yf = [], []
         if parallel:
-            pool = multiprocessing.Pool(4)
-            tstart = time()
-            x, y, stats = zip(*pool.map(load_patient_func, filenames[j:(j+100)]))
+            with multiprocessing.Pool(4) as pool:
+                tstart = time()
+                x, y, stats = zip(*pool.map(load_patient_func, filenames[j:(j+100)]))
 
-            for i in range(len(x)):
-                xf.extend(x[i])
-                yf.extend(y[i])
-                total_stats = add_stats(total_stats, stats[i])
+
+                for i in range(len(x)):
+                    xf.extend(x[i])
+                    yf.extend(y[i])
+                    total_stats = add_stats(total_stats, stats[i])
         else:
             for idx,filename in enumerate(filenames):
                 logging.info("Loading %d/%d" % (idx,len(filenames)))
