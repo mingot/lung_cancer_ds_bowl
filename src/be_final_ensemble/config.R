@@ -16,11 +16,11 @@ generateModel <- function(model_family) {
   if(model_family == "classif.xgboost") {
     lrn = makeLearner(
       "classif.xgboost",
-      predict.type = "prob",
-      eval_metric = "auc",
-      nthread = 7,
-      eta = 0.01,
-      nrounds = 10000
+      predict.type = "prob"
+      # eval_metric = "auc",
+      # nthread = 7,
+      # eta = 0.01,
+      # nrounds = 10000
     )
     ps = makeParamSet(
       makeNumericParam("eta", lower = 0.001, upper = 0.3),
@@ -164,20 +164,35 @@ aggregate_patient <- function(dt) {
   # Computing if the patient has consecutive nodules 
   dt_2d <- dt[
     nodule_pred > 0.2 & max_intensity > 0.96,
-    .(patientid,nslice,x,y,x_patches,y_patches)]
+    .(patientid,nslice,x,y)]
   dt_2d_bis <- dt[
     nodule_pred > 0.2 & max_intensity > 0.96,
-    .(patientid,nslice2 = nslice,x2 = x,y2 = y,x_patches2 = x_patches,y_patches2 = y_patches)]
+    .(patientid,nslice2 = nslice,x2 = x,y2 = y)]
   dt_3d <- merge(dt_2d,dt_2d_bis,all.x = T, by = "patientid",allow.cartesian = TRUE)
   dt_3d <- dt_3d[nslice2 > nslice]
   setkey(dt_3d,patientid,nslice,nslice2)
   dt_3d <- dt_3d[,.SD[1],c("patientid","nslice")]
-  dt_3d <- dt_3d[nslice2-nslice < 4]
+  dt_3d <- dt_3d[nslice2-nslice < 3]
   dt_3d[,d_nodule := abs(x-x2)+abs(y-y2) < 10]
   nodules_consec <- dt_3d[,.(consec_nods = sum(d_nodule)),patientid]
   
   final_df <- merge(final_df,nodules_consec,all.x = T, by = "patientid")
   final_df[is.na(consec_nods),consec_nods := 0]
+  
+  
+  # Computing if the patient has consecutive nodules of patches
+  dt_2d <- dt[!is.na(x_patches),.(patientid,nslice,x = x_patches,y = y_patches)]
+  dt_2d_bis <- dt[!is.na(x_patches),.(patientid,nslice2 = nslice,x2=x_patches,y2=y_patches)]
+  dt_3d <- merge(dt_2d,dt_2d_bis,all.x=T,by="patientid",allow.cartesian = TRUE)
+  dt_3d <- dt_3d[nslice2 > nslice]
+  setkey(dt_3d,patientid,nslice,nslice2)
+  dt_3d <- dt_3d[,.SD[1],c("patientid","nslice")]
+  dt_3d <- dt_3d[nslice2-nslice <3]
+  dt_3d[,d_nodule := abs(x-x2) + abs(y-y2) < 10]
+  nodules_patches_consec <- dt_3d[,.(consec_nods_patches = sum(d_nodule)),patientid]
+  
+  final_df <- merge(final_df,nodules_patches_consec,all.x=T,by="patientid")
+  final_df[is.na(consec_nods_patches),consec_nods_patches:=0]
   
   # Computing the variables of the nodules with highter score for patient
   dt[,`:=`(

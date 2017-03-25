@@ -1,6 +1,7 @@
 
 ## REPO PATH, CANVIAR SI ES NECESSARI
 path_repo <<- "D:/lung_cancer_ds_bowl/"
+path_data <<- "D:/output/"
 # IMPORTS ------------------------------------------------------------------------------------------
 source(paste0(path_repo,"src/be_final_ensemble/config.R"))
 source(paste0(path_repo,"src/be_final_ensemble/fp_model.R"))
@@ -45,6 +46,7 @@ vars_nodules_patches[,patientid:=gsub(".npz|dsb_","",patientid)]
 vars_nodules_patches = vars_nodules_patches[score>0.9]
 names_change <- c("x","y","diameter","score")
 setnames(vars_nodules_patches,names_change,paste0(names_change,"_patches"))
+vars_nodules_patches <- merge(vars_nodules_patches,patients,all.x=T,by = "patientid")
 
 ## Merging al nodules variables
 vars_nodules <- rbind(vars_nodules,vars_nodules_patches,fill = TRUE)
@@ -69,15 +71,16 @@ dataset_final <- na_to_zeros(dataset_final,names(dataset_final))
 # SEPARATING TRAIN AND SCORING ---------------------------------------------------------------------
 
 vars_train <- c(
-  "max_intensity",
+  #"max_intensity",
   "max_diameter",
   "big_nodules_patches",
-  #"max_diameter_patches",
+  "max_diameter_patches",
   "num_slices_patches",
   "max_score",
-  #"max_score_patches",
-  "nslice_nodule_patch"
-  #"diameter_nodule_patch",
+  "max_score_patches",
+  "nslice_nodule_patch",
+  "consec_nods_patches",
+  "diameter_nodule_patch"
   #"patient_min",
   #"patient_mean",
   #"patient_std"
@@ -101,7 +104,7 @@ train_task <- makeClassifTask(data = data.frame(data_train),target = "cancer")
 fv <- generateFilterValuesData(train_task, method = c("anova.test","chi.squared"))
 data.table(fv$data)
 
-lrn = generateModel("classif.logreg")$lrn
+lrn = generateModel("classif.gbm")$lrn
 k_folds = 5
 rdesc = makeResampleDesc("CV", iters = k_folds, stratify = TRUE)
 
@@ -135,7 +138,7 @@ LogLossBinary(target,preds)
 preds = predictCv(final_model, scoring)
 
 submission = data.table(id=patients_scoring, cancer=preds)
-write.csv(submission, paste0(path_repo,"data/submissions/03_submission.csv"), quote=F, row.names=F)
+write.csv(submission, paste0(path_repo,"data/submissions/04_submission.csv"), quote=F, row.names=F)
 
 
 
