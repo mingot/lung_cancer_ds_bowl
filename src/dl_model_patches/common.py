@@ -239,7 +239,7 @@ def load_patient(patient_data, patient_nodules_df=None, discard_empty_nodules=Fa
         if patient_nodules_df is not None:
                 # TODO: remove when filtering good candidates is done in the begining
                 # Select just regions that are nodules (TPs and FNs) and regions with high socre (FPs)
-                idx_sel = [i for i in range(len(regions_pred)) if labels[i]==1 or sel_patient_nodules_df.iloc[i]['score']>0.3]
+                idx_sel = [i for i in range(len(regions_pred)) if labels[i]==1 or sel_patient_nodules_df.iloc[i]['score']>0.5]
                 regions_pred = [regions_pred[i] for i in idx_sel]
                 if sum(labels)!=0:
                     labels, stats = get_labels_from_regions(regions_real, regions_pred)
@@ -259,17 +259,28 @@ def load_patient(patient_data, patient_nodules_df=None, discard_empty_nodules=Fa
 
 
 
-def multiproc_crop_generator(filenames, out_x_filename, out_y_filename, load_patient_func):
+def multiproc_crop_generator(filenames, out_x_filename, out_y_filename, load_patient_func, parallel=False):
     """loads patches in parallel and stores the results."""
-    pool = multiprocessing.Pool(4)
-    tstart = time()
-    x, y, stats = zip(*pool.map(load_patient_func, filenames))
 
     xf, yf, total_stats = [], [], {}
-    for i in range(len(x)):
-        xf.extend(x[i])
-        yf.extend(y[i])
-        total_stats = add_stats(total_stats, stats[i])
+
+    if parallel:
+        pool = multiprocessing.Pool(4)
+        tstart = time()
+        x, y, stats = zip(*pool.map(load_patient_func, filenames))
+
+        for i in range(len(x)):
+            xf.extend(x[i])
+            yf.extend(y[i])
+            total_stats = add_stats(total_stats, stats[i])
+    else:
+        for idx,filename in enumerate(filenames):
+            logging.info("Loading %d/%d" % (idx,len(filenames)))
+            x,y,stats = load_patient_func(filename)
+            xf.extend(x)
+            yf.extend(y)
+            total_stats = add_stats(total_stats, stats)
+
 
     logging.info('Total time: %.2f, total patients:%d, stats: %s' % (time() - tstart, len(x), total_stats))
     np.savez_compressed(out_x_filename, np.asarray(xf))
