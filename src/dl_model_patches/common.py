@@ -262,9 +262,10 @@ def load_patient(patient_data, patient_nodules_df=None, discard_empty_nodules=Fa
 def multiproc_crop_generator(filenames, out_x_filename, out_y_filename, load_patient_func, parallel=False):
     """loads patches in parallel and stores the results."""
 
-    xf, yf, total_stats = [], [], {}
+    total_stats = {}
 
     for idx,j in enumerate(range(0,len(filenames),100)):
+        xf, yf = [], []
         if parallel:
             pool = multiprocessing.Pool(4)
             tstart = time()
