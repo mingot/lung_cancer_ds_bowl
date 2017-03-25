@@ -239,7 +239,7 @@ def load_patient(patient_data, patient_nodules_df=None, discard_empty_nodules=Fa
         if patient_nodules_df is not None:
                 # TODO: remove when filtering good candidates is done in the begining
                 # Select just regions that are nodules (TPs and FNs) and regions with high socre (FPs)
-                idx_sel = [i for i in range(len(regions_pred)) if labels[i]==1 or sel_patient_nodules_df.iloc[i]['score']>0.3]
+                idx_sel = [i for i in range(len(regions_pred)) if labels[i]==1 or sel_patient_nodules_df.iloc[i]['score']>0.5]
                 regions_pred = [regions_pred[i] for i in idx_sel]
                 if sum(labels)!=0:
                     labels, stats = get_labels_from_regions(regions_real, regions_pred)
