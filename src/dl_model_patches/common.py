@@ -264,25 +264,26 @@ def multiproc_crop_generator(filenames, out_x_filename, out_y_filename, load_pat
 
     xf, yf, total_stats = [], [], {}
 
-    if parallel:
-        pool = multiprocessing.Pool(4)
-        tstart = time()
-        x, y, stats = zip(*pool.map(load_patient_func, filenames))
+    for idx,j in enumerate(range(0,len(filenames),100)):
+        if parallel:
+            pool = multiprocessing.Pool(4)
+            tstart = time()
+            x, y, stats = zip(*pool.map(load_patient_func, filenames[j:(j+100)]))
 
-        for i in range(len(x)):
-            xf.extend(x[i])
-            yf.extend(y[i])
-            total_stats = add_stats(total_stats, stats[i])
-    else:
-        for idx,filename in enumerate(filenames):
-            logging.info("Loading %d/%d" % (idx,len(filenames)))
-            x,y,stats = load_patient_func(filename)
-            xf.extend(x)
-            yf.extend(y)
-            total_stats = add_stats(total_stats, stats)
+            for i in range(len(x)):
+                xf.extend(x[i])
+                yf.extend(y[i])
+                total_stats = add_stats(total_stats, stats[i])
+        else:
+            for idx,filename in enumerate(filenames):
+                logging.info("Loading %d/%d" % (idx,len(filenames)))
+                x,y,stats = load_patient_func(filename)
+                xf.extend(x)
+                yf.extend(y)
+                total_stats = add_stats(total_stats, stats)
 
 
-    logging.info('Total time: %.2f, total patients:%d, stats: %s' % (time() - tstart, len(x), total_stats))
-    np.savez_compressed(out_x_filename, np.asarray(xf))
-    np.savez_compressed(out_y_filename, np.asarray(yf))
-    logging.info('Finished saving files')
+        logging.info('Total time: %.2f, total patients:%d, stats: %s' % (time() - tstart, len(x), total_stats))
+        np.savez_compressed(out_x_filename + str(idx), np.asarray(xf))
+        np.savez_compressed(out_y_filename + str(idx), np.asarray(yf))
+        logging.info('Finished saving files')

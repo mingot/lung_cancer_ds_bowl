@@ -68,13 +68,13 @@ common.multiproc_crop_generator(filenames_train,
                                 os.path.join(PATCHES_PATH,'x_train_dl2.npz'),
                                 os.path.join(PATCHES_PATH,'y_train_dl2.npz'),
                                 __load_and_store,
-                                parallel=False)
+                                parallel=True)
 
 common.multiproc_crop_generator(filenames_test,
                                 os.path.join(PATCHES_PATH,'x_test_dl2.npz'),
                                 os.path.join(PATCHES_PATH,'y_test_dl2.npz'),
                                 __load_and_store,
-                                parallel=False)
+                                parallel=True)
 
 
 ### TRAINING -------------------------------------------------------------------------------------------------------
