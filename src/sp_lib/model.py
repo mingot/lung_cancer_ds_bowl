@@ -235,6 +235,7 @@ def process_prop(prop):
     
     # basic features
     # added 'esbeltez' and hu moments from Jacobo!
+    # it was the samem as eccent.
     dict_ans = {
         '01_eccentricity': prop.eccentricity, 
         '02_extent': prop.extent, 
@@ -244,8 +245,7 @@ def process_prop(prop):
         '06_mean_intensity': prop.mean_intensity, 
         '07_max_intensity': prop.max_intensity, 
         '08_inertia_tensor_eigvals0': eig0, 
-        '09_inertia_tensor_eigvals1': eig1, 
-        '10_esb': np.sqrt(1 - eig1/eig0)
+        '09_inertia_tensor_eigvals1': eig1
     }
     dict_hu = dict(zip(hu_names, hu_moments))
     dict_ans.update(dict_hu)
@@ -350,6 +350,11 @@ def process_pipeline_patient(
     
     # (2) Extract properties (not features yet)
     p_prop = [process_img(img['resc_hu'], img['resc_lung']) for img in p_patch]
+    
+    # (3.0) % of lung (differentiate walls from interior)
+    lungmask_feat = [float((img['resc_lung']).sum())/(img['resc_lung']).size for img in p_patch]
+    lungmask_df = pd.DataFrame.from_records([{'10_lungmask':feat} for feat in lungmask_feat])
+    
     # Extract meaningful features
     # TODO: also use (weighted?) hu moments, HOG, LBP, use lung mask in the process
     # this returns 1-row dfs for each patch, or None 
@@ -391,7 +396,8 @@ def process_pipeline_patient(
     df_augmented = pd.concat([
         df_feat, 
         hog_df.iloc[patch_nonnull], 
-        lbp_df.iloc[patch_nonnull]], 
+        lbp_df.iloc[patch_nonnull], 
+        lungmask_df.iloc[patch_nonnull]], 
         axis=1)
     # keep track of original indices
     df_augmented.index = p_df.index[patch_nonnull]
