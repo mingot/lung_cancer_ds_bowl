@@ -60,13 +60,13 @@ def __load_and_store(filename):
     return X, y, stats
 
 common.multiproc_crop_generator(filenames_train,
-                                os.path.join(PATCHES_PATH,'x_test.npz'),
-                                os.path.join(PATCHES_PATH,'y_test.npz'),
+                                os.path.join(PATCHES_PATH,'x_train_pre6.npz'),
+                                os.path.join(PATCHES_PATH,'y_train_pre6.npz'),
                                 __load_and_store)
 
 common.multiproc_crop_generator(filenames_test,
-                                os.path.join(PATCHES_PATH,'x_test.npz'),
-                                os.path.join(PATCHES_PATH,'y_test.npz'),
+                                os.path.join(PATCHES_PATH,'x_test_pre6.npz'),
+                                os.path.join(PATCHES_PATH,'y_test_pre6.npz'),
                                 __load_and_store)
 
 
