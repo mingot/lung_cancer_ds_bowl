@@ -5,14 +5,17 @@ from time import time
 from keras.optimizers import Adam
 from dl_networks.sample_resnet import ResnetBuilder
 from dl_model_patches import  common
+from keras import backend as K
 
+
+K.set_image_dim_ordering('th')
 
 # PATHS
 wp = os.environ['LUNG_PATH']
 INPUT_PATH = '/mnt/hd2/preprocessed5'  # INPUT_PATH = wp + 'data/preprocessed5_sample'
 VALIDATION_PATH = '/mnt/hd2/preprocessed5_validation_luna'
 NODULES_PATH = wp + 'data/luna/annotations.csv'
-OUTPUT_MODEL = wp + 'models/jm_patches_hardnegative_v01_bu01.hdf5'
+OUTPUT_MODEL = wp + 'models/jm_patches_hardnegative_v01.hdf5'
 OUTPUT_CSV = wp + 'output/noduls_patches_hardnegative_v01.csv'
 
 
@@ -74,7 +77,7 @@ with open(OUTPUT_CSV, write_method) as file:
             # if preds[i]>0.8:
             #     logging.info("++ Good candidate found with (nslice,x,y,diam,score): %d,%d,%d,%.2f,%.2f" % (nslice,r.centroid[0], r.centroid[1], r.equivalent_diameter,preds[i]))
 
-        logging.info("Total ROIS:%d, Good Candidates:%d, Time processnig:%.2f" % (len(preds), len([p for p in preds if p>0.8]), time()-tstart))
+        logging.info("Total ROIS:%d, Good Candidates:%d, Time processnig:%.2f" % (len(preds), len([p for p in preds if p>0.5]), time()-tstart))
 
 
 

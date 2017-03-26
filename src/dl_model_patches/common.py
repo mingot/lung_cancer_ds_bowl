@@ -221,13 +221,6 @@ def load_patient(patient_data, patient_nodules_df=None, discard_empty_nodules=Fa
             sel_patient_nodules_df = patient_nodules_df[patient_nodules_df['nslice']==nslice]
             regions_pred = extract_rois_from_df(patient_data, sel_patient_nodules_df)
 
-        # Extract cropped images
-        if thickness>0:  # add extra images as channels for thick resnet
-            lung_image = patient_data[0,(nslice - thickness):(nslice + thickness + 1),:,:]
-            if lung_image.shape[0] != 2*thickness + 1:  # skip the extremes
-                continue
-        cropped_images = extract_crops_from_regions(lung_image, regions_pred)
-
         # Generate labels
         if np.sum(nodules_mask)!=0:
             regions_real = get_regions(nodules_mask, threshold=np.mean(nodules_mask))
@@ -248,6 +241,15 @@ def load_patient(patient_data, patient_nodules_df=None, discard_empty_nodules=Fa
                     labels = [0]*len(regions_pred)
                 # labels = [labels[i] for i in idx_sel]
 
+
+        # Extract cropped images
+        if thickness>0:  # add extra images as channels for thick resnet
+            lung_image = patient_data[0,(nslice - thickness):(nslice + thickness + 1),:,:]
+            if lung_image.shape[0] != 2*thickness + 1:  # skip the extremes
+                continue
+        cropped_images = extract_crops_from_regions(lung_image, regions_pred)
+
+
         total_stats = add_stats(stats, total_stats)
         if debug: logging.info("++ Slice %d, stats: %s" % (nslice, str(stats)))
 
@@ -262,10 +264,10 @@ def load_patient(patient_data, patient_nodules_df=None, discard_empty_nodules=Fa
 def multiproc_crop_generator(filenames, out_x_filename, out_y_filename, load_patient_func, parallel=False):
     """loads patches in parallel and stores the results."""
 
-    xf, yf, total_stats = [], [], {}
-
+    total_stats = {}
+    xf, yf = [], []
     if parallel:
-        pool = multiprocessing.Pool(4)
+        pool =  multiprocessing.Pool(4)
         tstart = time()
         x, y, stats = zip(*pool.map(load_patient_func, filenames))
 
@@ -273,6 +275,8 @@ def multiproc_crop_generator(filenames, out_x_filename, out_y_filename, load_pat
             xf.extend(x[i])
             yf.extend(y[i])
             total_stats = add_stats(total_stats, stats[i])
+        pool.close()
+        pool.join()
     else:
         for idx,filename in enumerate(filenames):
             logging.info("Loading %d/%d" % (idx,len(filenames)))
