@@ -9,8 +9,8 @@ import matplotlib.pyplot as plt
 wp = os.environ['LUNG_PATH']
 # INPUT_PATH = wp + 'data/preprocessed5_sample'  # INPUT_PATH = wp + 'data/preprocessed5_sample'  '/mnt/hd2/preprocessed5'
 # OUTPUT_PATH =  wp + 'data/preprocessed5_sample_th2'
-INPUT_PATH = '/mnt/hd2/preprocessed5_wrong_lung_segmentation'
-OUTPUT_PATH = '/mnt/hd2/preprocessed6_wrong_lung_segmentation'
+INPUT_PATH = '/mnt/hd2/preprocessed5_validation_luna'
+OUTPUT_PATH = '/mnt/hd2/preprocessed6_validation_luna'
 filenames = os.listdir(INPUT_PATH)
 
 #
