@@ -89,7 +89,7 @@ test_datagen = ImageDataGenerator(dim_ordering="th")  # dummy for testing to hav
 
 def chunk_generator(X_orig, y_orig, thickness=0, batch_size=32, is_training=True):
     while 1:
-        logging.info("Loaded batch of patients with %d/%d positives" % (np.sum(y_orig), len(y_orig)))
+        logging.info("[TRAIN:%s] Loaded batch of patients with %d/%d positives" % (str(is_training), np.sum(y_orig), len(y_orig)))
         idx_sel = [i for i in range(len(X_orig)) if y_orig[i]==1 or random.uniform(0,1) < 1.2*np.mean(y_orig)]
         X = [X_orig[i] for i in idx_sel]
         y = [y_orig[i] for i in idx_sel]
