@@ -5,7 +5,10 @@ from time import time
 from keras.optimizers import Adam
 from dl_networks.sample_resnet import ResnetBuilder
 from dl_model_patches import  common
+from keras import backend as K
 
+
+K.set_image_dim_ordering('th')
 
 # PATHS
 wp = os.environ['LUNG_PATH']
