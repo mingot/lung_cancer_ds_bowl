@@ -93,6 +93,7 @@ def extract_rois_from_lung_mask(lung_image, lung_mask):
     mask[mask<-500] = -2000  # based on LUNA examination ()
 
     # generate regions
+    # plotting.plot_bb(mask, regions_pred)
     #mask = morphology.opening(mask)
     regions_pred = get_regions(mask, threshold=np.mean(mask))
 
