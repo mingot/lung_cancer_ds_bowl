@@ -221,13 +221,6 @@ def load_patient(patient_data, patient_nodules_df=None, discard_empty_nodules=Fa
             sel_patient_nodules_df = patient_nodules_df[patient_nodules_df['nslice']==nslice]
             regions_pred = extract_rois_from_df(patient_data, sel_patient_nodules_df)
 
-        # Extract cropped images
-        if thickness>0:  # add extra images as channels for thick resnet
-            lung_image = patient_data[0,(nslice - thickness):(nslice + thickness + 1),:,:]
-            if lung_image.shape[0] != 2*thickness + 1:  # skip the extremes
-                continue
-        cropped_images = extract_crops_from_regions(lung_image, regions_pred)
-
         # Generate labels
         if np.sum(nodules_mask)!=0:
             regions_real = get_regions(nodules_mask, threshold=np.mean(nodules_mask))
@@ -239,7 +232,7 @@ def load_patient(patient_data, patient_nodules_df=None, discard_empty_nodules=Fa
         if patient_nodules_df is not None:
                 # TODO: remove when filtering good candidates is done in the begining
                 # Select just regions that are nodules (TPs and FNs) and regions with high socre (FPs)
-                idx_sel = [i for i in range(len(regions_pred)) if labels[i]==1 or sel_patient_nodules_df.iloc[i]['score']>0.7]
+                idx_sel = [i for i in range(len(regions_pred)) if labels[i]==1 or sel_patient_nodules_df.iloc[i]['score']>0.5]
                 regions_pred = [regions_pred[i] for i in idx_sel]
                 if sum(labels)!=0:
                     labels, stats = get_labels_from_regions(regions_real, regions_pred)
@@ -247,6 +240,15 @@ def load_patient(patient_data, patient_nodules_df=None, discard_empty_nodules=Fa
                     stats = {'fp':len(regions_pred), 'tp': 0, 'fn':0}
                     labels = [0]*len(regions_pred)
                 # labels = [labels[i] for i in idx_sel]
+
+
+        # Extract cropped images
+        if thickness>0:  # add extra images as channels for thick resnet
+            lung_image = patient_data[0,(nslice - thickness):(nslice + thickness + 1),:,:]
+            if lung_image.shape[0] != 2*thickness + 1:  # skip the extremes
+                continue
+        cropped_images = extract_crops_from_regions(lung_image, regions_pred)
+
 
         total_stats = add_stats(stats, total_stats)
         if debug: logging.info("++ Slice %d, stats: %s" % (nslice, str(stats)))
@@ -263,31 +265,28 @@ def multiproc_crop_generator(filenames, out_x_filename, out_y_filename, load_pat
     """loads patches in parallel and stores the results."""
 
     total_stats = {}
+    xf, yf = [], []
+    if parallel:
+        pool =  multiprocessing.Pool(4)
+        tstart = time()
+        x, y, stats = zip(*pool.map(load_patient_func, filenames))
 
-    for idx,j in enumerate(range(3,len(filenames),100)):
-        xf, yf = [], []
-        if parallel:
-                pool =  multiprocessing.Pool(4)
-                tstart = time()
-                x, y, stats = zip(*pool.map(load_patient_func, filenames[j:(j+100)]))
-
-
-                for i in range(len(x)):
-                    xf.extend(x[i])
-                    yf.extend(y[i])
-                    total_stats = add_stats(total_stats, stats[i])
-                pool.close()
-                pool.join()
-        else:
-            for idx,filename in enumerate(filenames):
-                logging.info("Loading %d/%d" % (idx,len(filenames)))
-                x,y,stats = load_patient_func(filename)
-                xf.extend(x)
-                yf.extend(y)
-                total_stats = add_stats(total_stats, stats)
+        for i in range(len(x)):
+            xf.extend(x[i])
+            yf.extend(y[i])
+            total_stats = add_stats(total_stats, stats[i])
+        pool.close()
+        pool.join()
+    else:
+        for idx,filename in enumerate(filenames):
+            logging.info("Loading %d/%d" % (idx,len(filenames)))
+            x,y,stats = load_patient_func(filename)
+            xf.extend(x)
+            yf.extend(y)
+            total_stats = add_stats(total_stats, stats)
 
 
-        logging.info('Total time: %.2f, total patients:%d, stats: %s' % (time() - tstart, len(x), total_stats))
-        np.savez_compressed(out_x_filename + str(idx), np.asarray(xf))
-        np.savez_compressed(out_y_filename + str(idx), np.asarray(yf))
-        logging.info('Finished saving files')
+    logging.info('Total time: %.2f, total patients:%d, stats: %s' % (time() - tstart, len(x), total_stats))
+    np.savez_compressed(out_x_filename, np.asarray(xf))
+    np.savez_compressed(out_y_filename, np.asarray(yf))
+    logging.info('Finished saving files')
