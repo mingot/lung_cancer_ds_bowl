@@ -264,7 +264,7 @@ def multiproc_crop_generator(filenames, out_x_filename, out_y_filename, load_pat
 
     total_stats = {}
 
-    for idx,j in enumerate(range(0,len(filenames),100)):
+    for idx,j in enumerate(range(3,len(filenames),100)):
         xf, yf = [], []
         if parallel:
                 pool =  multiprocessing.Pool(4)
