@@ -71,21 +71,21 @@ dataset_final <- na_to_zeros(dataset_final,names(dataset_final))
 # SEPARATING TRAIN AND SCORING ---------------------------------------------------------------------
 
 vars_train <- c(
-  #"max_intensity",
+  "max_intensity",
   "max_diameter",
   "big_nodules_patches",
   "max_diameter_patches",
-  "num_slices_patches",
+  #"num_slices_patches",
   "max_score",
-  "max_score_patches",
+  #"max_score_patches",
   "nslice_nodule_patch",
-  "consec_nods_patches",
-  "diameter_nodule_patch"
+  "consec_nods_patches"
+  #"diameter_nodule_patch",
   #"patient_min",
-  #"patient_mean",
-  #"patient_std"
+  #"patient_mean"
+  #"patient_std",
   #"diameter_nodule"
-  #"max_intensity_nodule",
+  #"max_intensity_nodule"
   #"mean_intensity_nodule"
   )
 #vars_train <- names(dataset_final)
@@ -104,7 +104,7 @@ train_task <- makeClassifTask(data = data.frame(data_train),target = "cancer")
 fv <- generateFilterValuesData(train_task, method = c("anova.test","chi.squared"))
 data.table(fv$data)
 
-lrn = generateModel("classif.gbm")$lrn
+lrn = generateModel("classif.logreg")$lrn
 k_folds = 5
 rdesc = makeResampleDesc("CV", iters = k_folds, stratify = TRUE)
 
@@ -113,7 +113,7 @@ rdesc = makeResampleDesc("CV", iters = k_folds, stratify = TRUE)
 
 parallelStartSocket(5)
 tr_cv = resample(lrn, train_task, rdesc, models = TRUE, measures = list(auc,logloss,fpr,fnr))
-ctrlF = makeFeatSelControlGA(maxit = 3000)
+# ctrlF = makeFeatSelControlGA(maxit = 4000)
 # sfeats = selectFeatures(
 #   learner = lrn,
 #   task = train_task,
@@ -122,6 +122,8 @@ ctrlF = makeFeatSelControlGA(maxit = 3000)
 #   measures = logloss,
 #   show.info = FALSE)
 knitr::knit_print(tr_cv$measures.test)
+summary(tr_cv$measures.test$auc)
+summary(tr_cv$measures.test$logloss)
 final_model = train(lrn,train_task)
 summary(final_model$learner.model)
 parallelStop()
