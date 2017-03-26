@@ -196,12 +196,12 @@ common.multiproc_crop_generator(filenames_test,
 # INPUT_PATH = wp + 'data/preprocessed5_sample_th2'
 # file_list = [os.path.join(INPUT_PATH, fp) for fp in os.listdir(INPUT_PATH)]
 #
-total_stats = {}
-for filename in file_list:
-    X, y, rois, stats = load_patient(filename, discard_empty_nodules=True, output_rois=True, thickness=0)
-    print stats
-    total_stats = add_stats(stats, total_stats)
-    print "TOTAL STATS:", filename.split('/')[-1], total_stats
+# total_stats = {}
+# for filename in file_list:
+#     X, y, rois, stats = load_patient(filename, discard_empty_nodules=True, output_rois=True, thickness=0)
+#     print stats
+#     total_stats = add_stats(stats, total_stats)
+#     print "TOTAL STATS:", filename.split('/')[-1], total_stats
 #
 # filename = 'luna_127965161564033605177803085629.npz'
 # p = np.load(os.path.join(INPUT_PATH,filename))['arr_0']

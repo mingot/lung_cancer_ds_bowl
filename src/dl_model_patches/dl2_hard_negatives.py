@@ -53,8 +53,8 @@ logging.basicConfig(level=logging.INFO,
 # nodules_df['nslice'] = nodules_df['nslice'].astype(int)
 #
 # # Construction of training and testsets
-# filenames_train = [os.path.join(INPUT_PATH,f) for f in set(nodules_df['patientid']) if f[0:4]=='luna' and f in os.listdir(INPUT_PATH) and f in annotated]
-# filenames_test = [os.path.join(VALIDATION_PATH,f) for f in set(nodules_df['patientid']) if f[0:4]=='luna' and f in os.listdir(VALIDATION_PATH) and f in annotated]
+# filenames_train = [os.path.join(INPUT_PATH,f) for f in set(nodules_df['patientid']) if f[0:4]=='luna' and f in os.listdir(INPUT_PATH)] #and f in annotated]
+# filenames_test = [os.path.join(VALIDATION_PATH,f) for f in set(nodules_df['patientid']) if f[0:4]=='luna' and f in os.listdir(VALIDATION_PATH)] #and f in annotated]
 #
 #
 # def __load_and_store(filename):
