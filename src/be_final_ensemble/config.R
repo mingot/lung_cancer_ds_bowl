@@ -16,11 +16,14 @@ generateModel <- function(model_family) {
   if(model_family == "classif.xgboost") {
     lrn = makeLearner(
       "classif.xgboost",
-      predict.type = "prob"
-      # eval_metric = "auc",
-      # nthread = 7,
-      # eta = 0.01,
-      # nrounds = 10000
+      predict.type = "prob",
+      eval_metric = "logloss",
+      nthread = 7,
+      eta = 0.03757,
+      nrounds = 2500,
+      colsample_bytree = 0.9,
+      subsample = 0.85,
+      min_child_weight = 96
     )
     ps = makeParamSet(
       makeNumericParam("eta", lower = 0.001, upper = 0.3),
