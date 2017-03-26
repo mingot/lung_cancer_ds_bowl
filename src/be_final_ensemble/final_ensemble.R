@@ -105,7 +105,7 @@ train_task <- makeClassifTask(data = data.frame(data_train),target = "cancer")
 fv <- generateFilterValuesData(train_task, method = c("anova.test","chi.squared"))
 data.table(fv$data)
 
-lrn = generateModel("classif.xgboost")$lrn
+lrn = generateModel("classif.logreg")$lrn
 k_folds = 5
 rdesc = makeResampleDesc("CV", iters = k_folds, stratify = TRUE)
 
