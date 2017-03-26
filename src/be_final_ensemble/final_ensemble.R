@@ -1,6 +1,7 @@
 
 ## REPO PATH, CANVIAR SI ES NECESSARI
 path_repo <<- "D:/lung_cancer_ds_bowl/"
+path_data <<- "D:/output/"
 # IMPORTS ------------------------------------------------------------------------------------------
 source(paste0(path_repo,"src/be_final_ensemble/config.R"))
 source(paste0(path_repo,"src/be_final_ensemble/fp_model.R"))
@@ -45,6 +46,7 @@ vars_nodules_patches[,patientid:=gsub(".npz|dsb_","",patientid)]
 vars_nodules_patches = vars_nodules_patches[score>0.9]
 names_change <- c("x","y","diameter","score")
 setnames(vars_nodules_patches,names_change,paste0(names_change,"_patches"))
+vars_nodules_patches <- merge(vars_nodules_patches,patients,all.x=T,by = "patientid")
 
 ## Merging al nodules variables
 vars_nodules <- rbind(vars_nodules,vars_nodules_patches,fill = TRUE)
@@ -72,17 +74,18 @@ vars_train <- c(
   "max_intensity",
   "max_diameter",
   "big_nodules_patches",
-  #"max_diameter_patches",
-  "num_slices_patches",
+  "max_diameter_patches",
+  #"num_slices_patches",
   "max_score",
   #"max_score_patches",
-  "nslice_nodule_patch"
+  "nslice_nodule_patch",
+  "consec_nods_patches"
   #"diameter_nodule_patch",
   #"patient_min",
-  #"patient_mean",
-  #"patient_std"
+  #"patient_mean"
+  #"patient_std",
   #"diameter_nodule"
-  #"max_intensity_nodule",
+  #"max_intensity_nodule"
   #"mean_intensity_nodule"
   )
 #vars_train <- names(dataset_final)
@@ -110,7 +113,7 @@ rdesc = makeResampleDesc("CV", iters = k_folds, stratify = TRUE)
 
 parallelStartSocket(5)
 tr_cv = resample(lrn, train_task, rdesc, models = TRUE, measures = list(auc,logloss,fpr,fnr))
-ctrlF = makeFeatSelControlGA(maxit = 3000)
+# ctrlF = makeFeatSelControlGA(maxit = 4000)
 # sfeats = selectFeatures(
 #   learner = lrn,
 #   task = train_task,
@@ -119,6 +122,8 @@ ctrlF = makeFeatSelControlGA(maxit = 3000)
 #   measures = logloss,
 #   show.info = FALSE)
 knitr::knit_print(tr_cv$measures.test)
+summary(tr_cv$measures.test$auc)
+summary(tr_cv$measures.test$logloss)
 final_model = train(lrn,train_task)
 summary(final_model$learner.model)
 parallelStop()
@@ -135,7 +140,7 @@ LogLossBinary(target,preds)
 preds = predictCv(final_model, scoring)
 
 submission = data.table(id=patients_scoring, cancer=preds)
-write.csv(submission, paste0(path_repo,"data/submissions/03_submission.csv"), quote=F, row.names=F)
+write.csv(submission, paste0(path_repo,"data/submissions/04_submission.csv"), quote=F, row.names=F)
 
 
 
