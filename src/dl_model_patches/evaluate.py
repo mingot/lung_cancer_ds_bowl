@@ -77,7 +77,8 @@ with open(OUTPUT_CSV, write_method) as file:
             # if preds[i]>0.8:
             #     logging.info("++ Good candidate found with (nslice,x,y,diam,score): %d,%d,%d,%.2f,%.2f" % (nslice,r.centroid[0], r.centroid[1], r.equivalent_diameter,preds[i]))
 
-        logging.info("Total ROIS:%d, Good Candidates:%d, Time processnig:%.2f" % (len(preds), len([p for p in preds if p>0.5]), time()-tstart))
+        logging.info("Total ROIS:%d, Good Candidates:%d, Time processnig:%.2f" % (len(preds), len([p for p in preds if p>0.5
+        ]), time()-tstart))
 
 
 
