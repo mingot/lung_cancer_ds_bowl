@@ -19,8 +19,8 @@ from dl_utils.tb_callback import TensorBoard
 
 # PATHS
 wp = os.environ['LUNG_PATH']
-INPUT_PATH = '/mnt/hd2/preprocessed6'  # INPUT_PATH = wp + 'data/preprocessed5_sample'
-VALIDATION_PATH = '/mnt/hd2/preprocessed6_validation_luna'
+INPUT_PATH = '/mnt/hd2/preprocessed5'  # INPUT_PATH = wp + 'data/preprocessed5_sample'
+VALIDATION_PATH = '/mnt/hd2/preprocessed5_validation_luna'
 NODULES_PATH = wp + 'data/luna/annotations.csv'
 OUTPUT_MODEL = wp + 'models/jm_patches_train_v07.hdf5'  # OUTPUT_MODEL = wp + 'personal/jm_patches_train_v06_local.hdf5'
 #OUTPUT_CSV = wp + 'output/noduls_patches_hardnegative_v01.csv'
@@ -59,13 +59,13 @@ def __load_and_store(filename):
     return X, y, stats
 
 common.multiproc_crop_generator(filenames_train,
-                                os.path.join(PATCHES_PATH,'x_train_pre6.npz'),
-                                os.path.join(PATCHES_PATH,'y_train_pre6.npz'),
+                                os.path.join(PATCHES_PATH,'x_train_pre5_new.npz'),
+                                os.path.join(PATCHES_PATH,'y_train_pre5_new.npz'),
                                 __load_and_store)
 
 common.multiproc_crop_generator(filenames_test,
-                                os.path.join(PATCHES_PATH,'x_test_pre6.npz'),
-                                os.path.join(PATCHES_PATH,'y_test_pre6.npz'),
+                                os.path.join(PATCHES_PATH,'x_test_pre5_new.npz'),
+                                os.path.join(PATCHES_PATH,'y_test_pre5_new.npz'),
                                 __load_and_store)
 
 
