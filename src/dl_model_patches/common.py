@@ -68,7 +68,6 @@ class AuxRegion():
             return np.stack(stack_crops)
 
 
-
 def calc_area(r):
     return (r.bbox[2]-r.bbox[0])*(r.bbox[3]-r.bbox[1])
 
