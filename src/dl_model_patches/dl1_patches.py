@@ -136,6 +136,7 @@ model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['acc
 # logging.info('Loading exiting model...')
 # model.load_weights(OUTPUT_MODEL)
 
+
 model.fit_generator(generator=chunks(x_train, y_train, batch_size=32, thickness=1),
                     samples_per_epoch=1280,  # make it small to update TB and CHECKPOINT frequently
                     nb_epoch=500,
