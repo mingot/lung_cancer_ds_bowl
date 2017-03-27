@@ -24,8 +24,8 @@ VALIDATION_PATH = '/mnt/hd2/preprocessed5_validation_luna'
 NODULES_PATH = wp + 'data/luna/annotations.csv'
 PATCHES_PATH = '/mnt/hd2/patches'  # PATCHES_PATH = wp + 'data/preprocessed5_patches'
 
-OUTPUT_MODEL = wp + 'models/jm_patches_train_v09.hdf5'  # OUTPUT_MODEL = wp + 'personal/jm_patches_train_v06_local.hdf5'
-LOGS_PATH = wp + 'logs/%s' % str('v09')
+OUTPUT_MODEL = wp + 'models/jm_patches_train_v10.hdf5'  # OUTPUT_MODEL = wp + 'personal/jm_patches_train_v06_local.hdf5'
+LOGS_PATH = wp + 'logs/%s' % str('v10')
 
 #LOGS_PATH = wp + 'logs/%s' % str(int(time()))
 if not os.path.exists(LOGS_PATH):
@@ -140,13 +140,13 @@ model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['acc
 # model.load_weights(OUTPUT_MODEL)
 
 
-model.fit_generator(generator=chunks(x_train, y_train, batch_size=32, thickness=1),
-                    samples_per_epoch=1280,  # make it small to update TB and CHECKPOINT frequently
+model.fit_generator(generator=chunks(x_train, y_train, batch_size=64, thickness=1),
+                    samples_per_epoch=1280*2,  # make it small to update TB and CHECKPOINT frequently
                     nb_epoch=500,
                     verbose=1,
                     #class_weight={0:1., 1:4.},
                     callbacks=[tb, model_checkpoint],
-                    validation_data=chunks(x_test, y_test, batch_size=32, thickness=1, is_training=False),
+                    validation_data=chunks(x_test, y_test, batch_size=64, thickness=1, is_training=False),
                     nb_val_samples=32*10,
                     max_q_size=64,
                     nb_worker=1)  # a locker is needed if increased the number of parallel workers
