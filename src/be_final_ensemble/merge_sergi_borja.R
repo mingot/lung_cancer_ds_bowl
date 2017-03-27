@@ -1,3 +1,26 @@
+## REPO PATH, CANVIAR SI ES NECESSARI
+path_repo <<- "D:/lung_cancer_ds_bowl/"
+path_data <<- "D:/output/"
+# IMPORTS ------------------------------------------------------------------------------------------
+source(paste0(path_repo,"src/be_final_ensemble/config.R"))
+source(paste0(path_repo,"src/be_final_ensemble/fp_model.R"))
+source(paste0(path_repo,"src/be_final_ensemble/aggregate_dt.R"))
+
+# DATA ---------------------------------------------------------------------------------------------
+
+## PATIENTS AND LABELS Data ------------------------------------------------------------------------
+
+## Add variables to all sets
+
+dataset_final <- generate_patient_dt(path_repo)
+# SEPARATING TRAIN AND SCORING ---------------------------------------------------------------------
+patients_train <- dataset_final[dataset == "training",patientid]
+dataset_final[,dataset := NULL]
+features_sp <- fread(paste0(path_repo,"src/sp_final_ensemble/submissions/sp_01_features.csv"))
+dataset_final <- merge(dataset_final,features_sp,all.x = T,by = "patientid")
+dataset_final <- na_to_zeros(dataset_final,names(dataset_final))
+
+
 dataset_final[,consec_nods := NULL]
 dataset_final[,cancer := as.numeric(as.character(cancer))]
 dataset_final <- na_to_zeros(dataset_final,names(dataset_final))
