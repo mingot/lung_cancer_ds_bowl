@@ -24,8 +24,8 @@ VALIDATION_PATH = '/mnt/hd2/preprocessed5_validation_luna'
 NODULES_PATH = wp + 'data/luna/annotations.csv'
 PATCHES_PATH = '/mnt/hd2/patches'  # PATCHES_PATH = wp + 'data/preprocessed5_patches'
 
-OUTPUT_MODEL = wp + 'models/jm_patches_train_v10.hdf5'  # OUTPUT_MODEL = wp + 'personal/jm_patches_train_v06_local.hdf5'
-LOGS_PATH = wp + 'logs/%s' % str('v10')
+OUTPUT_MODEL = wp + 'models/jm_patches_train_v11.hdf5'  # OUTPUT_MODEL = wp + 'personal/jm_patches_train_v06_local.hdf5'
+LOGS_PATH = wp + 'logs/%s' % str('v11')
 
 #LOGS_PATH = wp + 'logs/%s' % str(int(time()))
 if not os.path.exists(LOGS_PATH):
@@ -75,9 +75,9 @@ logging.basicConfig(level=logging.INFO,
 
 # Data augmentation generator
 train_datagen = ImageDataGenerator(
-    #rotation_range=.5,  # .06,
-    #width_shift_range=0.05, #0.02,
-    #height_shift_range=0.05, #0.02,
+    rotation_range=10,  # .06,
+    width_shift_range=0.05, #0.02,
+    height_shift_range=0.05, #0.02,
     #shear_range=0.0002,
     #zoom_range=0.0002,
     dim_ordering="th",
@@ -142,7 +142,7 @@ model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['acc
 
 model.fit_generator(generator=chunks(x_train, y_train, batch_size=64, thickness=1),
                     samples_per_epoch=1280*2,  # make it small to update TB and CHECKPOINT frequently
-                    nb_epoch=500,
+                    nb_epoch=500*4,
                     verbose=1,
                     #class_weight={0:1., 1:4.},
                     callbacks=[tb, model_checkpoint],
