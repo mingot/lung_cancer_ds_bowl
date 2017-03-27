@@ -68,7 +68,6 @@ class AuxRegion():
             return np.stack(stack_crops)
 
 
-
 def calc_area(r):
     return (r.bbox[2]-r.bbox[0])*(r.bbox[3]-r.bbox[1])
 
@@ -211,7 +210,7 @@ def load_patient(patient_data, patient_nodules_df=None, discard_empty_nodules=Fa
             # Discard if bad segmentation
             voxel_volume_l = 2*0.7*0.7/(1000000.0)
             lung_volume_l = np.sum(lung_mask)*voxel_volume_l
-            if lung_volume_l < 0.02 or lung_volume_l > 0.1:
+            if lung_volume_l < 0.009 or lung_volume_l > 0.1:
                 continue  # skip slices with bad lung segmentation
 
             # Filter ROIs to discard small and connected
@@ -266,6 +265,7 @@ def multiproc_crop_generator(filenames, out_x_filename, out_y_filename, load_pat
 
     total_stats = {}
     xf, yf = [], []
+    tstart = time()
     if parallel:
         pool =  multiprocessing.Pool(4)
         tstart = time()
