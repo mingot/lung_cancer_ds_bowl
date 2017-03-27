@@ -134,7 +134,7 @@ logging.info("Test set (1s/total): %d/%d" % (sum(y_test), len(y_test)))
 
 
 # Load model
-model = ResnetBuilder().build_resnet_18((3,40,40),1)
+model = ResnetBuilder().build_resnet_50((3,40,40),1)
 model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['accuracy','fmeasure'])
 # logging.info('Loading exiting model...')
 # model.load_weights(OUTPUT_MODEL)
