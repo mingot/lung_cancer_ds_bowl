@@ -22,9 +22,12 @@ wp = os.environ['LUNG_PATH']
 INPUT_PATH = '/mnt/hd2/preprocessed5'  # INPUT_PATH = wp + 'data/preprocessed5_sample'
 VALIDATION_PATH = '/mnt/hd2/preprocessed5_validation_luna'
 NODULES_PATH = wp + 'data/luna/annotations.csv'
-OUTPUT_MODEL = wp + 'models/jm_patches_train_v08.hdf5'  # OUTPUT_MODEL = wp + 'personal/jm_patches_train_v06_local.hdf5'
 PATCHES_PATH = '/mnt/hd2/patches'  # PATCHES_PATH = wp + 'data/preprocessed5_patches'
-LOGS_PATH = wp + 'logs/%s' % str(int(time()))
+
+OUTPUT_MODEL = wp + 'models/jm_patches_train_v08.hdf5'  # OUTPUT_MODEL = wp + 'personal/jm_patches_train_v06_local.hdf5'
+LOGS_PATH = wp + 'logs/%s' % str('v08')
+
+#LOGS_PATH = wp + 'logs/%s' % str(int(time()))
 if not os.path.exists(LOGS_PATH):
     os.makedirs(LOGS_PATH)
 
@@ -131,7 +134,7 @@ logging.info("Test set (1s/total): %d/%d" % (sum(y_test), len(y_test)))
 
 
 # Load model
-model = ResnetBuilder().build_resnet_50((3,40,40),1)
+model = ResnetBuilder().build_resnet_34((3,40,40),1)
 model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['accuracy','fmeasure'])
 # logging.info('Loading exiting model...')
 # model.load_weights(OUTPUT_MODEL)
