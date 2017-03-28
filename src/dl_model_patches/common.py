@@ -82,7 +82,7 @@ def augment_bbox(r, margin=5):
     return r
 
 
-def extract_rois_from_lung_mask(lung_image, lung_mask):
+def extract_rois_from_lung_mask(lung_image, lung_mask, margin=15):
     """
         Given a lung image,  generate ROIs based on HU filtering.
         Reduce the candidates by discarding smalls and very rectangular regions.
@@ -108,13 +108,13 @@ def extract_rois_from_lung_mask(lung_image, lung_mask):
     regions_pred_augmented = []
     for region in regions_pred:
         region = AuxRegion(region)
-        region = augment_bbox(region, margin=5)
+        region = augment_bbox(region, margin=margin)
         regions_pred_augmented.append(region)
 
     return regions_pred_augmented
 
 
-def extract_crops_from_regions(img, regions, output_size=(40,40)):
+def extract_crops_from_regions(img, regions, output_size=(60,60)):
     # Crop img given a vector of regions.
     # If img have depth (1 dim of 3), generate the depth cropped image
     cropped_images = []
