@@ -157,7 +157,7 @@ def get_labels_from_regions(regions_real, regions_pred):
     return labels, stats
 
 
-def extract_rois_from_df(patient, nodules_df):
+def extract_rois_from_df(nodules_df):
     regions = []
     for idx, row in nodules_df.iterrows():
         x, y, d = int(row['x']), int(row['y']), int(row['diameter']+10)
@@ -218,7 +218,7 @@ def load_patient(patient_data, patient_nodules_df=None, discard_empty_nodules=Fa
 
         else:
             sel_patient_nodules_df = patient_nodules_df[patient_nodules_df['nslice']==nslice]
-            regions_pred = extract_rois_from_df(patient_data, sel_patient_nodules_df)
+            regions_pred = extract_rois_from_df(sel_patient_nodules_df)
 
         # Generate labels
         if np.sum(nodules_mask)!=0:

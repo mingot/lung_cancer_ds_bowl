@@ -15,8 +15,8 @@ wp = os.environ['LUNG_PATH']
 INPUT_PATH = '/mnt/hd2/preprocessed5'  # INPUT_PATH = wp + 'data/preprocessed5_sample'
 VALIDATION_PATH = '/mnt/hd2/preprocessed5_validation_luna'
 NODULES_PATH = wp + 'data/luna/annotations.csv'
-OUTPUT_MODEL = wp + 'models/jm_patches_hardnegative_v01.hdf5'
-OUTPUT_CSV = wp + 'output/nodules_parallel_output_test.csv'
+OUTPUT_MODEL = wp + 'models/jm_patches_train_v11.hdf5'
+OUTPUT_CSV ='/home/shared/output/nodules_parallel_output_test.csv'
 
 
 
@@ -25,7 +25,7 @@ OUTPUT_CSV = wp + 'output/nodules_parallel_output_test.csv'
 THICKNESS = 1
 write_method = 'w'
 file_list = [os.path.join(VALIDATION_PATH, fp) for fp in os.listdir(VALIDATION_PATH)]
-file_list += [os.path.join(INPUT_PATH, fp) for fp in os.listdir(INPUT_PATH) if fp.startswith('dsb_')]
+file_list += [os.path.join(INPUT_PATH, fp) for fp in os.listdir(INPUT_PATH)] # if fp.startswith('dsb_')]
 
 
 # ## if the OUTPUT_CSV file already exists, continue it
@@ -38,7 +38,7 @@ if os.path.exists(OUTPUT_CSV):
 
 
 # Load model
-model = ResnetBuilder().build_resnet_34((3,40,40),1)
+model = ResnetBuilder().build_resnet_50((3,40,40),1)
 model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['accuracy','fmeasure'])
 logging.info('Loading existing model...')
 model.load_weights(OUTPUT_MODEL)
