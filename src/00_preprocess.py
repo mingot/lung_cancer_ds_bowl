@@ -155,6 +155,7 @@ for patient_file in patient_files:
     # LUNG SEGMENTATION
     tstart = time()
     lung_mask = lung_segmentation.segment_lungs(image=pix_resampled, fill_lung=True, method="thresholding1")  # thresholding1, thresholding2, watershed
+    # TODO: if lung_mask fails, do it with thresholding2
     print "Time segmenting lungs: %.4f" % (time() - tstart)
 
     # Checks for lung segmentation
