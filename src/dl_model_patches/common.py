@@ -84,7 +84,7 @@ def augment_bbox(r, margin=5):
     return r
 
 
-def extract_rois_from_lung_mask(lung_image, lung_mask, nodules_mask=None):
+def extract_rois_from_lung_mask(lung_image, lung_mask):
     """
         Given a lung image,  generate ROIs based on HU filtering.
         Reduce the candidates by discarding smalls and very rectangular regions.
@@ -97,9 +97,6 @@ def extract_rois_from_lung_mask(lung_image, lung_mask, nodules_mask=None):
     # plotting.plot_bb(mask, regions_pred)
     #mask = morphology.opening(mask)
     regions_pred = get_regions(mask, threshold=np.mean(mask))
-    regions_real = get_regions(nodules_mask, threshold=np.mean(nodules_mask))
-
-    plotting.plot_bb_two_regions(mask, regions_pred, regions_real, ['red', 'yellow'])
 
     # discard small regions or long connected regions
     sel_regions = []
@@ -220,7 +217,7 @@ def load_patient(patient_data, patient_nodules_df=None, discard_empty_nodules=Fa
                 continue  # skip slices with bad lung segmentation
 
             # Filter ROIs to discard small and connected
-            regions_pred = extract_rois_from_lung_mask(lung_image, lung_mask, nodules_mask=nodules_mask)
+            regions_pred = extract_rois_from_lung_mask(lung_image, lung_mask)
 
         else:
             sel_patient_nodules_df = patient_nodules_df[patient_nodules_df['nslice']==nslice]
@@ -255,6 +252,11 @@ def load_patient(patient_data, patient_nodules_df=None, discard_empty_nodules=Fa
 
         total_stats = add_stats(stats, total_stats)
         if debug: logging.info("++ Slice %d, stats: %s" % (nslice, str(stats)))
+
+        mask = lung_image.copy()
+        mask[lung_mask != 1] = -2000
+        mask[mask < -500] = -2000  # based on LUNA examination ()
+        plotting.plot_bb_two_regions(mask, regions_pred, regions_real, ['red', 'yellow'])
 
         X.extend(cropped_images)
         Y.extend(labels)  # nodules_mask
