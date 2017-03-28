@@ -89,7 +89,7 @@ import multiprocessing
 
 def load_patient_func(filename):
     patient_data = np.load(filename)['arr_0']
-    X, y, rois, stats = common.load_patient(patient_data, discard_empty_nodules=True, output_rois=True, thickness=1)
+    X, y, rois, stats = common.load_patient(patient_data, discard_empty_nodules=False, output_rois=True, thickness=1)
     logging.info("Patient: %s, stats: %s" % (filename.split('/')[-1], stats))
     return X, y, rois, stats
 
@@ -114,6 +114,7 @@ with open(OUTPUT_CSV, write_method) as file:
 
         xf = np.asarray(xf)
         preds = model.predict(xf, verbose=1)
+        logging.info("Batch results: %d/%d (th=0.7)" % (len([p for p in preds if p>0.7]),len(preds)))
         for i in range(len(preds)):
             nslice, r = roisf[i]
             file.write('%s,%d,%d,%d,%.3f,%.5f,%d\n' % (ref_filenames[i].split('/')[-1], nslice, r.centroid[0], r.centroid[1], r.equivalent_diameter,preds[i],yf[i]))
