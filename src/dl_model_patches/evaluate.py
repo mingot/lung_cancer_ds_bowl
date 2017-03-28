@@ -99,7 +99,7 @@ with open(OUTPUT_CSV, 'a') as file:
     NUM_CONC = 16
     for j in range(160, len(file_list), NUM_CONC):
         filenames = file_list[j*NUM_CONC:(j+1)*NUM_CONC]
-        print filenames
+        logging.info(filenames)
         pool =  multiprocessing.Pool(4)
         x, y, rois, stats = zip(*pool.map(load_patient_func, filenames))
         break
