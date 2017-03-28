@@ -93,11 +93,11 @@ def load_patient_func(filename):
     logging.info("Patient: %s, stats: %s" % (filename.split('/')[-1], stats))
     return X, y, rois, stats
 
-with open(OUTPUT_CSV, write_method) as file:
-    file.write('patientid,nslice,x,y,diameter,score,label\n')
+with open(OUTPUT_CSV, 'a') as file:
+    #file.write('patientid,nslice,x,y,diameter,score,label\n')
 
     NUM_CONC = 16
-    for j in range(0, len(file_list), NUM_CONC):
+    for j in range(160, len(file_list), NUM_CONC):
         filenames = file_list[j*NUM_CONC:(j+1)*NUM_CONC]
         pool =  multiprocessing.Pool(4)
         x, y, rois, stats = zip(*pool.map(load_patient_func, filenames))
