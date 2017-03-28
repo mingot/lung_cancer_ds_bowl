@@ -217,6 +217,9 @@ def load_patient(patient_data, patient_nodules_df=None, discard_empty_nodules=Fa
                 continue  # skip slices with bad lung segmentation
 
             # Filter ROIs to discard small and connected
+            mask = lung_image.copy()
+            mask[lung_mask != 1] = -2000
+            mask[mask < -500] = -2000  # based on LUNA examination ()
             regions_pred = extract_rois_from_lung_mask(lung_image, lung_mask)
 
         else:
@@ -253,9 +256,6 @@ def load_patient(patient_data, patient_nodules_df=None, discard_empty_nodules=Fa
         total_stats = add_stats(stats, total_stats)
         if debug: logging.info("++ Slice %d, stats: %s" % (nslice, str(stats)))
 
-        mask = lung_image.copy()
-        mask[lung_mask != 1] = -2000
-        mask[mask < -500] = -2000  # based on LUNA examination ()
         plotting.plot_bb_two_regions(mask, regions_pred, regions_real, ['red', 'yellow'])
 
         X.extend(cropped_images)
