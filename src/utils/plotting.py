@@ -62,6 +62,27 @@ def plot_bb(img, regions):
     plt.show()
 
 
+def plot_bb_two_regions(img, regions_a, regions_b, colors):
+    """Draw the img and the bounding box defined by a scikit image region (measure module)."""
+    if not isinstance(regions_a, list):  # if given a single region, still works
+        regions_a = [regions_a]
+
+    if not isinstance(regions_b, list):  # if given a single region, still works
+        regions_b = [regions_b]
+
+    fig, ax = plt.subplots(ncols=1, nrows=1, figsize=(6, 6))
+    ax.imshow(img)
+    for region in regions_a:
+        minr, minc, maxr, maxc = region.bbox
+        rect = mpatches.Rectangle((minc, minr), maxc - minc, maxr - minr, fill=False, edgecolor=colors[0], linewidth=2)
+        ax.add_patch(rect)
+    for region in regions_b:
+        minr, minc, maxr, maxc = region.bbox
+        rect = mpatches.Rectangle((minc, minr), maxc - minc, maxr - minr, fill=False, edgecolor=colors[1], linewidth=2)
+        ax.add_patch(rect)
+    plt.show()
+
+
 def plot_mask(img, mask, threshold=None):
     if threshold is None:
         threshold = .8*np.max(mask)  # np.mean(mask)

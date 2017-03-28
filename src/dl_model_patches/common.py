@@ -3,6 +3,7 @@ import logging
 import multiprocessing
 from time import time
 from skimage import measure, transform, morphology
+from utils import plotting
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s  %(levelname)-8s %(message)s',
                     datefmt='%m-%d %H:%M:%S')
@@ -83,7 +84,7 @@ def augment_bbox(r, margin=5):
     return r
 
 
-def extract_rois_from_lung_mask(lung_image, lung_mask):
+def extract_rois_from_lung_mask(lung_image, lung_mask, nodules_mask=None):
     """
         Given a lung image,  generate ROIs based on HU filtering.
         Reduce the candidates by discarding smalls and very rectangular regions.
@@ -96,6 +97,9 @@ def extract_rois_from_lung_mask(lung_image, lung_mask):
     # plotting.plot_bb(mask, regions_pred)
     #mask = morphology.opening(mask)
     regions_pred = get_regions(mask, threshold=np.mean(mask))
+    regions_real = get_regions(nodules_mask, threshold=np.mean(nodules_mask))
+
+    plotting.plot_bb_two_regions(mask, regions_pred, regions_real, ['red', 'yellow'])
 
     # discard small regions or long connected regions
     sel_regions = []
@@ -216,7 +220,7 @@ def load_patient(patient_data, patient_nodules_df=None, discard_empty_nodules=Fa
                 continue  # skip slices with bad lung segmentation
 
             # Filter ROIs to discard small and connected
-            regions_pred = extract_rois_from_lung_mask(lung_image, lung_mask)
+            regions_pred = extract_rois_from_lung_mask(lung_image, lung_mask, nodules_mask=nodules_mask)
 
         else:
             sel_patient_nodules_df = patient_nodules_df[patient_nodules_df['nslice']==nslice]
