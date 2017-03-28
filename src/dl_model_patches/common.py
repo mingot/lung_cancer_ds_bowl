@@ -82,7 +82,7 @@ def augment_bbox(r, margin=5):
     return r
 
 
-def extract_rois_from_lung_mask(lung_image, lung_mask, margin=15):
+def extract_rois_from_lung_mask(lung_image, lung_mask, margin=5):
     """
         Given a lung image,  generate ROIs based on HU filtering.
         Reduce the candidates by discarding smalls and very rectangular regions.
