@@ -26,15 +26,15 @@ vars_train <- c(
   "max_intensity",
   "max_diameter",
   "big_nodules_patches",
-  "max_diameter_patches",
-  "num_slices_patches",
+  #"max_diameter_patches",
+  #"num_slices_patches",
   "max_score",
   "max_score_patches",
   "nslice_nodule_patch",
   "consec_nods_patches",
   "diameter_nodule_patch",
   "score_2_patch",
-  "max_score_2"
+  "diameter_nodule_patch"
   #"score_mean",
   #"nslice_sd",
   #"diameter_sd"
@@ -102,7 +102,7 @@ LogLossBinary(target,preds)
 preds = predictCv(final_model, scoring)
 
 submission = data.table(id=patients_scoring, cancer=preds)
-write.csv(submission, paste0(path_repo,"data/submissions/08_submission.csv"), quote=F, row.names=F)
+write.csv(submission, paste0(path_repo,"data/submissions/09_submission.csv"), quote=F, row.names=F)
 
 
 # GENERATING PREDICTIONS FOR TRAINING ----------------------------------------------------------------------------
@@ -111,7 +111,7 @@ preds = predictCv(final_model, train_task)
 data_out <- copy(data_train)
 data_out$patientid = patients_train
 data_out$predicted=preds
-write.csv(data_out, paste0(path_repo,"data/final_model/scoring_train.csv"), quote=F, row.names=F)
+write.csv(data_out, paste0(path_repo,"data/final_model/scoring_train_09.csv"), quote=F, row.names=F)
 
 
 #---------------------------------------------------------------------------------------------------
