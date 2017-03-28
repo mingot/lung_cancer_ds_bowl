@@ -24,8 +24,8 @@ VALIDATION_PATH = '/mnt/hd2/preprocessed5_validation_luna'
 NODULES_PATH = wp + 'data/luna/annotations.csv'
 PATCHES_PATH = '/mnt/hd2/patches'  # PATCHES_PATH = wp + 'data/preprocessed5_patches'
 
-OUTPUT_MODEL = wp + 'models/jm_patches_train_v14.hdf5'  # OUTPUT_MODEL = wp + 'personal/jm_patches_train_v06_local.hdf5'
-LOGS_PATH = wp + 'logs/%s' % str('v14')
+OUTPUT_MODEL = wp + 'models/jm_patches_train_v15.hdf5'  # OUTPUT_MODEL = wp + 'personal/jm_patches_train_v06_local.hdf5'
+LOGS_PATH = wp + 'logs/%s' % str('v15')
 
 #LOGS_PATH = wp + 'logs/%s' % str(int(time()))
 if not os.path.exists(LOGS_PATH):
@@ -99,16 +99,14 @@ def chunks(X_orig, y_orig, batch_size=32, augmentation_times=4, thickness=0, is_
     """
     while 1:
         # downsample negatives (reduce 90%)
-        #selected_samples  = [i for i in range(len(y_orig)) if y_orig[i]==1 or random.randint(0,9)==0]
-        if is_training:
-            idx_1 = [i for i in range(len(y_orig)) if y_orig[i]==1]
-            idx_0 = [i for i in range(len(y_orig)) if y_orig[i]==0]
-            idx_0 = random.sample(idx_0, len(idx_1))
-            selected_samples = idx_0 + idx_1
-        else:
-            selected_samples  = [i for i in range(len(y_orig)) if y_orig[i]==1 or random.randint(0,9)==0]
+        # if is_training:
+        #     idx_1 = [i for i in range(len(y_orig)) if y_orig[i]==1]
+        #     idx_0 = [i for i in range(len(y_orig)) if y_orig[i]==0]
+        #     idx_0 = random.sample(idx_0, len(idx_1))
+        #     selected_samples = idx_0 + idx_1
+        # else:
 
-
+        selected_samples  = [i for i in range(len(y_orig)) if y_orig[i]==1 or random.randint(0,9)==0]
         X = [X_orig[i] for i in selected_samples]
         y = [y_orig[i] for i in selected_samples]
         logging.info("Final downsampled dataset stats: TP:%d, FP:%d" % (sum(y), len(y)-sum(y)))
@@ -155,7 +153,7 @@ model.fit_generator(generator=chunks(x_train, y_train, batch_size=32, thickness=
                     samples_per_epoch=1280,  # make it small to update TB and CHECKPOINT frequently
                     nb_epoch=500,
                     verbose=1,
-                    #class_weight={0:1., 1:4.},
+                    class_weight={0:1., 1:4.},
                     callbacks=[tb, model_checkpoint],
                     validation_data=chunks(x_test, y_test, batch_size=32, thickness=1, is_training=False),
                     nb_val_samples=32*10,
