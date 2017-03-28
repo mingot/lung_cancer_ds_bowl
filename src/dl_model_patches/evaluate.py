@@ -93,16 +93,14 @@ def load_patient_func(filename):
     logging.info("Patient: %s, stats: %s" % (filename.split('/')[-1], stats))
     return X, y, rois, stats
 
-with open(OUTPUT_CSV, 'a') as file:
-    #file.write('patientid,nslice,x,y,diameter,score,label\n')
+with open(OUTPUT_CSV, 'w') as file:
+    file.write('patientid,nslice,x,y,diameter,score,label\n')
 
     NUM_CONC = 16
-    for j in range(160, len(file_list), NUM_CONC):
-        filenames = file_list[j*NUM_CONC:(j+1)*NUM_CONC]
-        logging.info(filenames)
+    for j in range(0, len(file_list), NUM_CONC):
+        filenames = file_list[j:j + NUM_CONC]
         pool =  multiprocessing.Pool(4)
         x, y, rois, stats = zip(*pool.map(load_patient_func, filenames))
-        break
         logging.info("Batch %d loaded" % j)
 
         xf, yf, ref_filenames, roisf = [], [], [], []
@@ -120,8 +118,6 @@ with open(OUTPUT_CSV, 'a') as file:
         for i in range(len(preds)):
             nslice, r = roisf[i]
             file.write('%s,%d,%d,%d,%.3f,%.5f,%d\n' % (ref_filenames[i].split('/')[-1], nslice, r.centroid[0], r.centroid[1], r.equivalent_diameter,preds[i],yf[i]))
-
-
 
 
 
