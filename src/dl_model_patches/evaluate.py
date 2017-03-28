@@ -28,13 +28,13 @@ file_list = [os.path.join(VALIDATION_PATH, fp) for fp in os.listdir(VALIDATION_P
 file_list += [os.path.join(INPUT_PATH, fp) for fp in os.listdir(INPUT_PATH)] # if fp.startswith('dsb_')]
 
 
-# ## if the OUTPUT_CSV file already exists, continue it
-previous_filenames = set()
-if os.path.exists(OUTPUT_CSV):
-    write_method = 'a'
-    with open(OUTPUT_CSV) as file:
-        for l in file:
-            previous_filenames.add(l.split(',')[0])
+# # ## if the OUTPUT_CSV file already exists, continue it
+# previous_filenames = set()
+# if os.path.exists(OUTPUT_CSV):
+#     write_method = 'a'
+#     with open(OUTPUT_CSV) as file:
+#         for l in file:
+#             previous_filenames.add(l.split(',')[0])
 
 
 # Load model
@@ -103,10 +103,11 @@ with open(OUTPUT_CSV, write_method) as file:
         x, y, rois, stats = zip(*pool.map(load_patient_func, filenames))
         logging.info("Batch %d loaded" % j)
 
-        xf, ref_filenames, roisf = [], [], []
+        xf, yf, ref_filenames, roisf = [], [], [], []
         for i in range(len(x)):
             ref_filenames.extend(filenames[i]*len(x[i]))
             xf.extend(x[i])
+            yf.extend(y[i])
             roisf.extend(rois[i])
         pool.close()
         pool.join()
@@ -115,7 +116,7 @@ with open(OUTPUT_CSV, write_method) as file:
         preds = model.predict(xf, verbose=1)
         for i in range(len(preds)):
             nslice, r = roisf[i]
-            file.write('%s,%d,%d,%d,%.3f,%.5f,%d\n' % (ref_filenames[i].split('/')[-1], nslice, r.centroid[0], r.centroid[1], r.equivalent_diameter,preds[i],y[i]))
+            file.write('%s,%d,%d,%d,%.3f,%.5f,%d\n' % (ref_filenames[i].split('/')[-1], nslice, r.centroid[0], r.centroid[1], r.equivalent_diameter,preds[i],yf[i]))
 
 
 
