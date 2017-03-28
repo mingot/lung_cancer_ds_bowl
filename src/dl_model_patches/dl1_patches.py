@@ -24,8 +24,8 @@ VALIDATION_PATH = '/mnt/hd2/preprocessed5_validation_luna'
 NODULES_PATH = wp + 'data/luna/annotations.csv'
 PATCHES_PATH = '/mnt/hd2/patches'  # PATCHES_PATH = wp + 'data/preprocessed5_patches'
 
-OUTPUT_MODEL = wp + 'models/jm_patches_train_v13.hdf5'  # OUTPUT_MODEL = wp + 'personal/jm_patches_train_v06_local.hdf5'
-LOGS_PATH = wp + 'logs/%s' % str('v13')
+OUTPUT_MODEL = wp + 'models/jm_patches_train_v14.hdf5'  # OUTPUT_MODEL = wp + 'personal/jm_patches_train_v06_local.hdf5'
+LOGS_PATH = wp + 'logs/%s' % str('v14')
 
 #LOGS_PATH = wp + 'logs/%s' % str(int(time()))
 if not os.path.exists(LOGS_PATH):
@@ -89,6 +89,7 @@ test_datagen = ImageDataGenerator(dim_ordering="th")  # dummy for testing to hav
 
 
 
+
 def chunks(X_orig, y_orig, batch_size=32, augmentation_times=4, thickness=0, is_training=True):
     """
     Batches generator for keras fit_generator. Returns batches of patches 40x40px
@@ -98,7 +99,16 @@ def chunks(X_orig, y_orig, batch_size=32, augmentation_times=4, thickness=0, is_
     """
     while 1:
         # downsample negatives (reduce 90%)
-        selected_samples  = [i for i in range(len(y_orig)) if y_orig[i]==1 or random.randint(0,9)==0]
+        #selected_samples  = [i for i in range(len(y_orig)) if y_orig[i]==1 or random.randint(0,9)==0]
+        if is_training:
+            idx_1 = [i for i in range(len(y_orig)) if y_orig[i]==1]
+            idx_0 = [i for i in range(len(y_orig)) if y_orig[i]==0]
+            idx_0 = random.sample(idx_0, len(idx_1))
+            selected_samples = idx_0 + idx_1
+        else:
+            selected_samples  = [i for i in range(len(y_orig)) if y_orig[i]==1 or random.randint(0,9)==0]
+
+
         X = [X_orig[i] for i in selected_samples]
         y = [y_orig[i] for i in selected_samples]
         logging.info("Final downsampled dataset stats: TP:%d, FP:%d" % (sum(y), len(y)-sum(y)))
@@ -125,16 +135,16 @@ def chunks(X_orig, y_orig, batch_size=32, augmentation_times=4, thickness=0, is_
 
 # LOADING PATCHES FROM DISK
 logging.info("Loading training and test sets")
-x_train = np.load(os.path.join(PATCHES_PATH, 'x_train_dl1_ctxt.npz'))['arr_0']
-y_train = np.load(os.path.join(PATCHES_PATH, 'y_train_dl1_ctxt.npz'))['arr_0']
-x_test = np.load(os.path.join(PATCHES_PATH, 'x_test_dl1_ctxt.npz'))['arr_0']
-y_test = np.load(os.path.join(PATCHES_PATH, 'y_test_dl1_ctxt.npz'))['arr_0']
+x_train = np.load(os.path.join(PATCHES_PATH, 'x_train_dl1.npz'))['arr_0']
+y_train = np.load(os.path.join(PATCHES_PATH, 'y_train_dl1.npz'))['arr_0']
+x_test = np.load(os.path.join(PATCHES_PATH, 'x_test_dl1.npz'))['arr_0']
+y_test = np.load(os.path.join(PATCHES_PATH, 'y_test_dl1.npz'))['arr_0']
 logging.info("Training set (1s/total): %d/%d" % (sum(y_train),len(y_train)))
 logging.info("Test set (1s/total): %d/%d" % (sum(y_test), len(y_test)))
 
 
 # Load model
-model = ResnetBuilder().build_resnet_34((3,60,60),1)
+model = ResnetBuilder().build_resnet_34((3,40,40),1)
 model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['accuracy','fmeasure'])
 # logging.info('Loading exiting model...')
 # model.load_weights(OUTPUT_MODEL)

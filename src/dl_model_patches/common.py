@@ -114,7 +114,7 @@ def extract_rois_from_lung_mask(lung_image, lung_mask, margin=5):
     return regions_pred_augmented
 
 
-def extract_crops_from_regions(img, regions, output_size=(60,60)):
+def extract_crops_from_regions(img, regions, output_size=(40,40)):
     # Crop img given a vector of regions.
     # If img have depth (1 dim of 3), generate the depth cropped image
     cropped_images = []
