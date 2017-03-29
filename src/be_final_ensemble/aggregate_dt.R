@@ -29,11 +29,17 @@ generate_patient_dt <- function(path_repo,path_output = NULL) {
   
   ## RESNET Data -------------------------------------------------------------------------------------
   #vars_nodules_patches <- fread(paste0("D:/dsb/nodules_patches_v05_augmented.csv"))
-  vars_nodules_patches <- fread(paste0("D:/dsb/noduls_patches_v06_rectif.csv")) ## PATH
+  #vars_nodules_patches <- fread(paste0("D:/dsb/noduls_patches_v06_rectif.csv"))
+  vars_nodules_patches <- fread(paste0("D:/dsb/noduls_patches_v06_dl1_dl2.csv")) ## PATH
+  
+  if(!"scored_dl2" %in% names(vars_nodules_patches)){
+    vars_nodules_patches$scored_dl2 <- 0
+  } else {setnames(vars_nodules_patches,"score_dl1","score")}
   vars_nodules_patches <- vars_nodules_patches[grep("dsb_",patientid)][!is.na(x)]
   vars_nodules_patches[,patientid:=gsub(".npz|dsb_","",patientid)]
   ### Filter by score
-  vars_nodules_patches = vars_nodules_patches[score>0.9]
+  vars_nodules_patches[,score := (0.8*score + 0.2*scored_dl2)/2]
+  vars_nodules_patches = vars_nodules_patches[score>0.3]
   names_change <- c("x","y","diameter","score")
   setnames(vars_nodules_patches,names_change,paste0(names_change,"_patches"))
   vars_nodules_patches <- merge(vars_nodules_patches,patients,all.x=T,by = "patientid")
@@ -75,7 +81,8 @@ aggregate_patient <- function(dt) {
     "mean_intensity",
     "nodule_pred",
     "diameter_patches",
-    "score_patches")
+    "score_patches",
+    "scored_dl2")
   )
   
   final_df = dt[,.(total_nodules_unet=sum(!is.na(x)), 
@@ -94,7 +101,8 @@ aggregate_patient <- function(dt) {
                    max_score = max(nodule_pred, na.rm=T),
                    mean_score = mean(nodule_pred),
                    max_score_patches = max(score_patches,na.rm=T),
-                   mean_score_patches = mean(score_patches,na.rm=T)
+                   mean_score_patches = mean(score_patches,na.rm=T),
+                   max_score_2 = max(scored_dl2,na.rm=T)
                    
   ),
   by=.(patientid)]
@@ -115,9 +123,9 @@ aggregate_patient <- function(dt) {
   dt_3d <- merge(dt_2d,dt_2d_bis,all.x = T, by = "patientid",allow.cartesian = TRUE)
   dt_3d <- dt_3d[nslice2 > nslice]
   setkey(dt_3d,patientid,nslice,nslice2)
-  dt_3d <- dt_3d[,.SD[1],c("patientid","nslice")]
   dt_3d <- dt_3d[nslice2-nslice < 3]
   dt_3d[,d_nodule := abs(x-x2)+abs(y-y2) < 10]
+  dt_3d <- dt_3d[,.SD[1],c("patientid","nslice")]
   nodules_consec <- dt_3d[,.(consec_nods = sum(d_nodule)),patientid]
   
   final_df <- merge(final_df,nodules_consec,all.x = T, by = "patientid")
@@ -130,9 +138,9 @@ aggregate_patient <- function(dt) {
   dt_3d <- merge(dt_2d,dt_2d_bis,all.x=T,by="patientid",allow.cartesian = TRUE)
   dt_3d <- dt_3d[nslice2 > nslice]
   setkey(dt_3d,patientid,nslice,nslice2)
-  dt_3d <- dt_3d[,.SD[1],c("patientid","nslice")]
   dt_3d <- dt_3d[nslice2-nslice <3]
   dt_3d[,d_nodule := abs(x-x2) + abs(y-y2) < 10]
+  dt_3d <- dt_3d[,.SD[1],c("patientid","nslice")]
   nodules_patches_consec <- dt_3d[,.(consec_nods_patches = sum(d_nodule)),patientid]
   
   final_df <- merge(final_df,nodules_patches_consec,all.x=T,by="patientid")
@@ -155,7 +163,8 @@ aggregate_patient <- function(dt) {
     max_score_patches == score_patches & max_score_patches > 0,
     .(patientid,
       nslice_nodule_patch = nslice,
-      diameter_nodule_patch = diameter_patches)
+      diameter_nodule_patch = diameter_patches,
+      score_2_patch = scored_dl2)
     ]
   max_score_nodule <- max_score_nodule[,.SD[1],patientid]
   final_df <- merge(final_df,max_score,all.x = T, by="patientid")

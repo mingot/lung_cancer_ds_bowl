@@ -100,4 +100,4 @@ df_out <- data.frame(
   cancer = v_out, 
   stringsAsFactors = FALSE
 )
-write.csv(df_out, file = paste0(path_repo,"data/submissions/06_submission.csv"), row.names = FALSE, quote = FALSE)
+write.csv(df_out, file = paste0(path_repo,"data/submissions/08_submission.csv"), row.names = FALSE, quote = FALSE)
