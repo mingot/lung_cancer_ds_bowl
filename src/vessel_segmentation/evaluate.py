@@ -8,7 +8,7 @@ import numpy as np
 import random
 from skimage.morphology import disk, binary_erosion, binary_closing, dilation
 from dl_model_patches.common import load_patient, add_stats
-from vessel_segmentation import get_vessel_mask
+from vessel_segmentation import get_vessel_mask, substract_from_existing_mask
 
 def subs_dict(d1, d2):
     d = {}
@@ -17,7 +17,7 @@ def subs_dict(d1, d2):
     return d
 
 
-def evaluate(INPUT_PATH, n_patients, dilate=True, rand_seed=None):
+def evaluate(INPUT_PATH, n_patients, dilate=True, binarize_threshold=25, rand_seed=None):
     file_list = [os.path.join(INPUT_PATH, fp) for fp in os.listdir(INPUT_PATH)]
     if n_patients > len(file_list):
         raise ValueError("You cannot ask for more patients than " + str(len(file_list)))
@@ -28,7 +28,7 @@ def evaluate(INPUT_PATH, n_patients, dilate=True, rand_seed=None):
         print "Loading patient: " + filename
         patient_data = np.load(filename)['arr_0']
         print "Getting its vessel mask..."
-        vessel_mask = get_vessel_mask(patient_data[0])
+        vessel_mask = get_vessel_mask(patient_data[0], binarize_threshold=binarize_threshold)
         if dilate:
             vessel_mask = dilation(vessel_mask)
         X, y, rois, stats_1 = load_patient(patient_data=patient_data, patient_nodules_df=None,

@@ -39,7 +39,7 @@ def binarize_image(im, threshold):
     im[im >= threshold] = 1
     return im
 
-def get_vessel_mask(data):
+def get_vessel_mask(data, binarize_threshold=25):
     """
     Given the list of slices of the patient, returns the list of its Vessels Mask
     :param data: a numpy array containig all the patient slides. The result of doing np.load(...)['arr_0'][0]
@@ -81,7 +81,7 @@ def get_vessel_mask(data):
 
     rescaleFilter.Update()
 
-    bin_image = binarize_image(itk.PyBuffer[OutputImageType].GetArrayFromImage(rescaleFilter.GetOutput()), 25)
+    bin_image = binarize_image(itk.PyBuffer[OutputImageType].GetArrayFromImage(rescaleFilter.GetOutput()), binarize_threshold)
 
     return bin_image
 
