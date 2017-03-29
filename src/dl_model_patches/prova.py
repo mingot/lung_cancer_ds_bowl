@@ -39,10 +39,8 @@ for idx,row in enumerate(f):
     row = row.strip().split(',')
     nslice = int(row[1])
     if nslice>=nslice_old:
-        pass
-        #print "%s,%s" % (patientid,','.join(row[1:]))
+        print "%s,%s" % (patientid,','.join(row[1:]))
     else:
-        print 'change at %d' % (idx)
         fidx += 1
         patientid = file_list[fidx].split('/')[-1]
         print "%s,%s" % (patientid,','.join(row[1:]))
