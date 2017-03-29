@@ -39,7 +39,7 @@ for idx,row in enumerate(f):
         continue
     if idx>10:
         break
-    row = row.split(',')
+    row = row.strip().split(',')
     nslice = row[1]
     if nslice>=nslice_old:
         print "%s,%s" % (patientid,','.join(row[1:]))
