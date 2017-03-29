@@ -5,14 +5,13 @@ import pickle
 
 from scipy import stats
 
-DEBUG = True
 SERVER = os.uname()[1] == 'ip-172-31-7-211'
 
 # Define execution location
 if SERVER:
     path = '/home/shared/data/stage1'
-    path_preprocessed = '/mnt/hd2/preprocessed5'
-    output_file = '/home/shared/data/stage1_extra_features_sex_predictors.csv'
+    path_preprocessed = '/mnt/hd2/preprocessed6'
+    output_file = '/home/shared/output/var_emphysema_v00.csv'
 else:
     path = '/Users/rdg/Documents/my_projects/DSB17/lung_cancer_ds_bowl/data/stage1'
     path_preprocessed = '/Users/rdg/Documents/my_projects/DSB17/lung_cancer_ds_bowl/data/stage1_proc'
@@ -21,8 +20,8 @@ else:
 patient_files = os.listdir(path_preprocessed)
 patient_files = sorted(patient_files)
 
-def get_emphysema_predictors(img, mask):
 
+def get_emphysema_predictors(img, mask):
     # Threshold that gates the main lobe of the histogram
     threshold = -600
 
@@ -60,7 +59,6 @@ def process_patient_file(patient_name):
 
 if __name__ == "__main__":
     print 'server:', SERVER
-    print 'debug:', DEBUG
 
     csvfile = open('var_emphysema_v00.csv', 'wb')
     csvwriter = csv.writer(csvfile, delimiter=',')
