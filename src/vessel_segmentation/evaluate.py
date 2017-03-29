@@ -10,6 +10,7 @@ from skimage.morphology import disk, binary_erosion, binary_closing, dilation
 from dl_model_patches.common import load_patient, add_stats
 from vessel_segmentation import get_vessel_mask, substract_from_existing_mask
 
+
 def subs_dict(d1, d2):
     d = {}
     for k, v in d1.items():
@@ -17,7 +18,18 @@ def subs_dict(d1, d2):
     return d
 
 
+def did_we_lost_full_nodules(tp_per_slice_a, tp_per_slice_b):
+    # CONDICIO CUTRE I MILLORABLE
+    # We can assure we did not lose full nodules if in at least one slice with tp > 0
+    # we have the same number of nodules before and after applying the vessel mask
+    for slice, tp in tp_per_slice_a.items():
+        if tp > 0 and tp == tp_per_slice_b[slice]:
+            return False
+    return True
+
+
 def evaluate(INPUT_PATH, n_patients, dilate=True, binarize_threshold=25, rand_seed=None):
+    full_nodules_lost = 0
     file_list = [os.path.join(INPUT_PATH, fp) for fp in os.listdir(INPUT_PATH)]
     if n_patients > len(file_list):
         raise ValueError("You cannot ask for more patients than " + str(len(file_list)))
@@ -31,14 +43,15 @@ def evaluate(INPUT_PATH, n_patients, dilate=True, binarize_threshold=25, rand_se
         vessel_mask = get_vessel_mask(patient_data[0], binarize_threshold=binarize_threshold)
         if dilate:
             vessel_mask = dilation(vessel_mask)
-        X, y, rois, stats_1 = load_patient(patient_data=patient_data, patient_nodules_df=None,
+        # stats before the mask
+        X, y, rois, stats_1, tp_a = load_patient(patient_data=patient_data, patient_nodules_df=None,
                                          discard_empty_nodules=True, output_rois=True,
-                                         debug=False, thickness=1)
-        # print "Stats before applying the vessel mask:\n", stats
+                                         debug=False, thickness=1, debug_vessel=True)
+        # stats after the mask
         patient_data[1, :, :, :] = substract_from_existing_mask(patient_data[1, :, :, :], vessel_mask)
-        X, y, rois, stats_2 = load_patient(patient_data=patient_data, patient_nodules_df=None,
+        X, y, rois, stats_2, tp_b = load_patient(patient_data=patient_data, patient_nodules_df=None,
                                          discard_empty_nodules=True, output_rois=True,
-                                         debug=False, thickness=1)
+                                         debug=False, thickness=1, debug_vessel=True)
         # print "Stats after applying the vessel mask:\n", stats
         sub_d = subs_dict(stats_1, stats_2)
         print "Results for patient " + filename
@@ -48,7 +61,14 @@ def evaluate(INPUT_PATH, n_patients, dilate=True, binarize_threshold=25, rand_se
             print "Lost " + str(sub_d['tp']) + " TRUE POSITIVES"
         else:
             print "Lost " + str(sub_d['tp']) + " true positives"
+        if did_we_lost_full_nodules(tp_a, tp_b):
+            print "CAREFUL!, WE MIGHT HAVE LOSE SOME NODULE HERE"
+            full_nodules_lost += 1
         print "----------------------------------------------"
+        print ""
+        print ""
+
+    print "After checking " + str(n_patients) + " we lost " + str(full_nodules_lost) + " full nodules"
 
 if __name__ == '__main__':
     # wp = os.environ['LUNG_PATH']

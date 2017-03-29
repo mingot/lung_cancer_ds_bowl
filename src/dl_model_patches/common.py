@@ -177,7 +177,7 @@ def add_stats(stat1, stat2):
 
 
 def load_patient(patient_data, patient_nodules_df=None, discard_empty_nodules=False,
-                 output_rois=False, debug=False, thickness=0):
+                 output_rois=False, debug=False, thickness=0, debug_vessel=False):
     """
     Returns images generated for each patient.
      - patient_nodules_df: pd dataframe with at least: x, y, nslice, diameter
@@ -185,6 +185,7 @@ def load_patient(patient_data, patient_nodules_df=None, discard_empty_nodules=Fa
     """
     X, Y, rois = [], [], []
     total_stats = {}
+    tp_per_slice = {}
 
     # load the slices to swipe
     if patient_nodules_df is not None:
@@ -252,11 +253,14 @@ def load_patient(patient_data, patient_nodules_df=None, discard_empty_nodules=Fa
 
         total_stats = add_stats(stats, total_stats)
         if debug: logging.info("++ Slice %d, stats: %s" % (nslice, str(stats)))
+        tp_per_slice[nslice] = stats['tp']
 
         X.extend(cropped_images)
         Y.extend(labels)  # nodules_mask
         rois.extend([(nslice, r) for r in regions_pred])  # extend regions with the slice index
 
+    if debug_vessel:
+        return (X, Y, rois, total_stats, tp_per_slice)
     return (X, Y, rois, total_stats) if output_rois else (X, Y)
 
 
