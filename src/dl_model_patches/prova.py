@@ -37,7 +37,7 @@ for idx,row in enumerate(f):
     if idx==0:
         print row.strip()
         continue
-    if idx>10:
+    if idx>300:
         break
     row = row.strip().split(',')
     nslice = row[1]
