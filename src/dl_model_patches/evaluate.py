@@ -126,7 +126,7 @@ def load_patient_func(filename):
 
 
 
-NUM_CONC = 16
+NUM_CONC = 4
 for j in range(0, 10, NUM_CONC):
     filenames = file_list[j:j + NUM_CONC]
     pool =  multiprocessing.Pool(4)
@@ -135,7 +135,7 @@ for j in range(0, 10, NUM_CONC):
 
     xf, yf, ref_filenames, roisf = [], [], [], []
     for i in range(len(x)):
-        ref_filenames.extend(filenames[i]*len(x[i]))
+        ref_filenames.extend([filenames[i]]*len(x[i]))
         xf.extend(x[i])
         yf.extend(y[i])
         roisf.extend(rois[i])
