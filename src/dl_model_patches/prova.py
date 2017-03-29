@@ -35,7 +35,7 @@ patientid = file_list[fidx].split('/')[-1]
 
 for idx,row in enumerate(f):
     if idx==0:
-        print row
+        print row.strip()
         continue
     if idx>10:
         break
