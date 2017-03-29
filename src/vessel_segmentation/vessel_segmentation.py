@@ -4,6 +4,19 @@ import SimpleITK as sitk
 import numpy as np
 from utils.reading import get_number_of_nodules
 
+
+def apply_vessel_mask_to_all_slices(slices_mask, vessel_mask):
+    for slice_index, (om, v) in enumerate(zip(slices_mask, vessel_mask)):
+        slices_mask[slice_index, :, :] = substract_from_existing_mask(om, v)
+    return slices_mask
+
+
+def substract_from_existing_mask(mask, vessel_mask_slice):
+    subs = mask - vessel_mask_slice
+    subs[subs<0] = 0
+    return subs
+
+
 def count_number_of_lost_nodules(nodules_slice_mask, vessel_mask):
     """
     Counts the number of nodules lost during the process of calculating the vessel mask
