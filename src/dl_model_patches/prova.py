@@ -44,6 +44,7 @@ for idx,row in enumerate(f):
     else:
         fidx += 1
         patientid = file_list[fidx].split('/')[-1]
-        nslice_old = nslice
         print "%s,%s" % (patientid,','.join(row[1:]))
+
+    nslice_old = nslice
 
