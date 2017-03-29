@@ -29,6 +29,16 @@ def did_we_lost_full_nodules(tp_per_slice_a, tp_per_slice_b):
 
 
 def evaluate(INPUT_PATH, n_patients, dilate=True, binarize_threshold=25, rand_seed=None):
+    """
+
+    :param INPUT_PATH: path to the sample of patients
+    :param n_patients: number of patients at random that you want to evaluate
+    :param dilate: whether you want to dilate the vessel mask or not
+    :param binarize_threshold: threshold to convert the mask into a binary mask. Values under
+           the threshold will be 0s and values above will be 1s
+    :param rand_seed: if you want to fix a seed to always evaluate the same patients
+    :return: nothing, just prints
+    """
     full_nodules_lost = 0
     file_list = [os.path.join(INPUT_PATH, fp) for fp in os.listdir(INPUT_PATH)]
     if n_patients > len(file_list):
@@ -47,13 +57,18 @@ def evaluate(INPUT_PATH, n_patients, dilate=True, binarize_threshold=25, rand_se
         X, y, rois, stats_1, tp_a = load_patient(patient_data=patient_data, patient_nodules_df=None,
                                          discard_empty_nodules=True, output_rois=True,
                                          debug=False, thickness=1, debug_vessel=True)
-        # stats after the mask
+
         patient_data[1, :, :, :] = substract_from_existing_mask(patient_data[1, :, :, :], vessel_mask)
+
+        # stats after the mask
         X, y, rois, stats_2, tp_b = load_patient(patient_data=patient_data, patient_nodules_df=None,
                                          discard_empty_nodules=True, output_rois=True,
                                          debug=False, thickness=1, debug_vessel=True)
         # print "Stats after applying the vessel mask:\n", stats
         sub_d = subs_dict(stats_1, stats_2)
+
+
+        # PRINTING THE RESULTS
         print "Results for patient " + filename
         print "----------------------------------------------"
         print "Lost " + str(sub_d['fp']) + " false positives"
