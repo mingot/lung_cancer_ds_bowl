@@ -88,45 +88,17 @@ model.load_weights(OUTPUT_MODEL)
 
 import multiprocessing
 
+
 def load_patient_func(filename):
     patient_data = np.load(filename)['arr_0']
     X, y, rois, stats = common.load_patient(patient_data, discard_empty_nodules=False, output_rois=True, thickness=1)
     logging.info("Patient: %s, stats: %s" % (filename.split('/')[-1], stats))
     return X, y, rois, stats
 
-# with open(OUTPUT_CSV, 'w') as file:
-#     file.write('patientid,nslice,x,y,diameter,score,label\n')
-#
-#     NUM_CONC = 16
-#     for j in range(0, len(file_list), NUM_CONC):
-#         filenames = file_list[j:j + NUM_CONC]
-#         pool =  multiprocessing.Pool(4)
-#         x, y, rois, stats = zip(*pool.map(load_patient_func, filenames))
-#         logging.info("Batch %d loaded" % j)
-#
-#         xf, yf, ref_filenames, roisf = [], [], [], []
-#         for i in range(len(x)):
-#             ref_filenames.extend(filenames[i]*len(x[i]))
-#             xf.extend(x[i])
-#             yf.extend(y[i])
-#             roisf.extend(rois[i])
-#         pool.close()
-#         pool.join()
-#
-#         for i in range(len(ref_filenames)):
-#             print ref_filenames[i]
-#
-#         xf = np.asarray(xf)
-#         preds = model.predict(xf, verbose=1)
-#         logging.info("Batch results: %d/%d (th=0.7)" % (len([p for p in preds if p>0.7]),len(preds)))
-#         for i in range(len(preds)):
-#             nslice, r = roisf[i]
-#             file.write('%s,%d,%d,%d,%.3f,%.5f,%d\n' % (ref_filenames[i].split('/')[-1], nslice, r.centroid[0], r.centroid[1], r.equivalent_diameter,preds[i],yf[i]))
 
-
-
-with open('/home/aitor/lung_cancer_ds_bowl/output/sol.csv', 'w') as file:
+with open(OUTPUT_CSV, 'w') as file:
     file.write('patientid,nslice,x,y,diameter,score,label\n')
+
     NUM_CONC = 16
     for j in range(0, len(file_list), NUM_CONC):
         filenames = file_list[j:j + NUM_CONC]
@@ -134,17 +106,47 @@ with open('/home/aitor/lung_cancer_ds_bowl/output/sol.csv', 'w') as file:
         x, y, rois, stats = zip(*pool.map(load_patient_func, filenames))
         logging.info("Batch %d loaded" % j)
 
-        yf, ref_filenames, roisf = [], [], []
+        xf, yf, ref_filenames, roisf = [], [], [], []
         for i in range(len(x)):
             ref_filenames.extend([filenames[i]]*len(x[i]))
+            xf.extend(x[i])
             yf.extend(y[i])
             roisf.extend(rois[i])
         pool.close()
         pool.join()
 
-        for i in range(len(yf)):
+        for i in range(len(ref_filenames)):
+            print ref_filenames[i]
+
+        xf = np.asarray(xf)
+        preds = model.predict(xf, verbose=1)
+        logging.info("Batch results: %d/%d (th=0.7)" % (len([p for p in preds if p>0.7]),len(preds)))
+        for i in range(len(preds)):
             nslice, r = roisf[i]
-            file.write('%s,%d,%d,%d,%.3f,%d\n' % (ref_filenames[i].split('/')[-1], nslice, r.centroid[0], r.centroid[1], r.equivalent_diameter,yf[i]))
+            file.write('%s,%d,%d,%d,%.3f,%.5f,%d\n' % (ref_filenames[i].split('/')[-1], nslice, r.centroid[0], r.centroid[1], r.equivalent_diameter,preds[i],yf[i]))
+
+
+
+# with open('/home/aitor/lung_cancer_ds_bowl/output/sol.csv', 'w') as file:
+#     file.write('patientid,nslice,x,y,diameter,score,label\n')
+#     NUM_CONC = 16
+#     for j in range(0, len(file_list), NUM_CONC):
+#         filenames = file_list[j:j + NUM_CONC]
+#         pool =  multiprocessing.Pool(4)
+#         x, y, rois, stats = zip(*pool.map(load_patient_func, filenames))
+#         logging.info("Batch %d loaded" % j)
+#
+#         yf, ref_filenames, roisf = [], [], []
+#         for i in range(len(x)):
+#             ref_filenames.extend([filenames[i]]*len(x[i]))
+#             yf.extend(y[i])
+#             roisf.extend(rois[i])
+#         pool.close()
+#         pool.join()
+#
+#         for i in range(len(yf)):
+#             nslice, r = roisf[i]
+#             file.write('%s,%d,%d,%d,%.3f,%d\n' % (ref_filenames[i].split('/')[-1], nslice, r.centroid[0], r.centroid[1], r.equivalent_diameter,yf[i]))
 
 
 
