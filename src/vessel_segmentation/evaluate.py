@@ -2,8 +2,8 @@ import os
 import sys
 import itk
 import SimpleITK as sitk
-sys.path.append('/home/marti/lung_cancer_ds_bowl/src')
-sys.path.append('/home/marti/lung_cancer_ds_bowl/src/vessel_segmentation')
+#sys.path.append('/home/marti/lung_cancer_ds_bowl/src')
+#sys.path.append('/home/marti/lung_cancer_ds_bowl/src/vessel_segmentation')
 import numpy as np
 import random
 from skimage.morphology import disk, binary_erosion, binary_closing, dilation
