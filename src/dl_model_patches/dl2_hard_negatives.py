@@ -19,7 +19,7 @@ from skimage import transform
 # PATHS
 wp = os.environ['LUNG_PATH']
 LUNA_ANNOTATIONS = wp + 'data/luna/annotations.csv'
-OUTPUT_DL1 = wp + 'output/nodules_patches_dl1_v11.csv'  # OUTPUT_DL1 = wp + 'personal/noduls_patches_v06.csv'
+OUTPUT_DL1 = wp + 'output/nodules_patches_dl1_v11_rectif.csv'  # OUTPUT_DL1 = wp + 'personal/noduls_patches_v06.csv'
 OUTPUT_MODEL =  wp + 'models/jm_patches_hardnegative_v02.hdf5'  # OUTPUT_MODEL = wp + 'personal/jm_patches_train_v06_local.hdf5'
 INPUT_PATH = '/mnt/hd2/preprocessed5/' # INPUT_PATH = wp + 'data/preprocessed5_sample'
 VALIDATION_PATH = '/mnt/hd2/preprocessed5_validation_luna/' # VALIDATION_PATH = wp + 'data/preprocessed5_sample'
@@ -48,13 +48,13 @@ annotated = list(set(['luna_%s.npz' % p.split('.')[-1] for p in luna_df['seriesu
 # filter TP and FP of the suggested by DL1
 SCORE_TH = 0.7
 nodules_df = pd.read_csv(OUTPUT_DL1)
-nodules_df = nodules_df[nodules_df['score'] > SCORE_TH]  # TODO: IMPORTANT!! this filter should include the TN through the label. Now there is no filtering in place
-nodules_df['patientid'] = [f.split('/')[-1] for f in nodules_df['patientid']]  # TODO: remove when fixed the patient id without whole path
+nodules_df = nodules_df[(nodules_df['score'] > SCORE_TH) | (nodules_df['label']==1)]
+#nodules_df['patientid'] = [f.split('/')[-1] for f in nodules_df['patientid']]
 nodules_df['nslice'] = nodules_df['nslice'].astype(int)
 
 # Construction of training and testsets
-filenames_train = [os.path.join(INPUT_PATH,f) for f in set(nodules_df['patientid']) if f[0:4]=='luna' and f in os.listdir(INPUT_PATH)] #and f in annotated]
-filenames_test = [os.path.join(VALIDATION_PATH,f) for f in set(nodules_df['patientid']) if f[0:4]=='luna' and f in os.listdir(VALIDATION_PATH)] #and f in annotated]
+filenames_train = [os.path.join(INPUT_PATH,f) for f in set(nodules_df['patientid']) if f[0:4]=='luna' and f in os.listdir(INPUT_PATH)]
+filenames_test = [os.path.join(VALIDATION_PATH,f) for f in set(nodules_df['patientid']) if f[0:4]=='luna' and f in os.listdir(VALIDATION_PATH)]
 
 
 def __load_and_store(filename):

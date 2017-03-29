@@ -228,19 +228,6 @@ def load_patient(patient_data, patient_nodules_df=None, discard_empty_nodules=Fa
             stats = {'fp':len(regions_pred), 'tp': 0, 'fn':0}
             labels = [0]*len(regions_pred)
 
-        if patient_nodules_df is not None:
-                # TODO: remove when filtering good candidates is done in the begining
-                # Select just regions that are nodules (TPs and FNs) and regions with high socre (FPs)
-                idx_sel = [i for i in range(len(regions_pred)) if labels[i]==1 or sel_patient_nodules_df.iloc[i]['score']>0.5]
-                regions_pred = [regions_pred[i] for i in idx_sel]
-                if sum(labels)!=0:
-                    labels, stats = get_labels_from_regions(regions_real, regions_pred)
-                else:
-                    stats = {'fp':len(regions_pred), 'tp': 0, 'fn':0}
-                    labels = [0]*len(regions_pred)
-                # labels = [labels[i] for i in idx_sel]
-
-
         # Extract cropped images
         if thickness>0:  # add extra images as channels for thick resnet
             lung_image = patient_data[0,(nslice - thickness):(nslice + thickness + 1),:,:]
