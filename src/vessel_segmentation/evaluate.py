@@ -8,8 +8,7 @@ import numpy as np
 import random
 from skimage.morphology import disk, binary_erosion, binary_closing, dilation
 from dl_model_patches.common import load_patient, add_stats
-from vessel_segmentation import get_vessel_mask, \
-     substract_from_existing_mask
+from vessel_segmentation import get_vessel_mask
 
 def subs_dict(d1, d2):
     d = {}
