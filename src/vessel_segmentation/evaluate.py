@@ -47,7 +47,7 @@ def evaluate(INPUT_PATH, n_patients, dilate=True, binarize_threshold=25, rand_se
     if rand_seed is not None:
         random.seed(rand_seed)
     for filename in [file_list[i] for i in random.sample(xrange(len(file_list)), n_patients)]:
-        print "Loading patient: " + filename
+        print "Loading patient: " + filename.split('/')[-1]
         patient_data = np.load(filename)['arr_0']
         print "Getting its vessel mask..."
         vessel_mask = get_vessel_mask(patient_data[0], binarize_threshold=binarize_threshold)
@@ -69,7 +69,7 @@ def evaluate(INPUT_PATH, n_patients, dilate=True, binarize_threshold=25, rand_se
 
 
         # PRINTING THE RESULTS
-        print "Results for patient " + filename
+        print "Results for patient " + filename.split('/')[-1]
         print "----------------------------------------------"
         print "Lost " + str(sub_d['fp']) + " false positives"
         if sub_d['tp'] != 0:
