@@ -125,7 +125,7 @@ def load_patient_func(filename):
 
 
 
-with open('/home/mingot/lung_cancer_ds_bowl/output/sol.csv', 'w') as file:
+with open('/home/aitor/lung_cancer_ds_bowl/output/sol.csv', 'w') as file:
     file.write('patientid,nslice,x,y,diameter,score,label\n')
     NUM_CONC = 16
     for j in range(0, len(file_list), NUM_CONC):
