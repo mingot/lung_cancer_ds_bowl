@@ -31,7 +31,7 @@ file_list += [os.path.join(INPUT_PATH, fp) for fp in os.listdir(INPUT_PATH)] # i
 
 
 nslice_old, fidx = 0, 0
-pid = file_list[fidx]
+patientid = file_list[fidx]
 
 for idx,row in enumerate(f):
     if idx>10:
