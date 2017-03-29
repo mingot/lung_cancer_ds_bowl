@@ -78,13 +78,6 @@ current_ids = glob(OUTPUT_FOLDER + '/*.npz')
 current_ids = [x.split('_')[-1].replace('.npz', '') for x in current_ids]
 
 
-for p in patient_files:
-    if '303421828981831854739626597495' in p:
-        print p
-patient_file = '/Users/mingot/Projectes/kaggle/ds_bowl_lung/data/luna/luna0123/1.3.6.1.4.1.14519.5.2.1.6279.6001.122621219961396951727742490470.mhd'
-patient_file = '/Users/mingot/Projectes/kaggle/ds_bowl_lung/data/luna/luna0123/1.3.6.1.4.1.14519.5.2.1.6279.6001.935683764293840351008008793409.mhd'
-patient_file = '/Users/mingot/Projectes/kaggle/ds_bowl_lung/data/luna/luna0123/1.3.6.1.4.1.14519.5.2.1.6279.6001.303421828981831854739626597495.mhd'
-
 # Main loop over the ensemble of the database
 times = []
 for patient_file in patient_files:

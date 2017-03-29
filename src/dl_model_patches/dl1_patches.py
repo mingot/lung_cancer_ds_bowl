@@ -200,17 +200,62 @@ model.fit_generator(generator=chunks(x_train, y_train, batch_size=32, thickness=
 
 
 
-# ### Quality checks for ROIs detection
+# # ### Quality checks for ROIs detection
+# from skimage import morphology, measure
+# def get_new_mask(pat_data):
+#     # based on kernel: https://www.kaggle.com/arnavkj95/data-science-bowl-2017/candidate-generation-and-luna16-preprocessing
+#     # remove the biggest princpial components to remove FPs
+#     mask = pat_data[0].copy()
+#     mask[pat_data[1]!=1] = -2000  # fuera de los pulmones a 0
+#     mask[mask<-500] = -2000  # regiones de tejido no nodular/vaso, fuera
+#
+#     binary = morphology.closing(mask, morphology.ball(2))
+#     binary[binary!=-2000] = 1
+#     binary[binary==-2000] = 0
+#
+#     # nslice = 96
+#     # plotting.plot_mask(mask[nslice], pat_data[2,nslice])
+#     # plotting.plot_mask(binary[nslice], pat_data[2,nslice])
+#
+#     label_scan = measure.label(binary)
+#     areas = [r.area for r in measure.regionprops(label_scan)]
+#     areas.sort()
+#
+#     for r in measure.regionprops(label_scan):
+#         max_x, max_y, max_z = 0, 0, 0
+#         min_x, min_y, min_z = 1000, 1000, 1000
+#
+#         for c in r.coords:
+#             max_z = max(c[0], max_z)
+#             max_y = max(c[1], max_y)
+#             max_x = max(c[2], max_x)
+#
+#             min_z = min(c[0], min_z)
+#             min_y = min(c[1], min_y)
+#             min_x = min(c[2], min_x)
+#         if (min_z == max_z or min_y == max_y or min_x == max_x or r.area > areas[-3]):
+#             for c in r.coords:
+#                 binary[c[0], c[1], c[2]] = 0
+#         else:
+#             index = (max((max_x - min_x), (max_y - min_y), (max_z - min_z))) / (min((max_x - min_x), (max_y - min_y) , (max_z - min_z)))
+#     binary  = morphology.dilation(morphology.dilation(binary))
+#     return binary
+#
+#
+#
 # INPUT_PATH = wp + 'data/preprocessed5_sample'
-# INPUT_PATH = wp + 'data/preprocessed5_sample_watershed'
-# INPUT_PATH = wp + 'data/preprocessed5_sample_th2'
+# #INPUT_PATH = wp + 'data/preprocessed5_sample_watershed'
+# #INPUT_PATH = wp + 'data/preprocessed5_sample_th2'
 # file_list = [os.path.join(INPUT_PATH, fp) for fp in os.listdir(INPUT_PATH)]
 #
 # total_stats = {}
 # for filename in file_list:
-#     X, y, rois, stats = load_patient(filename, discard_empty_nodules=True, output_rois=True, thickness=0)
+#     pat_data = np.load(filename)['arr_0']
+#     #new_mask = get_new_mask(pat_data)
+#     #pat_data[1] = new_mask
+#     X, y, rois, stats = common.load_patient(pat_data, discard_empty_nodules=True, output_rois=True, thickness=0)
 #     print stats
-#     total_stats = add_stats(stats, total_stats)
+#     total_stats = common.add_stats(stats, total_stats)
 #     print "TOTAL STATS:", filename.split('/')[-1], total_stats
 #
 # filename = 'luna_127965161564033605177803085629.npz'
