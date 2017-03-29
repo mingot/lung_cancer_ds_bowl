@@ -29,7 +29,6 @@ file_list = [os.path.join(VALIDATION_PATH, fp) for fp in os.listdir(VALIDATION_P
 file_list += [os.path.join(INPUT_PATH, fp) for fp in os.listdir(INPUT_PATH)] # if fp.startswith('dsb_')]
 
 
-
 nslice_old, fidx = 0, 0
 patientid = file_list[fidx].split('/')[-1]
 
@@ -40,8 +39,10 @@ for idx,row in enumerate(f):
     row = row.strip().split(',')
     nslice = row[1]
     if nslice>=nslice_old:
-        print "%s,%s" % (patientid,','.join(row[1:]))
+        pass
+        #print "%s,%s" % (patientid,','.join(row[1:]))
     else:
+        print 'change at %d' % (idx)
         fidx += 1
         patientid = file_list[fidx].split('/')[-1]
         print "%s,%s" % (patientid,','.join(row[1:]))
