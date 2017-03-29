@@ -125,25 +125,26 @@ def load_patient_func(filename):
 
 
 
+with open('/home/mingot/lung_cancer_ds_bowl/output/sol.csv', 'w') as file:
+    file.write('patientid,nslice,x,y,diameter,score,label\n')
+    NUM_CONC = 16
+    for j in range(0, len(file_list), NUM_CONC):
+        filenames = file_list[j:j + NUM_CONC]
+        pool =  multiprocessing.Pool(4)
+        x, y, rois, stats = zip(*pool.map(load_patient_func, filenames))
+        logging.info("Batch %d loaded" % j)
 
-NUM_CONC = 4
-for j in range(0, 10, NUM_CONC):
-    filenames = file_list[j:j + NUM_CONC]
-    pool =  multiprocessing.Pool(4)
-    x, y, rois, stats = zip(*pool.map(load_patient_func, filenames))
-    logging.info("Batch %d loaded" % j)
+        yf, ref_filenames, roisf = [], [], []
+        for i in range(len(x)):
+            ref_filenames.extend([filenames[i]]*len(x[i]))
+            yf.extend(y[i])
+            roisf.extend(rois[i])
+        pool.close()
+        pool.join()
 
-    xf, yf, ref_filenames, roisf = [], [], [], []
-    for i in range(len(x)):
-        ref_filenames.extend([filenames[i]]*len(x[i]))
-        xf.extend(x[i])
-        yf.extend(y[i])
-        roisf.extend(rois[i])
-    pool.close()
-    pool.join()
-
-    for i in range(len(ref_filenames)):
-        print ref_filenames[i]
+        for i in range(len(yf)):
+            nslice, r = roisf[i]
+            file.write('%s,%d,%d,%d,%.3f,%d\n' % (ref_filenames[i].split('/')[-1], nslice, r.centroid[0], r.centroid[1], r.equivalent_diameter,yf[i]))
 
 
 
