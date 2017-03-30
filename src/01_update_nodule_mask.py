@@ -16,7 +16,7 @@ logging.info("Total patients: %d" % len(seriesuids))
 COMMON_SPACING = [2, 0.7, 0.7]
 
 patients_done = os.listdir('/mnt/hd2/aux_validation/') + os.listdir('/mnt/hd2/aux/') + ['luna_225515255547637437801620523312.npz']
-seriesuids = [s for s in seriesuids if 'luna_%s.npz' % s.split('/')[-1] not in patients_done]
+seriesuids = [s for s in seriesuids if 'luna_%s.npz' % s.split('.')[-1] not in patients_done]
 logging.info("Total patients (undone): %d" % len(seriesuids))
 
 
@@ -45,5 +45,5 @@ def update_patient(seriesuid):
 
 
 
-# pool = multiprocessing.Pool(4)
-# pool.map(update_patient, seriesuids)
+pool = multiprocessing.Pool(4)
+pool.map(update_patient, seriesuids)
