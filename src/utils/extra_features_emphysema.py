@@ -10,7 +10,7 @@ SERVER = os.uname()[1] == 'ip-172-31-7-211'
 # Define execution location
 if SERVER:
     path = '/home/shared/data/stage1'
-    path_preprocessed = '/mnt/hd2/preprocessed6'
+    path_preprocessed = '/mnt/hd2/preprocessed5'
     output_file = '/home/ricard/var_emphysema_v00.csv'
 else:
     path = '/Users/rdg/Documents/my_projects/DSB17/lung_cancer_ds_bowl/data/stage1'
