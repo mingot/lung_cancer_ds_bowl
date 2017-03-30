@@ -5,14 +5,13 @@ import pickle
 
 from scipy import stats
 
-DEBUG = True
 SERVER = os.uname()[1] == 'ip-172-31-7-211'
 
 # Define execution location
 if SERVER:
     path = '/home/shared/data/stage1'
     path_preprocessed = '/mnt/hd2/preprocessed5'
-    output_file = '/home/shared/data/stage1_extra_features_sex_predictors.csv'
+    output_file = '/home/ricard/var_emphysema_v00.csv'
 else:
     path = '/Users/rdg/Documents/my_projects/DSB17/lung_cancer_ds_bowl/data/stage1'
     path_preprocessed = '/Users/rdg/Documents/my_projects/DSB17/lung_cancer_ds_bowl/data/stage1_proc'
@@ -21,8 +20,8 @@ else:
 patient_files = os.listdir(path_preprocessed)
 patient_files = sorted(patient_files)
 
-def get_emphysema_predictors(img, mask):
 
+def get_emphysema_predictors(img, mask):
     # Threshold that gates the main lobe of the histogram
     threshold = -600
 
@@ -41,28 +40,35 @@ def compute_emphysema_probability(img, mask):
     with open('emphysema_models/neural_net_model.sav', 'rb') as fid:
         clf = pickle.load(fid)
     gated_skewness, gated_kurtosis = get_emphysema_predictors(img, mask)
-    probability = clf.predict_proba([gated_skewness, gated_kurtosis])
+
+    temp = np.zeros((1, 2), dtype=np.float)
+    temp[0, 0] = gated_skewness
+    temp[0, 1] = gated_kurtosis
+    probability = clf.predict_proba(temp)
 
     return probability[0, 1], gated_skewness, gated_kurtosis
 
 
 def process_patient_file(patient_name):
     print patient_file
-
-    saved_data = np.load(os.path.join(path_preprocessed, patient_name))
+    file_name = os.path.join(path_preprocessed, patient_name)
+    print file_name
+    saved_data = np.load(file_name)
     loaded_stack = saved_data['arr_0']
     img = loaded_stack[0, :, :, :]
     mask = loaded_stack[1, :, :, :]
 
     p, f1, f2 = compute_emphysema_probability(img, mask)
 
+    print(patient_file + " - p=" + str(p) + " - f1=" + str(f1) + " - f2" + str(f2))
+
     csvwriter.writerow([patient_file, p, f1, f2])
 
 if __name__ == "__main__":
     print 'server:', SERVER
-    print 'debug:', DEBUG
-
-    csvfile = open('var_emphysema_v00.csv', 'wb')
+    print 'output_file: ', output_file
+    
+    csvfile = open(output_file, 'wb')
     csvwriter = csv.writer(csvfile, delimiter=',')
 
     for patient_file in patient_files:
