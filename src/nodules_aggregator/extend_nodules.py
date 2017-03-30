@@ -449,6 +449,8 @@ def process_pipeline_csv(
     csv_in, 
     patient_path, 
     csv_out, 
+    dmin = 3, 
+    dmax = 100, 
     compress={'hog':3, 'lbp':3, 'hu':2},
     nCores=1,
     patient_colname='patientid',
@@ -484,8 +486,9 @@ def process_pipeline_csv(
     # filter bad patches
     df_dl_filter = df_dl[df_dl['x'].between(1, 510) & 
         df_dl['y'].between(1, 510) & 
-        df_dl['diameter'].between(3.5, 28)]
+        df_dl['diameter'].between(dmin, dmax)]
     print 'Filtering invalid patches. New shape: {}'.format(df_dl_filter.shape)
+    print 'Filtered nodes with diameters outside ({} {})'.format(dmin, dmax)
     
     # different patients
     worker = mp.Pool(nCores)
