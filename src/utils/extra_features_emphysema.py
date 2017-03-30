@@ -40,22 +40,27 @@ def compute_emphysema_probability(img, mask):
     with open('emphysema_models/neural_net_model.sav', 'rb') as fid:
         clf = pickle.load(fid)
     gated_skewness, gated_kurtosis = get_emphysema_predictors(img, mask)
-    probability = clf.predict_proba([gated_skewness, gated_kurtosis])
+
+    temp = np.zeros((1, 2), dtype=np.float)
+    temp[0, 0] = gated_skewness
+    temp[0, 1] = gated_kurtosis
+    probability = clf.predict_proba(temp)
 
     return probability[0, 1], gated_skewness, gated_kurtosis
 
 
 def process_patient_file(patient_name):
     print patient_file
-
-    saved_data = np.load(os.path.join(path_preprocessed, patient_name))
+    file_name = os.path.join(path_preprocessed, patient_name)
+    print file_name
+    saved_data = np.load(file_name)
     loaded_stack = saved_data['arr_0']
     img = loaded_stack[0, :, :, :]
     mask = loaded_stack[1, :, :, :]
 
     p, f1, f2 = compute_emphysema_probability(img, mask)
 
-    print "" + patient_file + " - " + p + " - " + f1 + " - " + f2
+    print(patient_file + " - p=" + str(p) + " - f1=" + str(f1) + " - f2" + str(f2))
 
     csvwriter.writerow([patient_file, p, f1, f2])
 
