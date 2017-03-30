@@ -151,7 +151,7 @@ model.fit_generator(generator=chunks(x_train, y_train, batch_size=32, thickness=
                     samples_per_epoch=1280,  # make it small to update TB and CHECKPOINT frequently
                     nb_epoch=500,
                     verbose=1,
-                    class_weight={0:1., 1:4.},
+                    #class_weight={0:1., 1:4.},
                     callbacks=[tb, model_checkpoint],
                     validation_data=chunks(x_test, y_test, batch_size=32, thickness=1, is_training=False),
                     nb_val_samples=32*10,
