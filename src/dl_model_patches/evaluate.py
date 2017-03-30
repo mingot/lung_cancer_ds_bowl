@@ -15,8 +15,10 @@ wp = os.environ['LUNG_PATH']
 INPUT_PATH = '/mnt/hd2/preprocessed5'  # INPUT_PATH = wp + 'data/preprocessed5_sample'
 VALIDATION_PATH = '/mnt/hd2/preprocessed5_validation_luna'
 NODULES_PATH = wp + 'data/luna/annotations.csv'
-OUTPUT_MODEL = wp + 'models/jm_patches_train_v11.hdf5'
-OUTPUT_CSV = wp + 'output/nodules_patches_dl1_v11.csv'
+# OUTPUT_MODEL = wp + 'models/jm_patches_train_v11.hdf5'
+# OUTPUT_CSV = wp + 'output/nodules_patches_dl1_v11.csv'
+OUTPUT_MODEL = wp + 'models/jm_patches_hardnegative_v02.hdf5'
+OUTPUT_CSV = wp + 'output/nodules_patches_dl2_v02.csv'
 
 
 
