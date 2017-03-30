@@ -15,11 +15,14 @@ seriesuids = list(set(annotations_df['seriesuid']))
 logging.info("Total patients: %d" % len(seriesuids))
 COMMON_SPACING = [2, 0.7, 0.7]
 
-patients_done = os.listdir('/mnt/hd2/aux_validation/') + os.listdir('/mnt/hd2/aux/') + ['luna_225515255547637437801620523312.npz',
-                                                                                        'luna_303421828981831854739626597495.npz',
-                                                                                        'luna_243094273518213382155770295147.npz']
+patients_proc = os.listdir('/mnt/hd2/preprocessed5/') + os.listdir('/mnt/hd2/preprocessed5_validation_luna/')
+patients_done = os.listdir('/mnt/hd2/aux_validation/') + os.listdir('/mnt/hd2/aux/')
+logging.info("Patients with nodules not processed: %s" % str([s for s in seriesuids if 'luna_%s.npz' % s.split('.')[-1] not in patients_proc]))
+
+seriesuids = [s for s in seriesuids if 'luna_%s.npz' % s.split('.')[-1] in patients_proc]
 seriesuids = [s for s in seriesuids if 'luna_%s.npz' % s.split('.')[-1] not in patients_done]
 logging.info("Total patients (undone): %d" % len(seriesuids))
+
 
 
 def update_patient(seriesuid):
