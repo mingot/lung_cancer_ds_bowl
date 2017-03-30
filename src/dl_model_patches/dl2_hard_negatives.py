@@ -19,18 +19,18 @@ from skimage import transform
 # PATHS
 wp = os.environ['LUNG_PATH']
 LUNA_ANNOTATIONS = wp + 'data/luna/annotations.csv'
-OUTPUT_DL1 = wp + 'output/nodules_patches_dl1_v11_rectif.csv'  # OUTPUT_DL1 = wp + 'personal/noduls_patches_v06.csv'
+OUTPUT_DL1 = wp + 'output/nodules_patches_dl1_v11.csv'  # OUTPUT_DL1 = wp + 'personal/noduls_patches_v06.csv'
 OUTPUT_MODEL =  wp + 'models/jm_patches_hardnegative_v02.hdf5'  # OUTPUT_MODEL = wp + 'personal/jm_patches_train_v06_local.hdf5'
 INPUT_PATH = '/mnt/hd2/preprocessed5/' # INPUT_PATH = wp + 'data/preprocessed5_sample'
 VALIDATION_PATH = '/mnt/hd2/preprocessed5_validation_luna/' # VALIDATION_PATH = wp + 'data/preprocessed5_sample'
 PATCHES_PATH = '/mnt/hd2/patches'  # PATCHES_PATH = wp + 'data/preprocessed5_patches'
-LOGS_PATH = wp + 'logs/%s' % 'hn_v02' #str(int(time()))
-if not os.path.exists(LOGS_PATH):
-    os.makedirs(LOGS_PATH)
+# LOGS_PATH = wp + 'logs/%s' % 'hn_v02' #str(int(time()))
+# if not os.path.exists(LOGS_PATH):
+#     os.makedirs(LOGS_PATH)
 
 
 # OTHER INITIALIZATIONS: tensorboard, model checkpoint and logging
-tb = TensorBoard(log_dir=LOGS_PATH, histogram_freq=1, write_graph=False, write_images=False)  # replace keras.callbacks.TensorBoard
+# tb = TensorBoard(log_dir=LOGS_PATH, histogram_freq=1, write_graph=False, write_images=False)  # replace keras.callbacks.TensorBoard
 K.set_image_dim_ordering('th')
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s  %(levelname)-8s %(message)s',
@@ -49,7 +49,6 @@ annotated = list(set(['luna_%s.npz' % p.split('.')[-1] for p in luna_df['seriesu
 SCORE_TH = 0.7
 nodules_df = pd.read_csv(OUTPUT_DL1)
 nodules_df = nodules_df[(nodules_df['score'] > SCORE_TH) | (nodules_df['label']==1)]
-#nodules_df['patientid'] = [f.split('/')[-1] for f in nodules_df['patientid']]
 nodules_df['nslice'] = nodules_df['nslice'].astype(int)
 
 # Construction of training and testsets
