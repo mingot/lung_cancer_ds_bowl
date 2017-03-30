@@ -155,40 +155,6 @@ def load_slices_from_mhd(img_file):
     return img_array
     
 
-def make_mask(center, diam, z, width, height, spacing, origin):
-    """
-    DEPRECATED: now it's done with skimage.draw.circle
-    Center : centers of circles px -- list of coordinates x,y,z
-    diam : diameters of circles px -- diameter
-    widthXheight : pixel dim of image
-    spacing = mm/px conversion rate np array x,y,z
-    origin = x,y,z mm np.array
-    z = z position of slice in world coordinates mm
-    """
-    mask = np.zeros([height, width], dtype=np.uint8)  # 0's everywhere except nodule swapping x,y to match img
-    # convert to nodule space from world coordinates
-
-    # Defining the voxel range in which the nodule falls
-    v_center = (center-origin)/spacing
-    v_diam = int(diam/spacing[0]+5)
-    v_xmin = np.max([0, int(v_center[0]-v_diam)-5])
-    v_xmax = np.min([width-1, int(v_center[0]+v_diam)+5])
-    v_ymin = np.max([0, int(v_center[1]-v_diam)-5])
-    v_ymax = np.min([height-1, int(v_center[1]+v_diam)+5])
-
-    v_xrange = range(v_xmin, v_xmax+1)
-    v_yrange = range(v_ymin, v_ymax+1)
-
-    # Fill in 1 within sphere around nodule
-    for v_x in v_xrange:
-        for v_y in v_yrange:
-            p_x = spacing[0]*v_x + origin[0]
-            p_y = spacing[1]*v_y + origin[1]
-            if np.linalg.norm(center-np.array([p_x,p_y,z]))<=diam:
-                mask[int((p_y - origin[1])/spacing[1]),int((p_x - origin[0])/spacing[0])] = 1
-    return mask
-
-
 def create_mask(img, nodules):
 
     if len(nodules) == 0:
@@ -213,9 +179,9 @@ def create_mask(img, nodules):
             v_center[1] = -v_center[1]
             changed = True
 
-        for i_z in range(int(v_center[2])-1,int(v_center[2])+2):
+        slice_rad = int(int(diam/2)/spacing[2])  # make rad with slices
+        for i_z in range(int(v_center[2]) - slice_rad, int(v_center[2]) + slice_rad + 1):
 
-            #new_mask = make_mask(center, diam, i_z*spacing[2] + origin[2], width, height, spacing, origin)  # deprecated
             new_mask = np.zeros([height, width], dtype=np.uint8)
             rr, cc = circle(v_center[1], v_center[0], int(diam/spacing[0]+15)/2)
             new_mask[rr, cc] = 1
