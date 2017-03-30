@@ -43,4 +43,4 @@ def update_patient(seriesuid):
 
 
 pool = multiprocessing.Pool(4)
-pool.map(update_patient, seriesuids[0:10])
+pool.map(update_patient, seriesuids)
