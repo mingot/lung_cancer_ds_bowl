@@ -66,7 +66,8 @@ def process_patient_file(patient_name):
 
 if __name__ == "__main__":
     print 'server:', SERVER
-
+    print 'output_file: ', output_file
+    
     csvfile = open(output_file, 'wb')
     csvwriter = csv.writer(csvfile, delimiter=',')
 
