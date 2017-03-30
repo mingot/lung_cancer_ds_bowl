@@ -62,13 +62,16 @@ def plot_bb(img, regions):
     plt.show()
 
 
-def plot_mask(img, mask, threshold=None):
+def plot_mask(img, mask, threshold=None, debug=False):
     if threshold is None:
         threshold = .8*np.max(mask)  # np.mean(mask)
     thr = np.where(mask < threshold, 0., 1.0)
     label_image = measure.label(thr)  # label them
     labels = label_image.astype(int)
     regions = measure.regionprops(labels)
+    if debug:
+        for region in regions:
+            print "Region equivalent diameter:%.3f" % region.equivalent_diameter
     plot_bb(img, regions)
 
 
