@@ -146,6 +146,8 @@ def cube_show_slider(cube, axis=2, **kwargs):
 
 
 def slices_with_nodules(nodule_mask):
+    slices = []
     for j in range(nodule_mask.shape[0]):
         if np.sum(nodule_mask[j])!=0:
-            print j
+            slices.append(j)
+    return j
