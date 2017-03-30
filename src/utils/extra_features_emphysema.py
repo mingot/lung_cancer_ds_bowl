@@ -17,10 +17,6 @@ else:
     path_preprocessed = '/Users/rdg/Documents/my_projects/DSB17/lung_cancer_ds_bowl/data/stage1_proc'
     output_file = '/Users/rdg/Documents/my_projects/DSB17/lung_cancer_ds_bowl/data/stage1_proc/var_emphysema_v00.csv'
 
-patient_files = os.listdir(path_preprocessed)
-patient_files = sorted(patient_files)
-
-
 def get_emphysema_predictors(img, mask):
     # Threshold that gates the main lobe of the histogram
     threshold = -600
@@ -50,24 +46,23 @@ def compute_emphysema_probability(img, mask):
 
 
 def process_patient_file(patient_name):
-    print patient_file
     file_name = os.path.join(path_preprocessed, patient_name)
-    print file_name
+    patient_id = patient_file.lstrip('dsb_').rstrip('.npz')
     saved_data = np.load(file_name)
     loaded_stack = saved_data['arr_0']
     img = loaded_stack[0, :, :, :]
     mask = loaded_stack[1, :, :, :]
-
     p, f1, f2 = compute_emphysema_probability(img, mask)
-
-    print(patient_file + " - p=" + str(p) + " - f1=" + str(f1) + " - f2" + str(f2))
-
-    csvwriter.writerow([patient_file, p, f1, f2])
+    csvwriter.writerow([patient_id, p, f1, f2])
 
 if __name__ == "__main__":
     print 'server:', SERVER
     print 'output_file: ', output_file
-    
+
+    patient_files = os.listdir(path_preprocessed)
+    patient_files = [f for f in patient_files if f.startswith('dsb')]
+    patient_files = sorted(patient_files)
+
     csvfile = open(output_file, 'wb')
     csvwriter = csv.writer(csvfile, delimiter=',')
 
