@@ -150,4 +150,4 @@ def slices_with_nodules(nodule_mask):
     for j in range(nodule_mask.shape[0]):
         if np.sum(nodule_mask[j])!=0:
             slices.append(j)
-    return j
+    return slices
