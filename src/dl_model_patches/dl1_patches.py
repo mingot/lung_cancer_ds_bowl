@@ -149,7 +149,7 @@ model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['acc
 
 model.fit_generator(generator=chunks(x_train, y_train, batch_size=32, thickness=1),
                     samples_per_epoch=1280,  # make it small to update TB and CHECKPOINT frequently
-                    nb_epoch=500,
+                    nb_epoch=500*4,
                     verbose=1,
                     #class_weight={0:1., 1:4.},
                     callbacks=[tb, model_checkpoint],
