@@ -51,6 +51,8 @@ SCORE_TH = 0.7
 nodules_df = pd.read_csv(OUTPUT_DL1)
 nodules_df = nodules_df[(nodules_df['score'] > SCORE_TH) | (nodules_df['label']==1)]
 nodules_df['nslice'] = nodules_df['nslice'].astype(int)
+logging.info("Shape nodules df: %s" % str(nodules_df.shape))
+
 
 # Construction of training and testsets
 filenames_train = [os.path.join(INPUT_PATH,f) for f in set(nodules_df['patientid']) if f[0:4]=='luna' and f in os.listdir(INPUT_PATH)]
