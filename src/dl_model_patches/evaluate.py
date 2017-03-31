@@ -167,6 +167,7 @@ def listener(q):
 
         xf = np.asarray(xf)
         preds = model.predict(xf, verbose=1)
+        logging.info("Predicted patient %s, storing results" % (filename.split('/')[-1]))
         logging.info("Batch results: %d/%d (th=0.7)" % (len([p for p in preds if p>0.7]),len(preds)))
         for i in range(len(preds)):
             nslice, r = roisf[i]
