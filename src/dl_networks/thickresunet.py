@@ -24,14 +24,14 @@ def weighted_loss(y_true, y_pred, pos_weight=100, epsilon=1e-5):
     return K.mean(-(1-y_true_f)*K.log(1-y_pred_f)-y_true_f*K.log(y_pred_f)*pos_weight)
 
 class ThickRESUNET(object):
-    def __init__(self, input_shape=(5,512,512), saved_file=None, pos_weight=100):
+    def __init__(self, input_shape=(5,512,512), saved_file=None, pos_weight=100, lr=1e-5):
 
         self.thickness = input_shape[0]
 
         logging.info('Added thickness %d ' % self.thickness)
 
         self.model = residual_unet_model(input_shape)        
-        self.model.compile(optimizer=Adam(lr=1.0e-5), loss=weighted_loss, metrics=[weighted_loss])
+        self.model.compile(optimizer=Adam(lr=lr), loss=weighted_loss, metrics=[weighted_loss])
 
         if saved_file is not None:
             try:
