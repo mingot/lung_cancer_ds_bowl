@@ -230,7 +230,8 @@ class ResnetBuilder(object):
         if num_outputs != 1: 
             dense = Dense(output_dim=num_outputs, init="he_normal", activation="softmax")(flatten1)
         else:
-            dense = Dense(output_dim=1, init="he_normal", activation="sigmoid")(flatten1)
+            #dense = Dense(output_dim=1, init="he_normal", activation="sigmoid")(flatten1)
+            dense = Dense(output_dim=1, init="he_normal", activation="linear", W_regularizer=l2(0.01))(flatten1)
         model = Model(input=input, output=dense)
         return model
 
