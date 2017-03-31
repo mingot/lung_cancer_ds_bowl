@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import dicom
 import os
+from skimage.draw import circle
 import scipy.ndimage
 import matplotlib.pyplot as plt
 import SimpleITK as sitk
@@ -154,39 +155,6 @@ def load_slices_from_mhd(img_file):
     return img_array
     
 
-def make_mask(center, diam, z, width, height, spacing, origin):
-    """
-    Center : centers of circles px -- list of coordinates x,y,z
-    diam : diameters of circles px -- diameter
-    widthXheight : pixel dim of image
-    spacing = mm/px conversion rate np array x,y,z
-    origin = x,y,z mm np.array
-    z = z position of slice in world coordinates mm
-    """
-    mask = np.zeros([height, width], dtype=np.uint8)  # 0's everywhere except nodule swapping x,y to match img
-    # convert to nodule space from world coordinates
-
-    # Defining the voxel range in which the nodule falls
-    v_center = (center-origin)/spacing
-    v_diam = int(diam/spacing[0]+5)
-    v_xmin = np.max([0, int(v_center[0]-v_diam)-5])
-    v_xmax = np.min([width-1, int(v_center[0]+v_diam)+5])
-    v_ymin = np.max([0, int(v_center[1]-v_diam)-5])
-    v_ymax = np.min([height-1, int(v_center[1]+v_diam)+5])
-
-    v_xrange = range(v_xmin, v_xmax+1)
-    v_yrange = range(v_ymin, v_ymax+1)
-
-    # Fill in 1 within sphere around nodule
-    for v_x in v_xrange:
-        for v_y in v_yrange:
-            p_x = spacing[0]*v_x + origin[0]
-            p_y = spacing[1]*v_y + origin[1]
-            if np.linalg.norm(center-np.array([p_x,p_y,z]))<=diam:
-                mask[int((p_y-origin[1])/spacing[1]),int((p_x-origin[0])/spacing[0])] = 1
-    return mask
-
-
 def create_mask(img, nodules):
 
     if len(nodules) == 0:
@@ -197,6 +165,7 @@ def create_mask(img, nodules):
     origin = np.array(img.GetOrigin())  # x,y,z  Origin in world coordinates (mm)
     spacing = np.array(img.GetSpacing())  # spacing of voxels in world coor. (mm)
 
+    # row = nodules.iloc[0]
     for index, row in nodules.iterrows():
         node_x = row["coordX"]
         node_y = row["coordY"]
@@ -205,9 +174,28 @@ def create_mask(img, nodules):
         center = np.array([node_x, node_y, node_z])  # nodule center
         v_center = np.rint((center-origin)/spacing)  # nodule center in voxel space
 
-        for i_z in range(int(v_center[2])-1,int(v_center[2])+2):
-            new_mask = make_mask(center, diam, i_z*spacing[2] + origin[2], width, height, spacing, origin)
+        if v_center[0]<0 and v_center[1]<0:  # fix for when the origin invert the coordinates
+            v_center[0] = -v_center[0]
+            v_center[1] = -v_center[1]
+            changed = True
+
+        slice_rad = int(int(diam/2)/spacing[2])  # make rad with slices
+        for i_z in range(int(v_center[2]) - slice_rad, int(v_center[2]) + slice_rad + 1):
+
+            new_mask = np.zeros([height, width], dtype=np.uint8)
+            rr, cc = circle(v_center[1], v_center[0], int(diam/spacing[0]+15)/2)
+            new_mask[rr, cc] = 1
+
             masks[i_z, :, :] = np.bitwise_or(masks[i_z, :, :], new_mask)
 
     return masks
 
+
+def get_number_of_nodules(nodules_slice_mask):
+    """
+    Apologies in advance if this should not be in this module. Given the nodules_slice_mask, counts the number of
+    different nodules in the slice
+    :param nodules_slice: the nodules slice mask
+    :return: an Integer, the number of different nodules in the slice
+    """
+    return len(measure.regionprops(nodules_slice_mask.astype(int)))

@@ -5,6 +5,8 @@ from keras.optimizers import Adam
 from keras import backend as K
 import numpy as np
 import os
+from time import time
+from keras.callbacks import ModelCheckpoint
 from dl_utils.tb_callback import TensorBoard
 K.set_image_dim_ordering('th')
 
@@ -51,7 +53,7 @@ class ThickUNET(object):
         
         if logs_path is not None:
             # tensorboard logs
-            logs_path = wp + 'logs/%s' % str(int(time()))
+            logs_path = os.path.join(logs_path,'%s' % str(int(time())))
             if not os.path.exists(logs_path):
                 os.makedirs(logs_path)
             tb = TensorBoard(log_dir=logs_path, histogram_freq=1, write_graph=False, write_images=False)  # replace keras.callbacks.TensorBoard
@@ -61,6 +63,7 @@ class ThickUNET(object):
             nb_val_samples = 0
             for x,y in chunks(validation_file_list,batch_size,infinite=False):
                 nb_val_samples = nb_val_samples + x.shape[0]
+            logging.info('Added %d validation samples' % nb_val_samples)
     
         
         if nb_val_samples is not None:

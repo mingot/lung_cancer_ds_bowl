@@ -13,7 +13,10 @@ def multiplot(imgs, labels=None):
     f, plots = plt.subplots(num_rows, num_rows, sharex='all', sharey='all', figsize=(num_rows, num_rows))
     for i in range(nimg):
         plots[i // num_rows, i % num_rows].axis('off')
-        plots[i // num_rows, i % num_rows].imshow(imgs[i])
+        if len(imgs[i].shape)==2:  # single channel image
+            plots[i // num_rows, i % num_rows].imshow(imgs[i])
+        else:  # multiple channel image, plot the first channel
+            plots[i // num_rows, i % num_rows].imshow(imgs[i][0])
         if labels and labels[i]==1:
             plots[i // num_rows, i % num_rows].set_title('TARGET')
     plt.show()
@@ -47,6 +50,9 @@ def multiplot_single_image(imgs, show=True):
 
 def plot_bb(img, regions):
     """Draw the img and the bounding box defined by a scikit image region (measure module)."""
+    if not isinstance(regions, list):  # if given a single region, still works
+        regions = [regions]
+
     fig, ax = plt.subplots(ncols=1, nrows=1, figsize=(6, 6))
     ax.imshow(img)
     for region in regions:
@@ -56,13 +62,16 @@ def plot_bb(img, regions):
     plt.show()
 
 
-def plot_mask(img, mask, threshold=None):
+def plot_mask(img, mask, threshold=None, debug=False):
     if threshold is None:
         threshold = .8*np.max(mask)  # np.mean(mask)
     thr = np.where(mask < threshold, 0., 1.0)
     label_image = measure.label(thr)  # label them
     labels = label_image.astype(int)
     regions = measure.regionprops(labels)
+    if debug:
+        for region in regions:
+            print "Region equivalent diameter:%.3f" % region.equivalent_diameter
     plot_bb(img, regions)
 
 
@@ -137,3 +146,11 @@ def cube_show_slider(cube, axis=2, **kwargs):
     slider.on_changed(update)
 
     plt.show()
+
+
+def slices_with_nodules(nodule_mask):
+    slices = []
+    for j in range(nodule_mask.shape[0]):
+        if np.sum(nodule_mask[j])!=0:
+            slices.append(j)
+    return slices

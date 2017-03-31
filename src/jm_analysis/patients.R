@@ -1,6 +1,7 @@
 library(data.table)
 library(ggplot2)
 library(pROC)
+library(xgboost)
 
 
 # Load variables ----------------------------------------------------------
@@ -36,6 +37,36 @@ vars_nodules[,nodule_pred:=predict(fp_model, data, type="response")]
 vars_nodules = vars_nodules[nodule_pred>quantile(nodule_pred,0.9)]
 
 
+# var_nodules_dl_patches --------------------------------------------------
+
+vars_nodules_patches = data.table(read.csv("/Users/mingot/Projectes/kaggle/ds_bowl_lung/personal/noduls_patches_v05_backup3.csv"))
+vars_nodules_patches = vars_nodules_patches[substr(filename,1,3)=='dsb']
+vars_nodules_patches[,patientid:=gsub(".npz|dsb_","",filename)]
+vars_nodules_patches[,filename:=NULL]
+
+backup = copy(vars_nodules_patches)
+vars_nodules = backup
+
+# FILTER: reduce FP with fp model
+vars_nodules[,nodule_pred:=predict(fp_model, vars_nodules, type="response")]
+vars_nodules = vars_nodules[score>0.9]
+vars_nodules = vars_nodules[nodule_pred>quantile(nodule_pred,0.98)]
+uniqueN(vars_nodules$patientid)
+
+# > vars_nodules = backup
+# > vars_nodules[,nodule_pred:=predict(fp_model, vars_nodules, type="response")]
+# > vars_nodules = vars_nodules[nodule_pred>quantile(nodule_pred,0.98)]
+# > annotations = data.table(read.csv('/Users/mingot/Projectes/kaggle/ds_bowl_lung/data/stage1_labels.csv'))
+# > setnames(annotations, "id", "patientid")
+# > data = merge(annotations, vars_nodules, by="patientid", all.x=T) #, all.y=T)
+# > data = data[!is.na(cancer)]
+# > 
+#   > mean(data[!is.na(nslice)]$cancer)
+# [1] 0.3537736
+# > mean(data[is.na(nslice)]$cancer)
+# [1] 0.197561
+
+
 # Construct training ------------------------------------------------------
 
 ## Add annotations
@@ -47,6 +78,8 @@ data = data[!is.na(cancer)]
 mean(data[!is.na(nslice)]$cancer)
 mean(data[is.na(nslice)]$cancer)
 
+
+
 # Construct test ----------------------------------------------------------
 
 submission = data.table(read.csv("/Users/mingot/Projectes/kaggle/ds_bowl_lung/data/stage1_sample_submission.csv"))
@@ -55,25 +88,42 @@ submission = merge(submission, vars_nodules, by="patientid", all.x=T)
 data = submission
 
 
+
+final_df = data[,.(total_nodules=.N,
+                   nodules_per_slice=.N/uniqueN(nslice),
+                   num_slices = uniqueN(nslice),
+                   nodules_upper = sum(nslice>60),
+                   max_diameter = max(diameter),
+                   max_score = max(score),
+                   mean_score = mean(score)), by=.(patientid, cancer)]
+
 # Table aggregation --------------------------------------------------------
 
 # nodules per person
-final_df = data[,.(total_nodules=sum(!is.na(nslice)), 
-                   num_slices=uniqueN(nslice[!is.na(nslice)]), 
-                   nodules_per_slice=sum(!is.na(nslice))/uniqueN(nslice),
-                   max_intensity=max(max_intensity, na.rm=T), 
-                   max_mean_intensity=max(mean_intensity, na.rm=T)
-                   #max_score=max(nodule_pred, na.rm=T),
-                   #mean_score=mean(nodule_pred, na.rm=T)
+final_df = data[,.(total_nodules = sum(!is.na(nslice)), 
+                   num_slices = uniqueN(nslice[!is.na(nslice)]), 
+                   nodules_per_slice = sum(!is.na(nslice))/uniqueN(nslice),
+                   max_diameter = max(diameter),
+                   mean_diameter = mean(diameter),
+                   median_diameter = median(diameter)
+                   #max_intensity=max(max_intensity, na.rm=T), 
+                   #max_mean_intensity=max(mean_intensity, na.rm=T)
+                   #max_score=max(score, na.rm=T),
+                   #mean_score=mean(score, na.rm=T)
                    ),
           by=.(patientid,cancer)]
+
+final_df[,has_nodule:=as.numeric(total_nodules>0)]
+final_df[,has_nodule3:=as.numeric(total_nodules>3)]
 
 final_df[!is.finite(max_intensity), max_intensity:=0]
 final_df[!is.finite(max_mean_intensity), max_mean_intensity:=0]
 final_df[,high_intensity:=ifelse(max_mean_intensity>0.9,1,0)]
 final_df[,lot_nodules:=ifelse(total_nodules>150,1,0)]
 final_df[,few_nodules:=ifelse(total_nodules<50,1,0)]
-
+final_df[!is.finite(max_diameter), max_diameter:=0]
+final_df[!is.finite(mean_diameter), mean_diameter:=0]
+final_df[!is.finite(median_diameter), median_diameter:=0]
 
 
 # data visualization ------------------------------------------------------
@@ -120,6 +170,16 @@ auc(final_df$cancer, final_df$few_nodules)  # 0.49
 auc(final_df$cancer, final_df$high_intensity)  # 0.49
 
 
+arcvi_descriptivos(final_df$total_nodules, final_df$cancer, equidistributed=T)
+arcvi_descriptivos(final_df$max_score, final_df$cancer, equidistributed=T)
+arcvi_descriptivos(final_df$num_slices, final_df$cancer, equidistributed=T)
+arcvi_descriptivos(final_df$max_diameter, final_df$cancer, equidistributed=T)
+arcvi_descriptivos(final_df$mean_diameter, final_df$cancer, equidistributed=T)
+arcvi_descriptivos(final_df$median_diameter, final_df$cancer, equidistributed=T)
+
+arcvi_descriptivos(final_df$total_nodules, final_df$cancer, equidistributed=T)
+arcvi_descriptivos(final_df$has_nodule, final_df$cancer, equidistributed=T)
+arcvi_descriptivos(final_df$has_nodule3, final_df$cancer, equidistributed=T)
 
 # training ----------------------------------------------------------------
 
@@ -143,12 +203,24 @@ for (i in 1:k){
   # train
   #mymodel = randomForest(trainingset$target ~ ., data = trainingset, ntree = 100)
   mymodel = glm(#cancer ~ . -id, family=binomial(link='logit'), 
-                cancer ~ 1 + max_intensity + max_mean_intensity, family=binomial(link='logit'), 
-                data=trainingset[,!names(testset)%in%'patientid',with=F])
+                #cancer ~ 1 + max_intensity + max_mean_intensity, family=binomial(link='logit'), 
+                cancer ~ 1 + total_nodules + num_slices , family=binomial(link='logit'), 
+                data=trainingset[,!names(trainingset)%in%'patientid',with=F])
+  
+  # model = xgb.train( data = xgb.DMatrix( as.matrix(trainingset[,!names(final_df)%in%c('patientid','id','cancer'),with=F]), label = trainingset$cancer ),
+  #                    nrounds = 50,
+  #                    eta = 0.05,
+  #                    max_depth = 100,
+  #                    #subsample = 0.75,gamma = 0,min_child_weight = 1,max_delta_step = 0,colsample_bytree = 1,
+  #                    eval_metric = auc, #TODO
+  #                    objective = "binary:logistic", #TODO
+  #                    verbose = 1)
   
   # test
   pred = predict(mymodel, testset[,!names(testset)%in%'patientid',with=F], type="response")
+  #pred = predict(model, xgb.DMatrix( as.matrix( testset[,!names(final_df)%in%c('patientid','id','cancer'),with=F] ) ) )
   #pred = rep(.25, length(pred))
+  #pred[!is.finite(pred)] = 0.25
   real = testset$cancer
   
   # store results
@@ -159,10 +231,14 @@ summary(aucs)
 summary(lls)
 
 
+xgb_imp = xgb.importance( names(trainingset[,!names(final_df)%in%c('patientid','id'),with=F]), model = model )
+xgb_imp
+
+
 # final model (all data)
 final_model = glm(cancer ~ 1 + max_intensity + max_mean_intensity, family=binomial(link='logit'), 
                   data=final_df[,!names(testset)%in%'patientid',with=F])
-
+summary(final_model)
 
 
 # submission --------------------------------------------------------------
@@ -171,4 +247,5 @@ final_model = glm(cancer ~ 1 + max_intensity + max_mean_intensity, family=binomi
 preds = predict(final_model, final_df[,!names(testset)%in%'patientid',with=F], type="response")
 
 submission = data.table(id=final_df$patientid, cancer=preds)
+write.csv(submission, '/Users/mingot/Projectes/kaggle/ds_bowl_lung/data/submissions/00_submission.csv', quote=F, row.names=F)
 

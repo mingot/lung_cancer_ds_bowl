@@ -2,7 +2,7 @@
 File for preprocessing the datasets. It gets as input the DCOMS path, and converts it to numpy.
 
 
-Datasets accepted: [DSB, LIDC, LUNA]
+Datasets accepted: ['dsb', 'lidc', 'luna']
 
 Example usage:
 python 00_preprocess.py --input=/Users/mingot/Projectes/kaggle/ds_bowl_lung/data/luna/subset0 --output=/Users/mingot/Projectes/kaggle/ds_bowl_lung/data/preproc_luna --pipeline=luna --nodules=/Users/mingot/Projectes/kaggle/ds_bowl_lung/data/luna/annotations.csv
@@ -16,24 +16,21 @@ import os
 import sys
 from glob import glob
 from time import time
-
 import SimpleITK as sitk
-import matplotlib.pyplot as plt
 import numpy as np
-import pandas
 import pandas as pd
-from PIL import Image
-
-from utils import plotting
 from utils import preprocessing
 from utils import reading
+from utils import lung_segmentation
 
-accepted_datasets = ['dsb', 'lidc', 'luna']
+import matplotlib.pyplot as plt
+from utils import plotting
+
 
 # Define folder locations
 wp = os.environ.get('LUNG_PATH', '')
 TMP_FOLDER = os.path.join(wp, 'data/jm_tmp/')
-INPUT_FOLDER = os.path.join(wp, 'data/stage1/')  # 'data/stage1/stage1/'  'data/luna/subset2'
+INPUT_FOLDER = os.path.join(wp, 'data/luna/luna0123')
 OUTPUT_FOLDER = os.path.join(wp, 'data/stage1_proc/')
 NODULES_PATH = os.path.join(wp, 'data/luna/annotations.csv')
 
@@ -42,8 +39,6 @@ PIPELINE = 'dsb'  # for filename
 COMMON_SPACING = [2, 0.7, 0.7]
 
 # Execution parameters
-SHOW_DEBUG_IMAGES = False
-SAVE_DEBUG_IMAGES = False
 SAVE_RESULTS = True
 
 # Overwriting parameters by console
@@ -63,34 +58,31 @@ for arg in sys.argv[1:]:
     else:
         print('Unknown argument {}. Ignoring.'.format(arg))
 
-if PIPELINE not in accepted_datasets:
-    print('Error, preprocessing of dataset {} not implemented.'.format(PIPELINE))
 
 if PIPELINE == 'dsb':
     patient_files = os.listdir(INPUT_FOLDER)
-
 elif PIPELINE == 'lidc':
     patient_files = os.listdir(INPUT_FOLDER)
     try:
-        df_nodules = pandas.read_csv(NODULES_PATH)
+        df_nodules = pd.read_csv(NODULES_PATH)
         df_nodules.index = df_nodules['case']
     except Exception as e:
         print (e)
         print ('There are no nodules descriptor in this dataset.')
-
 elif PIPELINE == 'luna':
     patient_files = glob(INPUT_FOLDER + '/*.mhd')  # patients from subset
     df_nodules = pd.read_csv(NODULES_PATH)
 
-# get IDS in the output folder to avoid recalculating them
-current_ids = glob(OUTPUT_FOLDER+'/*.npz')
+## get IDS in the output folder to avoid recalculating them
+current_ids = glob(OUTPUT_FOLDER + '/*.npz')
 current_ids = [x.split('_')[-1].replace('.npz', '') for x in current_ids]
+
 
 # Main loop over the ensemble of the database
 times = []
 for patient_file in patient_files:
     
-    n = time()
+    tstart = time()
     nodule_mask = None
     print('Trying patient: {}'.format(patient_file))
     
@@ -142,64 +134,37 @@ for patient_file in patient_files:
     if pat_id in current_ids:
         continue
 
-    # set to air parts that fell outside
+    # SET BACKGROUND: set to air parts that fell outside
     patient_pixels[patient_pixels < -1500] = -2000
 
-    if SHOW_DEBUG_IMAGES:
-        plt.imshow(patient_pixels[3])
-        plt.hist(patient_pixels.flatten(), bins=80, color='c')
 
-    # Resampling
-    pix_resampled, new_spacing = preprocessing.resample(patient_pixels, spacing=originalSpacing,
-                                                        new_spacing=COMMON_SPACING)
-    print('Resampled image size: {}'.format(pix_resampled.shape))
+    # RESAMPLING
+    pix_resampled, new_spacing = preprocessing.resample(patient_pixels, spacing=originalSpacing, new_spacing=COMMON_SPACING)
     if nodule_mask is not None:
-        nodule_mask, new_spacing = preprocessing.resample(nodule_mask, spacing=originalSpacing,
-                                                          new_spacing=COMMON_SPACING)
-    if SHOW_DEBUG_IMAGES:
-        plt.imshow(pix_resampled[50])
-    if SAVE_DEBUG_IMAGES:
-        composite_image = plotting.multiplot_single_image(pix_resampled, show=False)
-        composite_image -= np.min(composite_image)
-        composite_image *= 255.0 / np.max(composite_image)
-        Image.fromarray(composite_image.astype(np.uint8)).save(os.path.join(OUTPUT_FOLDER, "%s_%s.jpg") % (PIPELINE, pat_id))
+        nodule_mask, new_spacing = preprocessing.resample(nodule_mask, spacing=originalSpacing, new_spacing=COMMON_SPACING)
+    print('Resampled image size: {}'.format(pix_resampled.shape))
 
-    # Segment lungs
-    lung_mask = preprocessing.segment_lung_mask(image=pix_resampled, fill_lung_structures=True)
-    if SHOW_DEBUG_IMAGES:
-        plt.imshow(lung_mask[50])
-    if SAVE_DEBUG_IMAGES:
-        composite_image = plotting.multiplot_single_image(lung_mask, show=False)
-        composite_image -= np.min(composite_image)
-        composite_image *= 255.0 / np.max(composite_image)
-        Image.fromarray(composite_image.astype(np.uint8)).save(os.path.join(OUTPUT_FOLDER, "%s_%s_mask.jpg") % (PIPELINE, pat_id))
 
-    # Compute volume for sanity test
-    voxel_volume_l = COMMON_SPACING[0]*COMMON_SPACING[1]*COMMON_SPACING[2]/(1000000.0)
+    # LUNG SEGMENTATION
+    tstart = time()
+    lung_mask = lung_segmentation.segment_lungs(image=pix_resampled, fill_lung=True, method="thresholding1")  # thresholding1, thresholding2, watershed
+    # TODO: if lung_mask fails, do it with thresholding2
+    print "Time segmenting lungs: %.4f" % (time() - tstart)
+
+    # Checks for lung segmentation
+    voxel_volume_l = COMMON_SPACING[0]*COMMON_SPACING[1]*COMMON_SPACING[2]/(1000000.0)  # Check 1: volume
     lung_volume_l = np.sum(lung_mask)*voxel_volume_l
     if lung_volume_l < 2 or lung_volume_l > 10:
-        print('Warning lung volume: {} out of physiological values. Double-check the segmentation.'.format(pat_id))
+        print('ERROR LUNG MASK: Lung volume for patient {} out of physiological values.'.format(pat_id))
+    for nslice in range(pix_resampled.shape[0]):  # Check 2: nodules inside lung_mask
+        if nodule_mask is not None and np.sum(nodule_mask[nslice])>0 and np.sum(lung_mask[nslice]*nodule_mask[nslice])==0:
+            print('ERROR LUNG MASK: Nodules outside the mask in patient %s, slice %d' % (pat_id, nslice))
 
-    # zero center and normalization
-    # pix = preprocessing.normalize(pix_resampled)
-    # pix = preprocessing.zero_center(pix)
-    pix = pix_resampled
-    
-    # extend image to homogenize sizes
-    # try:
-    #     pix = preprocessing.extend_image(pix, val=-1000, size=800)  # if zero_centered: -0.25
-    #     lung_mask = preprocessing.extend_image(lung_mask, val=0, size=800)
-    #     if nodule_mask is not None:
-    #         nodule_mask = preprocessing.extend_image(nodule_mask, val=0, size=800)
-    # except:
-    #     print 'Error: %s did not fit in 800x800'
-    #     continue
-
-    pix = preprocessing.resize_image(pix, size=512)  # if zero_centered: -0.25
+    # CROPPING to 512x512
+    pix = preprocessing.resize_image(pix_resampled, size=512)  # if zero_centered: -0.25
     lung_mask = preprocessing.resize_image(lung_mask, size=512)
     if nodule_mask is not None:
         nodule_mask = preprocessing.resize_image(nodule_mask, size=512)
-
     print('Cropped image size: {}'.format(pix.shape))
 
     # Load nodules, after resampling to do it faster.
@@ -232,21 +197,20 @@ for patient_file in patient_files:
     
     # store output (processed lung and lung mask)
     if nodule_mask is None and PIPELINE=='luna':
+        # create virtual nodule mask for coherence
         nodule_mask = np.zeros(pix.shape, dtype=np.int)
 
     if nodule_mask is None:
         output = np.stack((pix, lung_mask))
     else:
         output = np.stack((pix, lung_mask, nodule_mask))
-        # sanity check: all modules are in the segmentation
-        if np.any(np.logical_and(nodule_mask, 0 == lung_mask)):
-            print('WARNING! nodules not included in segmentation.')
+
 
     if SAVE_RESULTS:
         np.savez_compressed(os.path.join(OUTPUT_FOLDER, "%s_%s.npz") % (PIPELINE, pat_id), output)
         # 10x compression over np.save (~400Mb vs 40Mb), but 10x slower  (~1.5s vs ~15s)
 
-    x = time()-n
+    x = time()-tstart
     print('Patient {}, Time: {}'.format(pat_id, x))
     times.append(x)
 
