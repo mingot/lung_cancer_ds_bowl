@@ -19,12 +19,13 @@ from skimage import transform
 # PATHS
 wp = os.environ['LUNG_PATH']
 LUNA_ANNOTATIONS = wp + 'data/luna/annotations.csv'
-OUTPUT_DL1 = '/home/aitor/output/noduls_patches_v06_copy.csv'  # OUTPUT_DL1 = wp + 'personal/noduls_patches_v06.csv'
-OUTPUT_MODEL =  wp + 'models/jm_patches_hardnegative_v01.hdf5'  # OUTPUT_MODEL = wp + 'personal/jm_patches_train_v06_local.hdf5'
+OUTPUT_DL1 = wp + 'output/nodules_patches_dl1_v11_solo_luna.csv'  # OUTPUT_DL1 = wp + 'personal/noduls_patches_v06.csv'
 INPUT_PATH = '/mnt/hd2/preprocessed5/' # INPUT_PATH = wp + 'data/preprocessed5_sample'
 VALIDATION_PATH = '/mnt/hd2/preprocessed5_validation_luna/' # VALIDATION_PATH = wp + 'data/preprocessed5_sample'
 PATCHES_PATH = '/mnt/hd2/patches'  # PATCHES_PATH = wp + 'data/preprocessed5_patches'
-LOGS_PATH = wp + 'logs/%s' % str(int(time()))
+
+OUTPUT_MODEL =  wp + 'models/jm_patches_hardnegative_v03.hdf5'  # OUTPUT_MODEL = wp + 'personal/jm_patches_train_v06_local.hdf5'
+LOGS_PATH = wp + 'logs/%s' % 'hn_v03' #str(int(time()))
 if not os.path.exists(LOGS_PATH):
     os.makedirs(LOGS_PATH)
 
@@ -48,13 +49,14 @@ logging.basicConfig(level=logging.INFO,
 # # filter TP and FP of the suggested by DL1
 # SCORE_TH = 0.7
 # nodules_df = pd.read_csv(OUTPUT_DL1)
-# #nodules_df = nodules_df[nodules_df['score'] > SCORE_TH]  # TODO: IMPORTANT!! this filter should include the TN through the label. Now there is no filtering in place
-# nodules_df['patientid'] = [f.split('/')[-1] for f in nodules_df['patientid']]  # TODO: remove when fixed the patient id without whole path
+# nodules_df = nodules_df[(nodules_df['score'] > SCORE_TH) | (nodules_df['label']==1)]
 # nodules_df['nslice'] = nodules_df['nslice'].astype(int)
+# logging.info("Shape nodules df: %s" % str(nodules_df.shape))
+#
 #
 # # Construction of training and testsets
-# filenames_train = [os.path.join(INPUT_PATH,f) for f in set(nodules_df['patientid']) if f[0:4]=='luna' and f in os.listdir(INPUT_PATH)] #and f in annotated]
-# filenames_test = [os.path.join(VALIDATION_PATH,f) for f in set(nodules_df['patientid']) if f[0:4]=='luna' and f in os.listdir(VALIDATION_PATH)] #and f in annotated]
+# filenames_train = [os.path.join(INPUT_PATH,f) for f in set(nodules_df['patientid']) if f[0:4]=='luna' and f in os.listdir(INPUT_PATH)]
+# filenames_test = [os.path.join(VALIDATION_PATH,f) for f in set(nodules_df['patientid']) if f[0:4]=='luna' and f in os.listdir(VALIDATION_PATH)]
 #
 #
 # def __load_and_store(filename):
@@ -90,7 +92,8 @@ test_datagen = ImageDataGenerator(dim_ordering="th")  # dummy for testing to hav
 def chunk_generator(X_orig, y_orig, thickness=0, batch_size=32, is_training=True):
     while 1:
         logging.info("[TRAIN:%s] Loaded batch of patients with %d/%d positives" % (str(is_training), np.sum(y_orig), len(y_orig)))
-        idx_sel = [i for i in range(len(X_orig)) if y_orig[i]==1 or random.uniform(0,1) < 1.2*np.mean(y_orig)]
+        #idx_sel = [i for i in range(len(X_orig)) if y_orig[i]==1 or random.uniform(0,1) < 1.2*np.mean(y_orig)]
+        idx_sel  = [i for i in range(len(y_orig)) if y_orig[i]==1 or random.randint(0,9)==0]
         X = [X_orig[i] for i in idx_sel]
         y = [y_orig[i] for i in idx_sel]
         logging.info("Downsampled to %d/%d positives" % (np.sum(y), len(y)))
@@ -127,7 +130,7 @@ logging.info("Training set (1s/total): %d/%d" % (sum(y_train),len(y_train)))
 logging.info("Test set (1s/total): %d/%d" % (sum(y_test), len(y_test)))
 
 # Load model
-model = ResnetBuilder().build_resnet_34((3,40,40),1)
+model = ResnetBuilder().build_resnet_50((3,40,40),1)
 model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['accuracy','fmeasure'])
 model_checkpoint = ModelCheckpoint(OUTPUT_MODEL, monitor='loss', save_best_only=True)
 # logging.info('Loading exiting model...')
@@ -136,7 +139,7 @@ model_checkpoint = ModelCheckpoint(OUTPUT_MODEL, monitor='loss', save_best_only=
 
 model.fit_generator(generator=chunk_generator(x_train, y_train, batch_size=32, thickness=1),
                     samples_per_epoch=1280,  # make it small to update TB and CHECKPOINT frequently
-                    nb_epoch=500,
+                    nb_epoch=500*4,
                     verbose=1,
                     callbacks=[tb, model_checkpoint],
                     validation_data=chunk_generator(x_test, y_test, batch_size=32, thickness=1, is_training=False),

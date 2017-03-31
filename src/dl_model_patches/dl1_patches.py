@@ -24,12 +24,13 @@ VALIDATION_PATH = '/mnt/hd2/preprocessed5_validation_luna'
 NODULES_PATH = wp + 'data/luna/annotations.csv'
 PATCHES_PATH = '/mnt/hd2/patches'  # PATCHES_PATH = wp + 'data/preprocessed5_patches'
 
-OUTPUT_MODEL = wp + 'models/jm_patches_train_v15.hdf5'  # OUTPUT_MODEL = wp + 'personal/jm_patches_train_v06_local.hdf5'
-LOGS_PATH = wp + 'logs/%s' % str('v15')
+OUTPUT_MODEL = wp + 'models/jm_patches_train_v17.hdf5'  # OUTPUT_MODEL = wp + 'personal/jm_patches_train_v06_local.hdf5'
+LOGS_PATH = wp + 'logs/%s' % str('v17')
 
 #LOGS_PATH = wp + 'logs/%s' % str(int(time()))
 if not os.path.exists(LOGS_PATH):
     os.makedirs(LOGS_PATH)
+
 
 
 # OTHER INITIALIZATIONS: tensorboard, model checkpoint and logging
@@ -56,18 +57,18 @@ logging.basicConfig(level=logging.INFO,
 #
 # def __load_and_store(filename):
 #     patient_data = np.load(filename)['arr_0']
-#     X, y, rois, stats = common.load_patient(patient_data, discard_empty_nodules=True, output_rois=True, debug=True, thickness=1)
+#     X, y, rois, stats = common.load_patient(patient_data, discard_empty_nodules=True, output_rois=True, debug=True, thickness=2)
 #     logging.info("Patient: %s, stats: %s" % (filename.split('/')[-1], stats))
 #     return X, y, stats
 #
 # common.multiproc_crop_generator(filenames_train,
-#                                 os.path.join(PATCHES_PATH,'x_train_dl1_ctxt.npz'),
-#                                 os.path.join(PATCHES_PATH,'y_train_dl1_ctxt.npz'),
+#                                 os.path.join(PATCHES_PATH,'x_train_dl1_5.npz'),
+#                                 os.path.join(PATCHES_PATH,'y_train_dl1_5.npz'),
 #                                 __load_and_store)
 #
 # common.multiproc_crop_generator(filenames_test,
-#                                 os.path.join(PATCHES_PATH,'x_test_dl1_ctxt.npz'),
-#                                 os.path.join(PATCHES_PATH,'y_test_dl1_ctxt.npz'),
+#                                 os.path.join(PATCHES_PATH,'x_test_dl1_5.npz'),
+#                                 os.path.join(PATCHES_PATH,'y_test_dl1_5.npz'),
 #                                 __load_and_store)
 
 
@@ -86,8 +87,6 @@ train_datagen = ImageDataGenerator(
     )
 
 test_datagen = ImageDataGenerator(dim_ordering="th")  # dummy for testing to have the same structure
-
-
 
 
 def chunks(X_orig, y_orig, batch_size=32, augmentation_times=4, thickness=0, is_training=True):
@@ -131,39 +130,76 @@ def chunks(X_orig, y_orig, batch_size=32, augmentation_times=4, thickness=0, is_
             yield X_batch, y_batch
 
 
+def chunks_multichannel(X_orig, y_orig, batch_size=32, augmentation_times=4, thickness=0, is_training=True):
+    """
+    Batches generator for keras fit_generator. Returns batches of patches 40x40px
+     - augmentation_times: number of time to return the data augmented
+     - concurrent_patients: number of patients to load at the same time to add diversity
+     - thickness: number of slices up and down to add as a channel to the patch
+    """
+    while 1:
+        # downsample negatives (reduce 90%)
+        if is_training:
+            len1 = int(0.25*batch_size)
+            idx_1 = [i for i in range(len(y_orig)) if y_orig[i]==1]
+            idx_1 = random.sample(idx_1, len1)
+            idx_0 = [i for i in range(len(y_orig)) if y_orig[i]==0]
+            idx_0 = random.sample(idx_0, batch_size - len1)
+            selected_samples = idx_0 + idx_1
+            random.shuffle(selected_samples)
+        else:
+            selected_samples = range(len(y_orig))
+
+        #selected_samples  = [i for i in range(len(y_orig)) if y_orig[i]==1 or random.randint(0,9)==0]
+        X = [X_orig[i] for i in selected_samples]
+        y = [y_orig[i] for i in selected_samples]
+        logging.info("Final downsampled dataset stats: TP:%d, FP:%d" % (sum(y), len(y)-sum(y)))
+
+        # convert to np array and add extra axis (needed for keras)
+        X, y = np.asarray(X), np.asarray(y)
+        y = np.expand_dims(y, axis=1)
+        if thickness==0:
+            X = np.expand_dims(X, axis=1)
+
+        yield X, y
+
 # LOADING PATCHES FROM DISK
 logging.info("Loading training and test sets")
-x_train = np.load(os.path.join(PATCHES_PATH, 'x_train_dl1.npz'))['arr_0']
-y_train = np.load(os.path.join(PATCHES_PATH, 'y_train_dl1.npz'))['arr_0']
-x_test = np.load(os.path.join(PATCHES_PATH, 'x_test_dl1.npz'))['arr_0']
-y_test = np.load(os.path.join(PATCHES_PATH, 'y_test_dl1.npz'))['arr_0']
+x_train = np.load(os.path.join(PATCHES_PATH, 'x_train_dl1_5.npz'))['arr_0']
+y_train = np.load(os.path.join(PATCHES_PATH, 'y_train_dl1_5.npz'))['arr_0']
+x_test = np.load(os.path.join(PATCHES_PATH, 'x_test_dl1_5.npz'))['arr_0']
+y_test = np.load(os.path.join(PATCHES_PATH, 'y_test_dl1_5.npz'))['arr_0']
 logging.info("Training set (1s/total): %d/%d" % (sum(y_train),len(y_train)))
 logging.info("Test set (1s/total): %d/%d" % (sum(y_test), len(y_test)))
 
 
 
 # Load model
-model = ResnetBuilder().build_resnet_34((3,40,40),1)
+model = ResnetBuilder().build_resnet_34((5,40,40),1)
 model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['accuracy','fmeasure'])
 # logging.info('Loading exiting model...')
 # model.load_weights(OUTPUT_MODEL)
 
 
-model.fit_generator(generator=chunks(x_train, y_train, batch_size=32, thickness=1),
+model.fit_generator(generator=chunks_multichannel(x_train, y_train, batch_size=32, thickness=1),
                     samples_per_epoch=1280,  # make it small to update TB and CHECKPOINT frequently
                     nb_epoch=500,
                     verbose=1,
-                    class_weight={0:1., 1:4.},
+                    #class_weight={0:1., 1:4.},
                     callbacks=[tb, model_checkpoint],
-                    validation_data=chunks(x_test, y_test, batch_size=32, thickness=1, is_training=False),
+                    validation_data=chunks_multichannel(x_test, y_test, batch_size=32, thickness=1),  # TODO: is_training=False
                     nb_val_samples=32*10,
                     max_q_size=64,
                     nb_worker=1)  # a locker is needed if increased the number of parallel workers
 
 # ## CHECKS GENERATOR
 # for i in range(10):
-#     X, y = next(chunks(file_list_train[1:3], batch_size=4, thickness=1))
-#     print X.shape, y.shape
+#     #X, y = next(chunks(x_test,y_test, batch_size=32, thickness=2))
+#     X, y = next(chunks_multichannel(x_test,y_test, batch_size=32, thickness=2))
+#     print X.shape, y.shape, np.mean(y)
+
+
+
 
 
 ### CHECKS -----------------------------------------------------------------
@@ -200,17 +236,62 @@ model.fit_generator(generator=chunks(x_train, y_train, batch_size=32, thickness=
 
 
 
-# ### Quality checks for ROIs detection
+# # ### Quality checks for ROIs detection
+# from skimage import morphology, measure
+# def get_new_mask(pat_data):
+#     # based on kernel: https://www.kaggle.com/arnavkj95/data-science-bowl-2017/candidate-generation-and-luna16-preprocessing
+#     # remove the biggest princpial components to remove FPs
+#     mask = pat_data[0].copy()
+#     mask[pat_data[1]!=1] = -2000  # fuera de los pulmones a 0
+#     mask[mask<-500] = -2000  # regiones de tejido no nodular/vaso, fuera
+#
+#     binary = morphology.closing(mask, morphology.ball(2))
+#     binary[binary!=-2000] = 1
+#     binary[binary==-2000] = 0
+#
+#     # nslice = 96
+#     # plotting.plot_mask(mask[nslice], pat_data[2,nslice])
+#     # plotting.plot_mask(binary[nslice], pat_data[2,nslice])
+#
+#     label_scan = measure.label(binary)
+#     areas = [r.area for r in measure.regionprops(label_scan)]
+#     areas.sort()
+#
+#     for r in measure.regionprops(label_scan):
+#         max_x, max_y, max_z = 0, 0, 0
+#         min_x, min_y, min_z = 1000, 1000, 1000
+#
+#         for c in r.coords:
+#             max_z = max(c[0], max_z)
+#             max_y = max(c[1], max_y)
+#             max_x = max(c[2], max_x)
+#
+#             min_z = min(c[0], min_z)
+#             min_y = min(c[1], min_y)
+#             min_x = min(c[2], min_x)
+#         if (min_z == max_z or min_y == max_y or min_x == max_x or r.area > areas[-3]):
+#             for c in r.coords:
+#                 binary[c[0], c[1], c[2]] = 0
+#         else:
+#             index = (max((max_x - min_x), (max_y - min_y), (max_z - min_z))) / (min((max_x - min_x), (max_y - min_y) , (max_z - min_z)))
+#     binary  = morphology.dilation(morphology.dilation(binary))
+#     return binary
+#
+#
+#
 # INPUT_PATH = wp + 'data/preprocessed5_sample'
-# INPUT_PATH = wp + 'data/preprocessed5_sample_watershed'
-# INPUT_PATH = wp + 'data/preprocessed5_sample_th2'
+# #INPUT_PATH = wp + 'data/preprocessed5_sample_watershed'
+# #INPUT_PATH = wp + 'data/preprocessed5_sample_th2'
 # file_list = [os.path.join(INPUT_PATH, fp) for fp in os.listdir(INPUT_PATH)]
 #
 # total_stats = {}
 # for filename in file_list:
-#     X, y, rois, stats = load_patient(filename, discard_empty_nodules=True, output_rois=True, thickness=0)
+#     pat_data = np.load(filename)['arr_0']
+#     #new_mask = get_new_mask(pat_data)
+#     #pat_data[1] = new_mask
+#     X, y, rois, stats = common.load_patient(pat_data, discard_empty_nodules=True, output_rois=True, thickness=0)
 #     print stats
-#     total_stats = add_stats(stats, total_stats)
+#     total_stats = common.add_stats(stats, total_stats)
 #     print "TOTAL STATS:", filename.split('/')[-1], total_stats
 #
 # filename = 'luna_127965161564033605177803085629.npz'
