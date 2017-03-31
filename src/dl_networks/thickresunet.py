@@ -70,7 +70,7 @@ class ThickRESUNET(object):
     
         
         if nb_val_samples is not None:
-            self.model.fit_generator(generator=chunks(train_file_list,batch_size,infinite=True,thickness=self.thickness,max_slices=max_slices),
+            self.model.fit_generator(generator=uniform_chunks(file_list=train_file_list,batch_size=batch_size,infinite=True,thickness=self.thickness,max_slices=max_slices),
                 samples_per_epoch=samples_per_epoch,
                 nb_epoch=nb_epochs,
                 verbose=1,
@@ -400,6 +400,29 @@ def chunks(file_list=[], batch_size=5, infinite=True, thickness=5, slices_data=F
                     yield a[start:end], b[start:end], [slices[i] for i in range(start,end)]
         if infinite is False:
             break    
+
+def uniform_chunks(batch_size=5, **kwargs):
+    x = chunks(batch_size=batch_size, **kwargs)
+    a, b = x.next()
+
+    tmp_a = a[0:0]
+    tmp_b = b[0:0]
+    while True:
+        a, b = x.next()
+
+        if a.shape[0] == batch_size:
+            yield a, b
+        else:
+            tmp_a = np.concatenate([tmp_a, a])
+            tmp_b = np.concatenate([tmp_b, b])
+            l_tmp = tmp_a.shape[0]
+
+            if l_tmp >= batch_size:
+                yield tmp_a[0:batch_size], tmp_b[0:batch_size]
+                
+                tmp_a = tmp_a[batch_size:l_tmp]
+                tmp_b = tmp_b[batch_size:l_tmp]
+
     
 #----------------------------------------------    
 # hard coded normalization as in https://www.kaggle.com/gzuidhof/data-science-bowl-2017/full-preprocessing-tutorial
