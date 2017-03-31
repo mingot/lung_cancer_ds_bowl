@@ -208,11 +208,11 @@ def load_patient(patient_data, patient_nodules_df=None, discard_empty_nodules=Fa
             if nodules_mask.sum() == 0 and discard_empty_nodules:
                 continue
 
-            # # Discard if bad segmentation
-            # voxel_volume_l = 2*0.7*0.7/(1000000.0)
-            # lung_volume_l = np.sum(lung_mask)*voxel_volume_l
-            # if lung_volume_l < 0.009 or lung_volume_l > 0.1:
-            #     continue  # skip slices with bad lung segmentation
+            # Discard if bad segmentation
+            voxel_volume_l = 2*0.7*0.7/(1000000.0)
+            lung_volume_l = np.sum(lung_mask)*voxel_volume_l
+            if lung_volume_l < 0.009 or lung_volume_l > 0.1:
+                continue  # skip slices with bad lung segmentation
 
             # Filter ROIs to discard small and connected
             regions_pred = extract_rois_from_lung_mask(lung_image, lung_mask)
