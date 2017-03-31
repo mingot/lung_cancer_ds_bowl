@@ -24,18 +24,23 @@ dataset_final <- na_to_zeros(dataset_final,names(dataset_final))
 
 
 vars_train <- c(
-  "max_intensity",
-  "max_diameter",
+  # "max_intensity",
+  # "max_diameter",
   "big_nodules_patches",
+  # "nods_15",
+  # "nods_20",
+  # "nods_25",
+  #"nods_30",
   "max_diameter_patches",
-  "num_slices_patches",
-  "max_score",
+  #"num_slices_patches",
+  #"max_score",
   "max_score_patches",
   "nslice_nodule_patch",
   "consec_nods_patches",
   "diameter_nodule_patch",
+  #"total_nodules_patches"
   #"score_2_patch",
-  "diameter_nodule_patch",
+  "diameter_nodule_patch"
   #"score_mean",
   #"nslice_sd",
   #"diameter_sd"
@@ -44,8 +49,8 @@ vars_train <- c(
   #"patient_mean",
   #"patient_std"
   #"diameter_nodule"
-  "max_intensity_nodule",
-  "mean_intensity_nodule"
+  # "max_intensity_nodule",
+  # "mean_intensity_nodule"
   )
 #vars_train <- names(dataset_final)
 dataset_final_f <- dataset_final[,.SD,.SDcols = unique(c(vars_train,"patientid","cancer"))]
@@ -61,7 +66,8 @@ scoring[,patientid := NULL]
 train_task <- makeClassifTask(data = data.frame(data_train),target = "cancer")
 
 fv <- generateFilterValuesData(train_task, method = c("anova.test","chi.squared"))
-data.table(fv$data)
+vars_importance <- data.table(fv$data)
+vars_importance[chi.squared > 0]
 
 lrn = generateModel("classif.logreg")$lrn
 k_folds = 5
@@ -78,7 +84,7 @@ knitr::knit_print(tr_cv$measures.test)
 summary(tr_cv$measures.test$auc)
 summary(tr_cv$measures.test$logloss)
 
-# ctrlF = makeFeatSelControlGA(maxit = 4000)
+ctrlF = makeFeatSelControlGA(maxit = 4000)
 # sfeats = selectFeatures(
 #   learner = lrn,
 #   task = train_task,
@@ -112,7 +118,7 @@ preds = predictCv(final_model, train_task)
 data_out <- copy(data_train)
 data_out$patientid = patients_train
 data_out$predicted=preds
-write.csv(data_out, paste0(path_repo,"data/final_model/scoring_train_09.csv"), quote=F, row.names=F)
+write.csv(data_out, paste0(path_repo,"data/final_model/scoring_train_10.csv"), quote=F, row.names=F)
 
 
 #---------------------------------------------------------------------------------------------------

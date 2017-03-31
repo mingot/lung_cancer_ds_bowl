@@ -38,8 +38,8 @@ generate_patient_dt <- function(path_repo,path_output = NULL) {
   vars_nodules_patches <- vars_nodules_patches[grep("dsb_",patientid)][!is.na(x)]
   vars_nodules_patches[,patientid:=gsub(".npz|dsb_","",patientid)]
   ### Filter by score
-  vars_nodules_patches[,score := (0.8*score + 0.2*scored_dl2)/2]
-  vars_nodules_patches = vars_nodules_patches[score>0.3]
+  #vars_nodules_patches[,score := (0.8*score + 0.2*scored_dl2)/2]
+  vars_nodules_patches = vars_nodules_patches[score>0.75]
   names_change <- c("x","y","diameter","score")
   setnames(vars_nodules_patches,names_change,paste0(names_change,"_patches"))
   vars_nodules_patches <- merge(vars_nodules_patches,patients,all.x=T,by = "patientid")
