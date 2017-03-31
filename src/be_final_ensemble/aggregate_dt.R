@@ -30,7 +30,7 @@ generate_patient_dt <- function(path_repo,path_output = NULL) {
   ## RESNET Data -------------------------------------------------------------------------------------
   #vars_nodules_patches <- fread(paste0("D:/dsb/nodules_patches_v05_augmented.csv"))
   #vars_nodules_patches <- fread(paste0("D:/dsb/noduls_patches_v06_rectif.csv"))
-  vars_nodules_patches <- fread(paste0("D:/dsb/noduls_patches_v06_dl1_dl2.csv")) ## PATH
+  vars_nodules_patches <- fread(paste0(path_dsb,"nodules_patches_dl1_v11.csv")) ## PATH
   
   if(!"scored_dl2" %in% names(vars_nodules_patches)){
     vars_nodules_patches$scored_dl2 <- 0
@@ -58,10 +58,14 @@ generate_patient_dt <- function(path_repo,path_output = NULL) {
   dataset_slices[,patient_id := gsub(".npz|dsb_","",patient_id)]
   setnames(dataset_slices,"patient_id","patientid")
   
+  # EMPHYSEMA
+  emphysema <- fread(paste0(path_dsb,"var_emphysema_v02.csv"))
+  setnames(emphysema,names(emphysema),c("patientid","var_emphy1","var_emphy2","var_emphy3"))
   
   ## Joining all the patient variables
   dataset_final <- merge(patients,dataset_nodules,all.x = T, by = "patientid")
   dataset_final <- merge(dataset_final,dataset_slices,all.x = T, by = "patientid")
+  dataset_final <- merge(dataset_final,emphysema,all.x=T,by="patientid")
   dataset_final <- na_to_zeros(dataset_final,names(dataset_final))
   if(is.null(path_output)) {
     return(dataset_final)

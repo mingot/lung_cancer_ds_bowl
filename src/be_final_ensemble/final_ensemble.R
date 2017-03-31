@@ -2,6 +2,7 @@
 ## REPO PATH, CANVIAR SI ES NECESSARI
 path_repo <<- "D:/lung_cancer_ds_bowl/"
 path_data <<- "D:/output/"
+path_dsb <<- "D:/dsb/"
 # IMPORTS ------------------------------------------------------------------------------------------
 source(paste0(path_repo,"src/be_final_ensemble/config.R"))
 source(paste0(path_repo,"src/be_final_ensemble/fp_model.R"))
@@ -17,8 +18,8 @@ dataset_final <- generate_patient_dt(path_repo)
 # SEPARATING TRAIN AND SCORING ---------------------------------------------------------------------
 patients_train <- dataset_final[dataset == "training",patientid]
 dataset_final[,dataset := NULL]
-features_sp <- fread(paste0(path_repo,"src/sp_final_ensemble/submissions/sp_01_features.csv"))
-dataset_final <- merge(dataset_final,features_sp,all.x = T,by = "patientid")
+# features_sp <- fread(paste0(path_repo,"src/sp_final_ensemble/submissions/sp_01_features.csv"))
+# dataset_final <- merge(dataset_final,features_sp,all.x = T,by = "patientid")
 dataset_final <- na_to_zeros(dataset_final,names(dataset_final))
 
 
@@ -26,15 +27,15 @@ vars_train <- c(
   "max_intensity",
   "max_diameter",
   "big_nodules_patches",
-  #"max_diameter_patches",
-  #"num_slices_patches",
+  "max_diameter_patches",
+  "num_slices_patches",
   "max_score",
   "max_score_patches",
   "nslice_nodule_patch",
   "consec_nods_patches",
   "diameter_nodule_patch",
-  "score_2_patch",
-  "diameter_nodule_patch"
+  #"score_2_patch",
+  "diameter_nodule_patch",
   #"score_mean",
   #"nslice_sd",
   #"diameter_sd"
@@ -43,8 +44,8 @@ vars_train <- c(
   #"patient_mean",
   #"patient_std"
   #"diameter_nodule"
-  #"max_intensity_nodule"
-  #"mean_intensity_nodule"
+  "max_intensity_nodule",
+  "mean_intensity_nodule"
   )
 #vars_train <- names(dataset_final)
 dataset_final_f <- dataset_final[,.SD,.SDcols = unique(c(vars_train,"patientid","cancer"))]
@@ -102,7 +103,7 @@ LogLossBinary(target,preds)
 preds = predictCv(final_model, scoring)
 
 submission = data.table(id=patients_scoring, cancer=preds)
-write.csv(submission, paste0(path_repo,"data/submissions/09_submission.csv"), quote=F, row.names=F)
+write.csv(submission, paste0(path_repo,"data/submissions/10_submission.csv"), quote=F, row.names=F)
 
 
 # GENERATING PREDICTIONS FOR TRAINING ----------------------------------------------------------------------------
