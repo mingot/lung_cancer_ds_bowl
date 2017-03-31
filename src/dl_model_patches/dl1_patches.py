@@ -141,7 +141,7 @@ logging.info("Test set (1s/total): %d/%d" % (sum(y_test), len(y_test)))
 
 
 # Load model
-model = ResnetBuilder().build_resnet_50((3,40,40),1)
+model = ResnetBuilder().build_resnet_34((3,40,40),1)
 model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['accuracy','fmeasure'])
 # logging.info('Loading exiting model...')
 # model.load_weights(OUTPUT_MODEL)
@@ -149,10 +149,10 @@ model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['acc
 
 model.fit_generator(generator=chunks(x_train, y_train, batch_size=32, thickness=1),
                     samples_per_epoch=1280,  # make it small to update TB and CHECKPOINT frequently
-                    nb_epoch=500*4,
+                    nb_epoch=500,
                     verbose=1,
                     #class_weight={0:1., 1:4.},
-                    #callbacks=[tb, model_checkpoint],
+                    callbacks=[tb, model_checkpoint],
                     validation_data=chunks(x_test, y_test, batch_size=32, thickness=1, is_training=False),
                     nb_val_samples=32*10,
                     max_q_size=64,
@@ -160,8 +160,8 @@ model.fit_generator(generator=chunks(x_train, y_train, batch_size=32, thickness=
 
 # ## CHECKS GENERATOR
 # for i in range(10):
-#     X, y = next(chunks(file_list_train[1:3], batch_size=4, thickness=1))
-#     print X.shape, y.shape
+#     X, y = next(chunks(x_test,y_test, batch_size=32, thickness=1))
+#     print X.shape, y.shape, np.mean(y)
 
 
 ### CHECKS -----------------------------------------------------------------
