@@ -15,19 +15,18 @@ wp = os.environ['LUNG_PATH']
 INPUT_PATH = '/mnt/hd2/preprocessed5'  # INPUT_PATH = wp + 'data/preprocessed5_sample'
 VALIDATION_PATH = '/mnt/hd2/preprocessed5_validation_luna'
 NODULES_PATH = wp + 'data/luna/annotations.csv'
-# OUTPUT_MODEL = wp + 'models/jm_patches_train_v11.hdf5'
-# OUTPUT_CSV = wp + 'output/nodules_patches_dl1_v11.csv'
-OUTPUT_MODEL = wp + 'models/jm_patches_hardnegative_v02.hdf5'
-OUTPUT_CSV = wp + 'output/nodules_patches_dl2_v02.csv'
+OUTPUT_MODEL = wp + 'models/jm_patches_train_v11.hdf5'
+OUTPUT_CSV = wp + 'output/nodules_patches_dl1_v11_solo_luna.csv'
+# OUTPUT_MODEL = wp + 'models/jm_patches_hardnegative_v02.hdf5'
+# OUTPUT_CSV = wp + 'output/nodules_patches_dl2_v02.csv'
 
 
 
 ## Params and filepaths
 # NOTA: Cargando validation luna i dsb
 THICKNESS = 1
-write_method = 'w'
 file_list = [os.path.join(VALIDATION_PATH, fp) for fp in os.listdir(VALIDATION_PATH)]
-file_list += [os.path.join(INPUT_PATH, fp) for fp in os.listdir(INPUT_PATH)] # if fp.startswith('dsb_')]
+file_list += [os.path.join(INPUT_PATH, fp) for fp in os.listdir(INPUT_PATH) if fp.startswith('luna_')] # if fp.startswith('dsb_')]
 
 
 # # ## if the OUTPUT_CSV file already exists, continue it
