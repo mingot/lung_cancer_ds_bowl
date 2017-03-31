@@ -32,6 +32,7 @@ if not os.path.exists(LOGS_PATH):
     os.makedirs(LOGS_PATH)
 
 
+
 # OTHER INITIALIZATIONS: tensorboard, model checkpoint and logging
 tb = TensorBoard(log_dir=LOGS_PATH, histogram_freq=1, write_graph=False, write_images=False)  # replace keras.callbacks.TensorBoard
 model_checkpoint = ModelCheckpoint(OUTPUT_MODEL, monitor='loss', save_best_only=True)

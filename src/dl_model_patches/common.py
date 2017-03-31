@@ -175,6 +175,7 @@ def add_stats(stat1, stat2):
     return stat_res
 
 
+
 def load_patient(patient_data, patient_nodules_df=None, discard_empty_nodules=False,
                  output_rois=False, debug=False, thickness=0):
     """
