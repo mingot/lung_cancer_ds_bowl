@@ -2,23 +2,23 @@ import os
 import logging
 import numpy as np
 from time import time
-from keras.optimizers import Adam
-from dl_networks.sample_resnet import ResnetBuilder
+# from keras.optimizers import Adam
+# from dl_networks.sample_resnet import ResnetBuilder
 from dl_model_patches import  common
-from keras import backend as K
+#from keras import backend as K
 
 
-K.set_image_dim_ordering('th')
+# K.set_image_dim_ordering('th')
 
 # PATHS
 wp = os.environ['LUNG_PATH']
 INPUT_PATH = '/mnt/hd2/preprocessed5'  # INPUT_PATH = wp + 'data/preprocessed5_sample'
 VALIDATION_PATH = '/mnt/hd2/preprocessed5_validation_luna'
 NODULES_PATH = wp + 'data/luna/annotations.csv'
-OUTPUT_MODEL = wp + 'models/jm_patches_train_v11.hdf5'
+OUTPUT_MODEL = wp + 'models/jm_patches_hardnegative_v03.hdf5'
 
 # OUTPUT_CSV = wp + 'output/nodules_patches_dl1_v11_solo_luna.csv'
-OUTPUT_CSV = wp + 'output/nodules_patches_TEST.csv'
+OUTPUT_CSV = wp + 'output/nodules_patches_hardnegative_v03.csv'
 
 # OUTPUT_MODEL = wp + 'models/jm_patches_hardnegative_v02.hdf5'
 # OUTPUT_CSV = wp + 'output/nodules_patches_dl2_v02.csv'
@@ -28,8 +28,8 @@ OUTPUT_CSV = wp + 'output/nodules_patches_TEST.csv'
 ## Params and filepaths
 # NOTA: Cargando validation luna i dsb
 THICKNESS = 1
-file_list = [os.path.join(VALIDATION_PATH, fp) for fp in os.listdir(VALIDATION_PATH)]
-file_list += [os.path.join(INPUT_PATH, fp) for fp in os.listdir(INPUT_PATH) if fp.startswith('luna_')] # if fp.startswith('dsb_')]
+#file_list = [os.path.join(VALIDATION_PATH, fp) for fp in os.listdir(VALIDATION_PATH)]
+file_list = [os.path.join(INPUT_PATH, fp) for fp in os.listdir(INPUT_PATH) if fp.startswith('dsb_')]
 
 
 # # ## if the OUTPUT_CSV file already exists, continue it
@@ -41,11 +41,11 @@ file_list += [os.path.join(INPUT_PATH, fp) for fp in os.listdir(INPUT_PATH) if f
 #             previous_filenames.add(l.split(',')[0])
 
 
-# Load model
-model = ResnetBuilder().build_resnet_50((3,40,40),1)
-model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['accuracy','fmeasure'])
-logging.info('Loading existing model...')
-model.load_weights(OUTPUT_MODEL)
+# # Load model
+# model = ResnetBuilder().build_resnet_50((3,40,40),1)
+# model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['accuracy','fmeasure'])
+# logging.info('Loading existing model...')
+# model.load_weights(OUTPUT_MODEL)
 
 # PARALLEL -------------------------------------------------------------------------------------------------------
 
@@ -141,38 +141,49 @@ import multiprocessing
 
 
 def worker(filename, q):
-    patient_data = np.load(filename)['arr_0']
-    X, y, rois, stats = common.load_patient(patient_data, discard_empty_nodules=False, output_rois=True, thickness=1)
-    logging.info("Patient: %s, stats: %s" % (filename.split('/')[-1], stats))
-    q.put((filename,X,y,rois))
+    while 1:
+        if q.qsize()<5:
+            logging.info("Entering! qsize: %d", q.qsize())
+            patient_data = np.load(filename)['arr_0']
+            X, y, rois, stats = common.load_patient(patient_data, discard_empty_nodules=False, output_rois=True, thickness=1)
+            logging.info("Patient: %s, stats: %s" % (filename.split('/')[-1], stats))
+            q.put((filename,X,y,rois))
+            break
 
 def listener(q):
     '''listens for messages on the q, writes to file. '''
+    from keras import backend as K
+    from dl_networks.sample_resnet import ResnetBuilder
+    from keras.optimizers import Adam
+
+    K.set_image_dim_ordering('th')
+    model = ResnetBuilder().build_resnet_50((3,40,40),1)
+    model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['accuracy','fmeasure'])
+    logging.info('Loading existing model...')
+    model.load_weights(OUTPUT_MODEL)
+
+    total = 0
 
     f = open(OUTPUT_CSV, 'wb')
+    f.write('patientid,nslice,x,y,diameter,score,label\n')
     while 1:
         m = q.get()
         if m == 'kill':
+            logging.info('[LISTENER] Received kill!')
             f.write('killed')
             break
 
         filename, x, y, rois = m
-        logging.info("Predicting patient %s" % (filename.split('/')[-1]))
-        xf, yf, ref_filenames, roisf = [], [], [], []
-        for i in range(len(x)):
-            ref_filenames.extend([filename]*len(x[i]))
-            xf.extend(x[i])
-            yf.extend(y[i])
-            roisf.extend(rois[i])
+        filename = filename.split('/')[-1]
+        total += 1
 
-        xf = np.asarray(xf)
-        preds = model.predict(xf, verbose=1)
-        logging.info("Predicted patient %s, storing results" % (filename.split('/')[-1]))
-        logging.info("Batch results: %d/%d (th=0.7)" % (len([p for p in preds if p>0.7]),len(preds)))
+        preds = model.predict(np.asarray(x), verbose=1)
+        logging.info("[LISTENER] Predicted patient %d %s. Batch results: %d/%d (th=0.7)" % (total, filename, len([p for p in preds if p>0.7]),len(preds)))
         for i in range(len(preds)):
-            nslice, r = roisf[i]
-            f.write('%s,%d,%d,%d,%.3f,%.5f,%d\n' % (ref_filenames[i].split('/')[-1], nslice, r.centroid[0], r.centroid[1], r.equivalent_diameter,preds[i],yf[i]))
+            nslice, r = rois[i]
+            f.write('%s,%d,%d,%d,%.3f,%.5f,%d\n' % (filename, nslice, r.centroid[0], r.centroid[1], r.equivalent_diameter,preds[i],y[i]))
         f.flush()
+
     f.close()
 
 
@@ -180,14 +191,14 @@ def main():
     #must use Manager queue here, or will not work
     manager = multiprocessing.Manager()
     q = manager.Queue()
-    pool = multiprocessing.Pool(multiprocessing.cpu_count() + 2)
+    pool = multiprocessing.Pool(5)  # multiprocessing.cpu_count()
 
     #put listener to work first
     watcher = pool.apply_async(listener, (q,))
 
     #fire off workers
     jobs = []
-    for filename in file_list[0:10]:
+    for filename in file_list[0:40]:
         job = pool.apply_async(worker, (filename, q))
         jobs.append(job)
 
@@ -195,10 +206,16 @@ def main():
     for job in jobs:
         job.get()
 
+    # watcher.get()
+
     #now we are done, kill the listener
     q.put('kill')
     pool.close()
     pool.join()
 
+
 if __name__ == "__main__":
-   main()
+    tstart = time()
+    main()
+    print "Total time:", time() - tstart
+
