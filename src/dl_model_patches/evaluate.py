@@ -165,7 +165,7 @@ def listener(q):
             ref_filenames.extend([filename]*len(x[i]))
             logging.info("[LISTENER] patient %s 02 iteration %d" % (filename.split('/')[-1], i))
             xf.extend(x[i])
-            logging.info("[LISTENER] patient %s 03 iteration %d" % (filename.split('/')[-1], i))
+            logging.info("[LISTENER] patient %s 03 iteration %d, leny" % (filename.split('/')[-1], i, len(y[i])))
             yf.extend(y[i])
             logging.info("[LISTENER] patient %s 04 iteration %d" % (filename.split('/')[-1], i))
             roisf.extend(rois[i])
