@@ -142,8 +142,7 @@ import multiprocessing
 
 def worker(filename, q):
     while 1:
-        if q.qsize()<5:
-            logging.info("Entering! qsize: %d", q.qsize())
+        if q.qsize() < 10:
             patient_data = np.load(filename)['arr_0']
             X, y, rois, stats = common.load_patient(patient_data, discard_empty_nodules=False, output_rois=True, thickness=1)
             logging.info("Patient: %s, stats: %s" % (filename.split('/')[-1], stats))
@@ -151,44 +150,48 @@ def worker(filename, q):
             break
 
 def listener(q):
-    '''listens for messages on the q, writes to file. '''
+    """Reads regions from queue, predicts nodules and stores in the output file."""
     from keras import backend as K
     from dl_networks.sample_resnet import ResnetBuilder
     from keras.optimizers import Adam
 
+    # Model loading inside the listener thread (otherwise keras complains)
     K.set_image_dim_ordering('th')
     model = ResnetBuilder().build_resnet_50((3,40,40),1)
     model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['accuracy','fmeasure'])
     logging.info('Loading existing model...')
     model.load_weights(OUTPUT_MODEL)
 
-    total = 0
+    total, errors = 0, 0
 
-    f = open(OUTPUT_CSV, 'wb')
-    f.write('patientid,nslice,x,y,diameter,score,label\n')
+    f = open(OUTPUT_CSV, 'a')
+    #f.write('patientid,nslice,x,y,diameter,score,label\n')
     while 1:
         m = q.get()
         if m == 'kill':
-            logging.info('[LISTENER] Received kill!')
-            f.write('killed')
+            logging.info('[LISTENER] Closing...')
             break
 
-        filename, x, y, rois = m
-        filename = filename.split('/')[-1]
-        total += 1
+        try:
+            filename, x, y, rois = m
+            filename = filename.split('/')[-1]
 
-        preds = model.predict(np.asarray(x), verbose=1)
-        logging.info("[LISTENER] Predicted patient %d %s. Batch results: %d/%d (th=0.7)" % (total, filename, len([p for p in preds if p>0.7]),len(preds)))
-        for i in range(len(preds)):
-            nslice, r = rois[i]
-            f.write('%s,%d,%d,%d,%.3f,%.5f,%d\n' % (filename, nslice, r.centroid[0], r.centroid[1], r.equivalent_diameter,preds[i],y[i]))
-        f.flush()
+            preds = model.predict(np.asarray(x), verbose=1)
+            logging.info("[LISTENER] Predicted patient %d %s. Batch results: %d/%d (th=0.7)" % (total, filename, len([p for p in preds if p>0.7]),len(preds)))
+            for i in range(len(preds)):
+                nslice, r = rois[i]
+                f.write('%s,%d,%d,%d,%.3f,%.5f,%d\n' % (filename, nslice, r.centroid[0], r.centroid[1], r.equivalent_diameter,preds[i],y[i]))
+            total += 1
+            f.flush()
+        except:
+            logging.error("Error processing filename, skipping")
+            errors += 1
 
+    logging.info("Stats: %d patients, %d errors" % (total,errors))
     f.close()
 
 
 def main():
-    #must use Manager queue here, or will not work
     manager = multiprocessing.Manager()
     q = manager.Queue()
     pool = multiprocessing.Pool(5)  # multiprocessing.cpu_count()
@@ -198,7 +201,7 @@ def main():
 
     #fire off workers
     jobs = []
-    for filename in file_list[0:40]:
+    for filename in file_list[725:]:
         job = pool.apply_async(worker, (filename, q))
         jobs.append(job)
 
