@@ -158,7 +158,7 @@ def listener(q):
             break
 
         filename, x, y, rois = m
-        logging.info("[LISTENER] Predicting patient %s" % (filename.split('/')[-1]))
+        logging.info("[LISTENER] Predicting patient %s, amb lenx: %d" % (filename.split('/')[-1], len(x)))
         xf, yf, ref_filenames, roisf = [], [], [], []
         for i in range(len(x)):
             ref_filenames.extend([filename]*len(x[i]))
