@@ -198,7 +198,10 @@ for filename in file_list[0:6]:
 for job in jobs:
     job.get()
 
+import time
 
+logging.info('Sleeping...')
+time.sleep(20)
 
 #now we are done, kill the listener
 logging.info('Sending kill...')
