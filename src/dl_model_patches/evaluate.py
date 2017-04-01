@@ -18,7 +18,7 @@ NODULES_PATH = wp + 'data/luna/annotations.csv'
 OUTPUT_MODEL = wp + 'models/jm_patches_hardnegative_v03.hdf5'
 
 # OUTPUT_CSV = wp + 'output/nodules_patches_dl1_v11_solo_luna.csv'
-OUTPUT_CSV = wp + 'output/nodules_patches_TEST.csv'
+OUTPUT_CSV = wp + 'output/nodules_patches_hardnegative_v03.csv'
 
 # OUTPUT_MODEL = wp + 'models/jm_patches_hardnegative_v02.hdf5'
 # OUTPUT_CSV = wp + 'output/nodules_patches_dl2_v02.csv'
@@ -28,8 +28,8 @@ OUTPUT_CSV = wp + 'output/nodules_patches_TEST.csv'
 ## Params and filepaths
 # NOTA: Cargando validation luna i dsb
 THICKNESS = 1
-file_list = [os.path.join(VALIDATION_PATH, fp) for fp in os.listdir(VALIDATION_PATH)]
-file_list += [os.path.join(INPUT_PATH, fp) for fp in os.listdir(INPUT_PATH) if fp.startswith('luna_')] # if fp.startswith('dsb_')]
+#file_list = [os.path.join(VALIDATION_PATH, fp) for fp in os.listdir(VALIDATION_PATH)]
+file_list = [os.path.join(INPUT_PATH, fp) for fp in os.listdir(INPUT_PATH) if fp.startswith('dsb_')]
 
 
 # # ## if the OUTPUT_CSV file already exists, continue it
