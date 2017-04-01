@@ -15,7 +15,7 @@ if SERVER:
 else:
     path = '/Users/rdg/Documents/my_projects/DSB17/lung_cancer_ds_bowl/data/stage1'
     path_preprocessed = '/Users/rdg/Documents/my_projects/DSB17/lung_cancer_ds_bowl/data/stage1_proc'
-    output_file = '/Users/rdg/Documents/my_projects/DSB17/lung_cancer_ds_bowl/data/stage1_proc/var_emphysema_v00.csv'
+    output_file = '/Users/rdg/Documents/my_projects/DSB17/lung_cancer_ds_bowl/data/stage1_proc/var_emphysema_v04.csv'
 
 
 def get_emphysema_predictors(img, mask):
@@ -26,6 +26,7 @@ def get_emphysema_predictors(img, mask):
     mask_1d = np.ndarray.flatten(mask)
     pix_lung = pix_1d[mask_1d > 0]
     gated_pix_lung = pix_lung[pix_lung < threshold]
+    # TODO: Check for empty
     gated_skewness = stats.skew(gated_pix_lung)
     gated_kurtosis = stats.kurtosis(gated_pix_lung)
 
@@ -48,7 +49,8 @@ def compute_emphysema_probability(img, mask):
 
 def process_patient_file(patient_name):
     file_name = os.path.join(path_preprocessed, patient_name)
-    patient_id = patient_file.lstrip('dsb_').rstrip('.npz')
+    patient_id = patient_file[4:-4]
+    print patient_id
     saved_data = np.load(file_name)
     loaded_stack = saved_data['arr_0']
     img = loaded_stack[0, :, :, :]
@@ -67,12 +69,9 @@ if __name__ == "__main__":
     csvfile = open(output_file, 'wb')
     csvwriter = csv.writer(csvfile, delimiter=',')
 
-    print('patient_files = %d' % len(patient_files))
     count = 0
     for patient_file in patient_files:
         try:
-            count += 1
-            print('Processing file {} out of {} : {}'.format(count, len(patient_files), patient_file))
             process_patient_file(patient_file)
         except Exception as e:  # Some patients have no data, ignore them
             print('There was some problem reading patient {}. Ignoring and live goes on.'.format(patient_file))
