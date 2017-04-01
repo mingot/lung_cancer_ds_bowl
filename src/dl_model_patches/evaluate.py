@@ -142,8 +142,7 @@ import multiprocessing
 
 def worker(filename, q):
     while 1:
-        if q.qsize()<5:
-            logging.info("Entering! qsize: %d", q.qsize())
+        if q.qsize() < 10:
             patient_data = np.load(filename)['arr_0']
             X, y, rois, stats = common.load_patient(patient_data, discard_empty_nodules=False, output_rois=True, thickness=1)
             logging.info("Patient: %s, stats: %s" % (filename.split('/')[-1], stats))
@@ -151,11 +150,12 @@ def worker(filename, q):
             break
 
 def listener(q):
-    '''listens for messages on the q, writes to file. '''
+    """Reads regions from queue, predicts nodules and stores in the output file."""
     from keras import backend as K
     from dl_networks.sample_resnet import ResnetBuilder
     from keras.optimizers import Adam
 
+    # Model loading inside the listener thread (otherwise keras complains)
     K.set_image_dim_ordering('th')
     model = ResnetBuilder().build_resnet_50((3,40,40),1)
     model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['accuracy','fmeasure'])
@@ -169,8 +169,7 @@ def listener(q):
     while 1:
         m = q.get()
         if m == 'kill':
-            logging.info('[LISTENER] Received kill!')
-            f.write('killed')
+            logging.info('[LISTENER] Closing...')
             break
 
         filename, x, y, rois = m
@@ -188,7 +187,6 @@ def listener(q):
 
 
 def main():
-    #must use Manager queue here, or will not work
     manager = multiprocessing.Manager()
     q = manager.Queue()
     pool = multiprocessing.Pool(5)  # multiprocessing.cpu_count()
