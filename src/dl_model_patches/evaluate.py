@@ -158,6 +158,8 @@ def listener(q):
     logging.info('Loading existing model...')
     model.load_weights(OUTPUT_MODEL)
 
+    total = 0
+
     f = open(OUTPUT_CSV, 'wb')
     while 1:
         m = q.get()
@@ -167,16 +169,15 @@ def listener(q):
             break
 
         filename, x, y, rois = m
-        logging.info("[LISTENER] Predicting patient %s, amb lenx: %d" % (filename.split('/')[-1], len(x)))
+        filename = filename.split('/')[-1]
+        total += 1
+        logging.info("[LISTENER] Predicting patient %d %s, with %d/%d ones" % (total, filename, np.sum(y)/len(y)))
 
-        logging.info("++ patient %s with %d ones" % (filename.split('/')[-1], np.sum(y)))
-        x = np.asarray(x)
-        preds = model.predict(x, verbose=1)
-        logging.info("[LISTENER] Predicted patient %s, storing results" % (filename.split('/')[-1]))
+        preds = model.predict(np.asarray(x), verbose=1)
         logging.info("[LISTENER] Batch results: %d/%d (th=0.7)" % (len([p for p in preds if p>0.7]),len(preds)))
         for i in range(len(preds)):
             nslice, r = rois[i]
-            f.write('%s,%d,%d,%d,%.3f,%.5f,%d\n' % (filename.split('/')[-1], nslice, r.centroid[0], r.centroid[1], r.equivalent_diameter,preds[i],y[i]))
+            f.write('%s,%d,%d,%d,%.3f,%.5f,%d\n' % (filename, nslice, r.centroid[0], r.centroid[1], r.equivalent_diameter,preds[i],y[i]))
         f.flush()
     f.close()
 
@@ -185,7 +186,7 @@ def main():
     #must use Manager queue here, or will not work
     manager = multiprocessing.Manager()
     q = manager.Queue()
-    pool = multiprocessing.Pool(4)  # multiprocessing.cpu_count()
+    pool = multiprocessing.Pool(5)  # multiprocessing.cpu_count()
 
     #put listener to work first
     watcher = pool.apply_async(listener, (q,))
