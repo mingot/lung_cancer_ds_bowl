@@ -165,7 +165,7 @@ def listener(q):
     total = 0
 
     f = open(OUTPUT_CSV, 'a')
-    f.write('patientid,nslice,x,y,diameter,score,label\n')
+    #f.write('patientid,nslice,x,y,diameter,score,label\n')
     while 1:
         m = q.get()
         if m == 'kill':
