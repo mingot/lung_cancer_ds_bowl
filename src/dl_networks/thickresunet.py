@@ -131,11 +131,14 @@ from keras import backend as K
 K.set_image_dim_ordering('th')
 
 
+l2regularization = l2(1.e-5) # it was 1.e-4
+
 def _bn_relu(input):
     """Helper to build a BN -> relu block
     """
     norm = BatchNormalization(axis=CHANNEL_AXIS)(input)
-    return Activation("relu")(norm)
+    #return Activation("relu")(norm)
+    return Activation("relu")(input) # disabling batch normalization
 
 
 def _conv_bn_relu(**conv_params):
@@ -147,7 +150,7 @@ def _conv_bn_relu(**conv_params):
     subsample = conv_params.setdefault("subsample", (1, 1))
     init = conv_params.setdefault("init", "he_normal")
     border_mode = conv_params.setdefault("border_mode", "same")
-    W_regularizer = conv_params.setdefault("W_regularizer", l2(1.e-4))
+    W_regularizer = conv_params.setdefault("W_regularizer", l2regularization)
 
     def f(input):
         conv = Convolution2D(nb_filter=nb_filter, nb_row=nb_row, nb_col=nb_col, subsample=subsample,
@@ -167,7 +170,7 @@ def _bn_relu_conv(**conv_params):
     subsample = conv_params.setdefault("subsample", (1,1))
     init = conv_params.setdefault("init", "he_normal")
     border_mode = conv_params.setdefault("border_mode", "same")
-    W_regularizer = conv_params.setdefault("W_regularizer", l2(1.e-4))
+    W_regularizer = conv_params.setdefault("W_regularizer", l2regularization)
 
     def f(input):
         activation = _bn_relu(input)

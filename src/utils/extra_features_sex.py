@@ -1,15 +1,16 @@
-  import os, csv
+import os, csv
 import numpy as np
 import SimpleITK as sitk
 from glob import glob
-from utils.reading import *
-from utils.plotting import *
-from utils.preprocessing import *
+from reading import *
+from plotting import *
+from preprocessing import *
 from scipy.ndimage.morphology import *
 from skimage import filters
 from skimage.measure import label, regionprops, moments, moments_central, moments_normalized, moments_hu
 from scipy.signal import periodogram, find_peaks_cwt
 from scipy.stats import describe
+from skimage.feature import local_binary_pattern
 from multiprocessing import Pool
 
 import matplotlib.pyplot as plt
@@ -24,12 +25,13 @@ if SERVER:
 else:
     path = '/home/carlos/DSB2017/dsb_sample'
     preprocessed = '/home/carlos/DSB2017/dsb_preprocessed'
-    output_file = '/home/carlos/lung_cancer_ds_bowl/data/stage1_extra_features_sex_predictors_simple.csv'
+    output_file = '/home/carlos/lung_cancer_ds_bowl/data/stage1_extra_features_sex_predictors_lbp.csv'
 
 patient_files = os.listdir(path)
 patient_files = sorted(patient_files)
 
-patient_files = ['4d86e1657d46b9ee44c2c434fad231ce', '579dfed23d49414a2c080bbf9d7f958f', '5fd33ea74e1ad740a201ae9b3c383fc5', '8269e2eb69b3ba38c48dd5ae6039e250']
+#patient_files = ['4d86e1657d46b9ee44c2c434fad231ce', '579dfed23d49414a2c080bbf9d7f958f', '5fd33ea74e1ad740a201ae9b3c383fc5', '8269e2eb69b3ba38c48dd5ae6039e250']
+patient_files = ['064366faa1a83fdcb18b2538f1717290', '14f713c1ef037f6c531cffdff0e5fb2c', '19f3b4dea7af5d6e13acb472d6af23d8', '4cc8af2efef2f41bf70684be25276ce5', 'fd2dd970bd3d91e5b26d7e57c03f70af']
 
 common_spacing = [2., 0.7, 0.7]
 
@@ -127,14 +129,6 @@ def __center_lungs__(lung_mask, shape):
         return crop_image(lung_mask, size=shape[1])
     else:
         return extend_image(lung_mask, val=0, size=shape[1])
-    ''' 
-    cx = shape[2]/2
-    cy = shape[1]/2
-    lx = lung_mask.shape[2]/2
-    ly = lung_mask.shape[1]/2
-    lung[:, cy-ly:cy+ly, cx-lx:cx+lx] = lung_mask
-    return lung 
-    '''
     
 def __to_positive__(pix):
     #return 255.*1000./3500. + 255./3500. * pix
@@ -143,7 +137,7 @@ def __to_positive__(pix):
 def __segment_chest__(pix, lung_mask):
     erode = 10
     mask = lung_mask.astype(bool)
-    mask = scipy.ndimage.morphology.binary_dilation(mask, iterations=20)
+    mask = scipy.ndimage.morphology.binary_dilation(mask, iterations=5)
     mask = scipy.ndimage.morphology.binary_closing(np.logical_or(mask, pix <= -1000), iterations=erode)
     zs = np.array(range(pix.shape[0])) 
     zs = np.logical_or( zs < pix.shape[0]/5, zs > 4*pix.shape[0]/5 )
@@ -169,6 +163,7 @@ def __segment_chest__(pix, lung_mask):
                 if region.area < areas[-1]:
                     for coordinates in region.coords:
                         img_label[coordinates[0], coordinates[1]] = 0
+    cube_show_slider(np.where(labels > 0, 1, 0), vmin=0, vmax=1)
     return labels > 0
     
 def __get_sex_predictors__(pix, mask):
@@ -177,34 +172,58 @@ def __get_sex_predictors__(pix, mask):
     sd = np.ma.std(masked)
     img = (masked - mu) / sd
     imgarr = np.ma.filled(img)
+    
     #edges = np.array([ filters.frangi(imgarr[z,:,:], beta1=0.01, beta2=1.0) for z in xrange(imgarr.shape[0]) ])
     edges_re, edges_im = map(np.array, zip(*[ filters.gabor(imgarr[z,:,:], frequency=10) for z in xrange(imgarr.shape[0]) ]))
     binary = (edges_re > 10).astype(int)
+    '''
+    binary = scipy.ndimage.morphology.binary_opening(binary, iterations=1).astype(int)
+    lbps = np.array([local_binary_pattern(binary[z,:,:], 32, 8, 'var') for z in xrange(binary.shape[0]) ])
+    flattened = lbps[ np.isnan(lbps) == False ].flatten() 
+    perc = np.sum(flattened > 0.21) * 1. / np.size(flattened)
+    cube_show_slider(lbps, vmin=np.min(lbps), vmax=np.max(lbps))
+    #lbps[lbps == 32] = 0
+   
+    hist, _ = np.histogram(flattened, density=True, range=(np.min(flattened), np.max(flattened)))
+    last_bin = hist[-1]
+    plt.hist(flattened, normed=True, range=(np.min(flattened), np.max(flattened)))
+    plt.show()
+    return { 'perc': perc, 'last_bin': last_bin }
+    '''
     
     i = 0
     cube_show_slider(img)
     while i < 2:
         binary = scipy.ndimage.morphology.binary_opening(binary, iterations=1).astype(int)
-        
-        
         labels = label(binary, neighbors=8)
         for img_label in labels:
             areas = [r.area for r in regionprops(img_label)]
             areas.sort()
             if len(areas) >= 1:
                 for region in regionprops(img_label):
-                    if region.area == areas[-1] or region.area > 0.25*areas[-1] or region.area < 25:
+                    #if region.area == areas[-1] or region.area > 0.3*areas[-1] or region.area < 25:
+                    if region.area == areas[-1] or region.area < 25:
                         for coordinates in region.coords:
                             img_label[coordinates[0], coordinates[1]] = 0
         binary = labels > 0
         binary = np.array([scipy.ndimage.morphology.binary_closing(bin, iterations=2).astype(int) for bin in binary])
-        print np.bincount(labels.flatten())
-        print np.sum(labels > 0)
+        
+        lbps = np.array([local_binary_pattern(binary[z,:,:], 32, 8, 'var') for z in xrange(binary.shape[0]) ])
+        flattened = lbps[ np.isnan(lbps) == False ].flatten() 
+        perc = np.sum(flattened > 0.21) * 1. / np.size(flattened)
+        cube_show_slider(labels, vmin=0, vmax=1)
+        cube_show_slider(lbps, vmin=np.min(lbps), vmax=np.max(lbps))
+        #lbps[lbps == 32] = 0
+   
+        hist, _ = np.histogram(flattened, density=True, range=(np.min(flattened), np.max(flattened)))
+        last_bin = hist[-1]
+        print perc
+        plt.hist(flattened, normed=True, range=(np.min(flattened), np.max(flattened)))
+        plt.show()        
+        #print np.bincount(labels.flatten())
+        #print np.sum(labels > 0)
         i += 1
     
-
-        cube_show_slider(binary, vmin=0, vmax=1)
-        cube_show_slider(labels, vmin=0, vmax=1)
 #    cube_show_slider(edges_re, vmin=np.min(edges_re), vmax=np.max(edges_re))
 #    cube_show_slider(edges_im, vmin=np.min(edges_im), vmax=np.max(edges_im))
     return {'volume_pix': np.sum(labels > 0)}
@@ -228,7 +247,6 @@ def __get_sex_predictors__(pix, mask):
                      })
     momentsdict = dict(zip([ 'mean_moments_hu_'+str(i) for i in xrange(7) ], np.mean(np.array([prop[0].moments_hu for prop in imgprops]), axis=0)))  
     '''
-    
     #print dict(features, **momentsdict)
     #return dict(features, **momentsdict)
     
@@ -324,7 +342,7 @@ if __name__ == "__main__":
             for i, d in zip(patient_files, features):
                 writer.writerow(dict({'patient_id': i}, **d))
 
-
+'''
 # Mingot
 wp = os.environ['LUNG_PATH']
 INPUT_PATH = wp + 'data/preprocessed5_sample'
@@ -342,3 +360,4 @@ cube_show_slider(lung_mask)
 plt.imshow(lung_mask[85])
 plt.imshow(chest_mask[85])
 plt.show()
+'''
