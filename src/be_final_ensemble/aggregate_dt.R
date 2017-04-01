@@ -1,5 +1,5 @@
 
-generate_patient_dt <- function(path_repo,path_output = NULL) {
+generate_patient_dt <- function(path_repo,path_data,path_dsb,path_output = NULL) {
   annotations = fread(paste0(path_repo,"data/stage1_labels.csv"))
   submission = fread(paste0(path_repo,"/data/stage1_sample_submission.csv"))
   submission[,cancer := 0]
@@ -30,7 +30,7 @@ generate_patient_dt <- function(path_repo,path_output = NULL) {
   ## RESNET Data -------------------------------------------------------------------------------------
   #vars_nodules_patches <- fread(paste0("D:/dsb/nodules_patches_v05_augmented.csv"))
   #vars_nodules_patches <- fread(paste0("D:/dsb/noduls_patches_v06_rectif.csv"))
-  vars_nodules_patches <- fread(paste0("D:/dsb/noduls_patches_v06_dl1_dl2.csv")) ## PATH
+  vars_nodules_patches <- fread(paste0(path_dsb,"nodules_patches_dl1_v11.csv")) ## PATH
   
   if(!"scored_dl2" %in% names(vars_nodules_patches)){
     vars_nodules_patches$scored_dl2 <- 0
@@ -38,8 +38,8 @@ generate_patient_dt <- function(path_repo,path_output = NULL) {
   vars_nodules_patches <- vars_nodules_patches[grep("dsb_",patientid)][!is.na(x)]
   vars_nodules_patches[,patientid:=gsub(".npz|dsb_","",patientid)]
   ### Filter by score
-  vars_nodules_patches[,score := (0.8*score + 0.2*scored_dl2)/2]
-  vars_nodules_patches = vars_nodules_patches[score>0.3]
+  #vars_nodules_patches[,score := (0.8*score + 0.2*scored_dl2)/2]
+  vars_nodules_patches = vars_nodules_patches[score>0.75]
   names_change <- c("x","y","diameter","score")
   setnames(vars_nodules_patches,names_change,paste0(names_change,"_patches"))
   vars_nodules_patches <- merge(vars_nodules_patches,patients,all.x=T,by = "patientid")
@@ -58,10 +58,14 @@ generate_patient_dt <- function(path_repo,path_output = NULL) {
   dataset_slices[,patient_id := gsub(".npz|dsb_","",patient_id)]
   setnames(dataset_slices,"patient_id","patientid")
   
+  # EMPHYSEMA
+  emphysema <- fread(paste0(path_dsb,"var_emphysema_v02.csv"))
+  setnames(emphysema,names(emphysema),c("patientid","var_emphy1","var_emphy2","var_emphy3"))
   
   ## Joining all the patient variables
   dataset_final <- merge(patients,dataset_nodules,all.x = T, by = "patientid")
   dataset_final <- merge(dataset_final,dataset_slices,all.x = T, by = "patientid")
+  dataset_final <- merge(dataset_final,emphysema,all.x=T,by="patientid")
   dataset_final <- na_to_zeros(dataset_final,names(dataset_final))
   if(is.null(path_output)) {
     return(dataset_final)

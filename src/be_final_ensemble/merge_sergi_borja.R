@@ -16,15 +16,22 @@ dataset_final <- generate_patient_dt(path_repo)
 # SEPARATING TRAIN AND SCORING ---------------------------------------------------------------------
 patients_train <- dataset_final[dataset == "training",patientid]
 dataset_final[,dataset := NULL]
-features_sp <- fread(paste0(path_repo,"src/sp_final_ensemble/submissions/sp_01_features.csv"))
-dataset_final <- merge(dataset_final,features_sp,all.x = T,by = "patientid")
-dataset_final <- na_to_zeros(dataset_final,names(dataset_final))
-
-
 dataset_final[,consec_nods := NULL]
-dataset_final[,cancer := as.numeric(as.character(cancer))]
-dataset_final <- na_to_zeros(dataset_final,names(dataset_final))
-df_model <- dataset_final
+dataset_final[,score_2_patch := NULL]
+dataset_final[,max_score_2 := NULL]
+features_sp <- fread(paste0(path_dsb,"/sp_04_features.csv"))
+dataset_final_m <- merge(dataset_final,features_sp,all.x = T,by = "patientid")
+dataset_final_m <- na_to_zeros(dataset_final_m,names(dataset_final_m))
+nombres_m <- names(dataset_final_m)
+nombres_m <- nombres_m[nombres_m!= "patientid"]
+dataset_final_m[,cancer := as.numeric(as.character(cancer))]
+dataset_final_m <- na_to_zeros(dataset_final_m,names(dataset_final_m))
+for(n in nombres_m) {
+  if(var(dataset_final_m[[n]]) < 0.0001) dataset_final_m[[n]] <- NULL
+}
+
+
+df_model <- dataset_final_m
 # Split train-test
 set.seed(2)
 inTraining <- caret::createDataPartition(df_model$cancer, p = .85, list = FALSE)
@@ -100,4 +107,4 @@ df_out <- data.frame(
   cancer = v_out, 
   stringsAsFactors = FALSE
 )
-write.csv(df_out, file = paste0(path_repo,"data/submissions/08_submission.csv"), row.names = FALSE, quote = FALSE)
+write.csv(df_out, file = paste0(path_repo,"data/submissions/08_submission_lqspa.csv"), row.names = FALSE, quote = FALSE)
