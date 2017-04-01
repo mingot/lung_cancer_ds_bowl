@@ -17,6 +17,7 @@ else:
     path_preprocessed = '/Users/rdg/Documents/my_projects/DSB17/lung_cancer_ds_bowl/data/stage1_proc'
     output_file = '/Users/rdg/Documents/my_projects/DSB17/lung_cancer_ds_bowl/data/stage1_proc/var_emphysema_v00.csv'
 
+
 def get_emphysema_predictors(img, mask):
     # Threshold that gates the main lobe of the histogram
     threshold = -600
@@ -56,8 +57,8 @@ def process_patient_file(patient_name):
     csvwriter.writerow([patient_id, p, f1, f2])
 
 if __name__ == "__main__":
-    print 'server:', SERVER
-    print 'output_file: ', output_file
+    print('server: {}'.format(SERVER))
+    print('output_file: {}'.format(output_file))
 
     patient_files = os.listdir(path_preprocessed)
     patient_files = [f for f in patient_files if f.startswith('dsb')]
@@ -66,8 +67,12 @@ if __name__ == "__main__":
     csvfile = open(output_file, 'wb')
     csvwriter = csv.writer(csvfile, delimiter=',')
 
+    print('patient_files = %d' % len(patient_files))
+    count = 0
     for patient_file in patient_files:
         try:
+            count += 1
+            print('Processing file {} out of {} : {}'.format(count, len(patient_files), patient_file))
             process_patient_file(patient_file)
         except Exception as e:  # Some patients have no data, ignore them
             print('There was some problem reading patient {}. Ignoring and live goes on.'.format(patient_file))
