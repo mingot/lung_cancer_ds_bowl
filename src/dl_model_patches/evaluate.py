@@ -2,13 +2,13 @@ import os
 import logging
 import numpy as np
 from time import time
-from keras.optimizers import Adam
-from dl_networks.sample_resnet import ResnetBuilder
+# from keras.optimizers import Adam
+# from dl_networks.sample_resnet import ResnetBuilder
 from dl_model_patches import  common
-from keras import backend as K
+#from keras import backend as K
 
 
-K.set_image_dim_ordering('th')
+# K.set_image_dim_ordering('th')
 
 # PATHS
 wp = os.environ['LUNG_PATH']
@@ -41,11 +41,11 @@ file_list += [os.path.join(INPUT_PATH, fp) for fp in os.listdir(INPUT_PATH) if f
 #             previous_filenames.add(l.split(',')[0])
 
 
-# Load model
-model = ResnetBuilder().build_resnet_50((3,40,40),1)
-model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['accuracy','fmeasure'])
-logging.info('Loading existing model...')
-model.load_weights(OUTPUT_MODEL)
+# # Load model
+# model = ResnetBuilder().build_resnet_50((3,40,40),1)
+# model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['accuracy','fmeasure'])
+# logging.info('Loading existing model...')
+# model.load_weights(OUTPUT_MODEL)
 
 # PARALLEL -------------------------------------------------------------------------------------------------------
 
@@ -148,6 +148,15 @@ def worker(filename, q):
 
 def listener(q):
     '''listens for messages on the q, writes to file. '''
+    from keras import backend as K
+    from dl_networks.sample_resnet import ResnetBuilder
+    from keras.optimizers import Adam
+
+    K.set_image_dim_ordering('th')
+    model = ResnetBuilder().build_resnet_50((3,40,40),1)
+    model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['accuracy','fmeasure'])
+    logging.info('Loading existing model...')
+    model.load_weights(OUTPUT_MODEL)
 
     f = open(OUTPUT_CSV, 'wb')
     while 1:
