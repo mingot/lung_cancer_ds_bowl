@@ -162,7 +162,7 @@ def listener(q):
     logging.info('Loading existing model...')
     model.load_weights(OUTPUT_MODEL)
 
-    total = 0
+    total, errors = 0, 0
 
     f = open(OUTPUT_CSV, 'a')
     #f.write('patientid,nslice,x,y,diameter,score,label\n')
@@ -172,17 +172,22 @@ def listener(q):
             logging.info('[LISTENER] Closing...')
             break
 
-        filename, x, y, rois = m
-        filename = filename.split('/')[-1]
-        total += 1
+        try:
+            filename, x, y, rois = m
+            filename = filename.split('/')[-1]
 
-        preds = model.predict(np.asarray(x), verbose=1)
-        logging.info("[LISTENER] Predicted patient %d %s. Batch results: %d/%d (th=0.7)" % (total, filename, len([p for p in preds if p>0.7]),len(preds)))
-        for i in range(len(preds)):
-            nslice, r = rois[i]
-            f.write('%s,%d,%d,%d,%.3f,%.5f,%d\n' % (filename, nslice, r.centroid[0], r.centroid[1], r.equivalent_diameter,preds[i],y[i]))
-        f.flush()
+            preds = model.predict(np.asarray(x), verbose=1)
+            logging.info("[LISTENER] Predicted patient %d %s. Batch results: %d/%d (th=0.7)" % (total, filename, len([p for p in preds if p>0.7]),len(preds)))
+            for i in range(len(preds)):
+                nslice, r = rois[i]
+                f.write('%s,%d,%d,%d,%.3f,%.5f,%d\n' % (filename, nslice, r.centroid[0], r.centroid[1], r.equivalent_diameter,preds[i],y[i]))
+            total += 1
+            f.flush()
+        except:
+            logging.error("Error processing filename, skipping")
+            errors += 1
 
+    logging.info("Stats: %d patients, %d errors" % (total,errors))
     f.close()
 
 
@@ -196,7 +201,7 @@ def main():
 
     #fire off workers
     jobs = []
-    for filename in file_list[40:]:
+    for filename in file_list[725:]:
         job = pool.apply_async(worker, (filename, q))
         jobs.append(job)
 
