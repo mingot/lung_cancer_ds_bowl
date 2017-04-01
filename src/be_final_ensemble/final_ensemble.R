@@ -14,7 +14,7 @@ source(paste0(path_repo,"src/be_final_ensemble/aggregate_dt.R"))
 
 ## Add variables to all sets
 
-dataset_final <- generate_patient_dt(path_repo)
+dataset_final <- generate_patient_dt(path_repo,path_data,path_dsb)
 
 patients_troll <- c("5968ac45330d7f24b041a73925818269","baf842dd446ce9d7082efe16d22fb971","f8ecf6be8ae631c6dd694c9638a02b45")
 dataset_final <- dataset_final[!patientid %in% patients_troll]
@@ -59,7 +59,6 @@ vars_sp <- c(
   #"score_median",
   "diameter_sd"
   #"PC1_lbp_sd"
-  
 )
 vars_train <- c(vars_train,vars_sp)
 dataset_final_f <- dataset_final[,.SD,.SDcols = unique(c(vars_train,"patientid","cancer"))]

@@ -19,7 +19,7 @@ dataset_final[,dataset := NULL]
 dataset_final[,consec_nods := NULL]
 dataset_final[,score_2_patch := NULL]
 dataset_final[,max_score_2 := NULL]
-features_sp <- fread(paste0(path_repo,"src/sp_final_ensemble/submissions/sp_01_features.csv"))
+features_sp <- fread(paste0(path_dsb,"/sp_04_features.csv"))
 dataset_final_m <- merge(dataset_final,features_sp,all.x = T,by = "patientid")
 dataset_final_m <- na_to_zeros(dataset_final_m,names(dataset_final_m))
 nombres_m <- names(dataset_final_m)

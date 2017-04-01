@@ -1,5 +1,5 @@
 
-generate_patient_dt <- function(path_repo,path_output = NULL) {
+generate_patient_dt <- function(path_repo,path_data,path_dsb,path_output = NULL) {
   annotations = fread(paste0(path_repo,"data/stage1_labels.csv"))
   submission = fread(paste0(path_repo,"/data/stage1_sample_submission.csv"))
   submission[,cancer := 0]
