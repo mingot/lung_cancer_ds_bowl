@@ -165,7 +165,7 @@ def listener(q):
             ref_filenames.extend([filename]*len(x[i]))
             logging.info("[LISTENER] patient %s 02 iteration %d" % (filename.split('/')[-1], i))
             xf.extend(x[i])
-            logging.info("[LISTENER] patient %s 03 iteration %d, leny" % (filename.split('/')[-1], i, len(y[i])))
+            logging.info("[LISTENER] patient %s 03 iteration %d, %s" % (filename.split('/')[-1], i, str(y)))
             yf.extend(y[i])
             logging.info("[LISTENER] patient %s 04 iteration %d" % (filename.split('/')[-1], i))
             roisf.extend(rois[i])
@@ -202,10 +202,7 @@ for filename in file_list[0:6]:
 for job in jobs:
     job.get()
 
-import time
-
-logging.info('Sleeping...')
-time.sleep(20)
+watcher.get()
 
 #now we are done, kill the listener
 logging.info('Sending kill...')
