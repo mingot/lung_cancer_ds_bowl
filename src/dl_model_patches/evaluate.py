@@ -153,11 +153,12 @@ def listener(q):
     while 1:
         m = q.get()
         if m == 'kill':
+            logging.info('[LISTENER] Received kill!')
             f.write('killed')
             break
 
         filename, x, y, rois = m
-        logging.info("Predicting patient %s" % (filename.split('/')[-1]))
+        logging.info("[LISTENER] Predicting patient %s" % (filename.split('/')[-1]))
         xf, yf, ref_filenames, roisf = [], [], [], []
         for i in range(len(x)):
             ref_filenames.extend([filename]*len(x[i]))
@@ -165,10 +166,11 @@ def listener(q):
             yf.extend(y[i])
             roisf.extend(rois[i])
 
+        logging.info("++ patient %s with %d ones" % (filename.split('/')[-1], np.sum(yf)))
         xf = np.asarray(xf)
         preds = model.predict(xf, verbose=1)
-        logging.info("Predicted patient %s, storing results" % (filename.split('/')[-1]))
-        logging.info("Batch results: %d/%d (th=0.7)" % (len([p for p in preds if p>0.7]),len(preds)))
+        logging.info("[LISTENER] Predicted patient %s, storing results" % (filename.split('/')[-1]))
+        logging.info("[LISTENER] Batch results: %d/%d (th=0.7)" % (len([p for p in preds if p>0.7]),len(preds)))
         for i in range(len(preds)):
             nslice, r = roisf[i]
             f.write('%s,%d,%d,%d,%.3f,%.5f,%d\n' % (ref_filenames[i].split('/')[-1], nslice, r.centroid[0], r.centroid[1], r.equivalent_diameter,preds[i],yf[i]))
@@ -196,6 +198,7 @@ def main():
         job.get()
 
     #now we are done, kill the listener
+    logging.info('Sending kill...')
     q.put('kill')
     pool.close()
     pool.join()
