@@ -182,7 +182,7 @@ def main():
     #must use Manager queue here, or will not work
     manager = multiprocessing.Manager()
     q = manager.Queue()
-    pool = multiprocessing.Pool(multiprocessing.cpu_count())
+    pool = multiprocessing.Pool(4)  # multiprocessing.cpu_count()
 
     #put listener to work first
     watcher = pool.apply_async(listener, (q,))
@@ -198,11 +198,12 @@ def main():
         job.get()
 
 
-    pool.join()
+
     #now we are done, kill the listener
     logging.info('Sending kill...')
-    q.put('kill')
+    # q.put('kill')
     pool.close()
+    pool.join()
 
 
 if __name__ == "__main__":
