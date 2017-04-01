@@ -176,39 +176,40 @@ def listener(q):
         logging.info("[LISTENER] Batch results: %d/%d (th=0.7)" % (len([p for p in preds if p>0.7]),len(preds)))
         for i in range(len(preds)):
             nslice, r = rois[i]
-            f.write('%s,%d,%d,%d,%.3f,%.5f,%d\n' % (filename.split('/')[-1], nslice, r.centroid[0], r.centroid[1], r.equivalent_diameter,preds[i],yf[i]))
+            f.write('%s,%d,%d,%d,%.3f,%.5f,%d\n' % (filename.split('/')[-1], nslice, r.centroid[0], r.centroid[1], r.equivalent_diameter,preds[i],y[i]))
         f.flush()
     f.close()
 
 
-#def main():
-#must use Manager queue here, or will not work
-manager = multiprocessing.Manager()
-q = manager.Queue()
-pool = multiprocessing.Pool(4)  # multiprocessing.cpu_count()
+def main():
+    #must use Manager queue here, or will not work
+    manager = multiprocessing.Manager()
+    q = manager.Queue()
+    pool = multiprocessing.Pool(4)  # multiprocessing.cpu_count()
 
-#put listener to work first
-watcher = pool.apply_async(listener, (q,))
+    #put listener to work first
+    watcher = pool.apply_async(listener, (q,))
 
-#fire off workers
-jobs = []
-for filename in file_list[0:6]:
-    job = pool.apply_async(worker, (filename, q))
-    jobs.append(job)
+    #fire off workers
+    jobs = []
+    for filename in file_list[0:6]:
+        job = pool.apply_async(worker, (filename, q))
+        jobs.append(job)
 
-# collect results from the workers through the pool result queue
-for job in jobs:
-    job.get()
+    # collect results from the workers through the pool result queue
+    for job in jobs:
+        job.get()
 
-watcher.get()
+    watcher.get()
 
-#now we are done, kill the listener
-logging.info('Sending kill...')
-# q.put('kill')
-pool.close()
-pool.join()
+    #now we are done, kill the listener
+    q.put('kill')
+    pool.close()
+    pool.join()
 
 
-# if __name__ == "__main__":
-#    main()
+if __name__ == "__main__":
+    tstart = time()
+    main()
+    print "Total time:", time() - tstart
 
