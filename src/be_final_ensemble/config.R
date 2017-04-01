@@ -19,8 +19,8 @@ generateModel <- function(model_family) {
       predict.type = "prob",
       eval_metric = "logloss",
       nthread = 7,
-      eta = 0.03757,
-      nrounds = 2500,
+      eta = 0.01,
+      nrounds = 1000,
       colsample_bytree = 0.9,
       subsample = 0.85,
       min_child_weight = 96
@@ -40,16 +40,18 @@ generateModel <- function(model_family) {
             # interaction.depth = 5,
             # shrinkage = 0.0005728955
           #  minobsinnode = 1
-      n.trees = 474,
-      interaction.depth = 3,
-      shrinkage = 0.004618582
+      n.trees = 10000,
+      # n.minobsinnode = 10, # eliminar
+      # interaction.depth = 5, #eliminar
+      #interaction.depth = 3,
+      shrinkage = 0.001
     )
     
     ps = makeParamSet(
-      makeIntegerParam("n.trees", lower = 1, upper = 700),
+      #makeIntegerParam("n.trees", lower = 1, upper = 700),
       makeIntegerParam("interaction.depth", lower = 1, upper = 10),
-      makeNumericParam("shrinkage",lower = 0, upper = 0.001),
-      makeIntegerParam("n.minobsinnode", lower = 1, upper = 20)
+      #makeNumericParam("shrinkage",lower = 0, upper = 0.001),
+      makeIntegerParam("n.minobsinnode", lower = 1, upper = 10)
     )
   }
   if(model_family == "classif.ranger") {

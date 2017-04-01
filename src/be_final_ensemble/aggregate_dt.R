@@ -1,5 +1,5 @@
 
-generate_patient_dt <- function(path_repo,path_data,path_dsb,path_output = NULL) {
+generate_patient_dt <- function(path_repo,path_dsb,path_output = NULL) {
   annotations = fread(paste0(path_repo,"data/stage1_labels.csv"))
   submission = fread(paste0(path_repo,"/data/stage1_sample_submission.csv"))
   submission[,cancer := 0]
@@ -59,13 +59,19 @@ generate_patient_dt <- function(path_repo,path_data,path_dsb,path_output = NULL)
   setnames(dataset_slices,"patient_id","patientid")
   
   # EMPHYSEMA
-  emphysema <- fread(paste0(path_dsb,"var_emphysema_v02.csv"))
+  emphysema <- fread(paste0(path_dsb,"var_emphysema_v04.csv"))
   setnames(emphysema,names(emphysema),c("patientid","var_emphy1","var_emphy2","var_emphy3"))
+
+  # Extra features
+  extra_feats <- fread(paste0(path_dsb,"stage1_extra_features_intercostal.csv"))
+  setnames(extra_feats,"patient_id","patientid")
+  extra_feats[,patientid := gsub("dsb_","",patientid)]
   
   ## Joining all the patient variables
   dataset_final <- merge(patients,dataset_nodules,all.x = T, by = "patientid")
   dataset_final <- merge(dataset_final,dataset_slices,all.x = T, by = "patientid")
   dataset_final <- merge(dataset_final,emphysema,all.x=T,by="patientid")
+  dataset_final <- merge(dataset_final,extra_feats,all.x=T,by="patientid")
   dataset_final <- na_to_zeros(dataset_final,names(dataset_final))
   if(is.null(path_output)) {
     return(dataset_final)
