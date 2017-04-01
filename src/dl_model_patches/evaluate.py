@@ -161,11 +161,15 @@ def listener(q):
         logging.info("[LISTENER] Predicting patient %s, amb lenx: %d" % (filename.split('/')[-1], len(x)))
         xf, yf, ref_filenames, roisf = [], [], [], []
         for i in range(len(x)):
-            logging.info("[LISTENER] patient %s iteration %d" % (filename.split('/')[-1], i))
+            logging.info("[LISTENER] patient %s 01 iteration %d" % (filename.split('/')[-1], i))
             ref_filenames.extend([filename]*len(x[i]))
+            logging.info("[LISTENER] patient %s 02 iteration %d" % (filename.split('/')[-1], i))
             xf.extend(x[i])
+            logging.info("[LISTENER] patient %s 03 iteration %d" % (filename.split('/')[-1], i))
             yf.extend(y[i])
+            logging.info("[LISTENER] patient %s 04 iteration %d" % (filename.split('/')[-1], i))
             roisf.extend(rois[i])
+            logging.info("[LISTENER] patient %s 05 iteration %d" % (filename.split('/')[-1], i))
 
         logging.info("++ patient %s with %d ones" % (filename.split('/')[-1], np.sum(yf)))
         xf = np.asarray(xf)
