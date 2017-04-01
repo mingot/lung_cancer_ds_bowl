@@ -92,7 +92,7 @@ def extract_rois_from_lung_mask(lung_image, lung_mask, margin=5):
     mask[mask<-500] = -2000  # based on LUNA examination ()
 
     # generate regions
-    #mask = morphology.opening(mask)
+    mask = morphology.opening(mask)
     regions_pred = get_regions(mask, threshold=np.mean(mask))
 
     # discard small regions or long connected regions
