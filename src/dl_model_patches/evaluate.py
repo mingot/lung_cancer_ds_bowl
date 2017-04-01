@@ -159,26 +159,15 @@ def listener(q):
 
         filename, x, y, rois = m
         logging.info("[LISTENER] Predicting patient %s, amb lenx: %d" % (filename.split('/')[-1], len(x)))
-        xf, yf, ref_filenames, roisf = [], [], [], []
-        for i in range(len(x)):
-            logging.info("[LISTENER] patient %s 01 iteration %d" % (filename.split('/')[-1], i))
-            ref_filenames.extend([filename]*len(x[i]))
-            logging.info("[LISTENER] patient %s 02 iteration %d" % (filename.split('/')[-1], i))
-            xf.extend(x[i])
-            logging.info("[LISTENER] patient %s 03 iteration %d, %s" % (filename.split('/')[-1], i, str(y)))
-            yf.extend(y[i])
-            logging.info("[LISTENER] patient %s 04 iteration %d" % (filename.split('/')[-1], i))
-            roisf.extend(rois[i])
-            logging.info("[LISTENER] patient %s 05 iteration %d" % (filename.split('/')[-1], i))
 
-        logging.info("++ patient %s with %d ones" % (filename.split('/')[-1], np.sum(yf)))
-        xf = np.asarray(xf)
-        preds = model.predict(xf, verbose=1)
+        logging.info("++ patient %s with %d ones" % (filename.split('/')[-1], np.sum(y)))
+        x = np.asarray(x)
+        preds = model.predict(x, verbose=1)
         logging.info("[LISTENER] Predicted patient %s, storing results" % (filename.split('/')[-1]))
         logging.info("[LISTENER] Batch results: %d/%d (th=0.7)" % (len([p for p in preds if p>0.7]),len(preds)))
         for i in range(len(preds)):
-            nslice, r = roisf[i]
-            f.write('%s,%d,%d,%d,%.3f,%.5f,%d\n' % (ref_filenames[i].split('/')[-1], nslice, r.centroid[0], r.centroid[1], r.equivalent_diameter,preds[i],yf[i]))
+            nslice, r = rois[i]
+            f.write('%s,%d,%d,%d,%.3f,%.5f,%d\n' % (filename.split('/')[-1], nslice, r.centroid[0], r.centroid[1], r.equivalent_diameter,preds[i],yf[i]))
         f.flush()
     f.close()
 
