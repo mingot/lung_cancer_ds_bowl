@@ -161,6 +161,7 @@ def listener(q):
         logging.info("[LISTENER] Predicting patient %s, amb lenx: %d" % (filename.split('/')[-1], len(x)))
         xf, yf, ref_filenames, roisf = [], [], [], []
         for i in range(len(x)):
+            logging.info("[LISTENER] patient %s iteration %d" % (filename.split('/')[-1], i))
             ref_filenames.extend([filename]*len(x[i]))
             xf.extend(x[i])
             yf.extend(y[i])
