@@ -171,7 +171,7 @@ def listener(q):
         filename, x, y, rois = m
         filename = filename.split('/')[-1]
         total += 1
-        logging.info("[LISTENER] Predicting patient %d %s, with %d/%d ones" % (total, filename, np.sum(y)/len(y)))
+        logging.info("[LISTENER] Predicting patient %d %s, with %d/%d ones" % (total, filename, np.sum(y), len(y)))
 
         preds = model.predict(np.asarray(x), verbose=1)
         logging.info("[LISTENER] Batch results: %d/%d (th=0.7)" % (len([p for p in preds if p>0.7]),len(preds)))
