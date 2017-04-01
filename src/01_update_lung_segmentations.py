@@ -11,20 +11,16 @@ INPUT_PATH = '/mnt/hd2/preprocessed5'  # INPUT_PATH = wp + 'data/preprocessed5_s
 OUTPUT_PATH = '/mnt/hd2/preprocessed5_ls'
 filenames = os.listdir(INPUT_PATH)
 
-# filenames = [
-#     'dsb_f1a64fda219db48bcfb8ad3823ef9fc1.npz',
-#     'dsb_402a18fa05523f80abb1e6d97793cc19.npz',
-#     'dsb_ca3cdb2e771df9989df5a9cb0296c44c.npz',
-#     'dsb_1e0f8048728717064645cb758eb89279.npz',
-#     'dsb_edad1a7e85b5443e0ae9e654d2adbcba.npz',
-#     'dsb_6e5f12931ef179cc21382a59f5acab86.npz',
-#     'dsb_11f10c2a0bfd231deeec98d69e4d0767.npz',
-#     'dsb_16377fe7caf072d882f234dbbff9ef6c.npz',
-#     'dsb_2969c7ad0e550fee1f4a68fcb3bbb9e5.npz',
-#     'dsb_cf0a772e90a14d77d664ce9baedf0e5c.npz',
-#     'dsb_91d0606b85ab7dbc7bab718c1312f2df.npz',
-#     'dsb_c87a713d17522698958de55c97654beb.npz'
-# ]
+filenames = [
+'dsb_ebd601d40a18634b100c92e7db39f585',
+'dsb_08528b8817429d12b7ce2bf444d264f9',
+'dsb_d8a0ebe575539c2357c2365cdf0229a0',
+'dsb_043ed6cb6054cc13804a3dca342fa4d0',
+'dsb_043ed6cb6054cc13804a3dca342fa4d0',
+# z:
+'dsb_8c63c8ebd684911de92509a8a703d567',
+'dsb_380eb569a5750648434cc8ae8da4a0a9'
+]
 
 
 
