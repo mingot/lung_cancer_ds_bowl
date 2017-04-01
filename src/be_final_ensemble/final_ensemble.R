@@ -15,13 +15,15 @@ source(paste0(path_repo,"src/be_final_ensemble/aggregate_dt.R"))
 ## Add variables to all sets
 
 dataset_final <- generate_patient_dt(path_repo)
+
+patients_troll <- c("5968ac45330d7f24b041a73925818269","baf842dd446ce9d7082efe16d22fb971","f8ecf6be8ae631c6dd694c9638a02b45")
+dataset_final <- dataset_final[!patientid %in% patients_troll]
 # SEPARATING TRAIN AND SCORING ---------------------------------------------------------------------
 patients_train <- dataset_final[dataset == "training",patientid]
 dataset_final[,dataset := NULL]
-# features_sp <- fread(paste0(path_repo,"src/sp_final_ensemble/submissions/sp_01_features.csv"))
-# dataset_final <- merge(dataset_final,features_sp,all.x = T,by = "patientid")
+features_sp <- fread(paste0(path_dsb,"/sp_04_features.csv"))
+dataset_final <- merge(dataset_final,features_sp,all.x = T,by = "patientid")
 dataset_final <- na_to_zeros(dataset_final,names(dataset_final))
-
 
 vars_train <- c(
   # "max_intensity",
@@ -31,7 +33,7 @@ vars_train <- c(
   # "nods_20",
   # "nods_25",
   #"nods_30",
-  "max_diameter_patches",
+  #"max_diameter_patches",
   #"num_slices_patches",
   #"max_score",
   "max_score_patches",
@@ -52,7 +54,14 @@ vars_train <- c(
   # "max_intensity_nodule",
   # "mean_intensity_nodule"
   )
-#vars_train <- names(dataset_final)
+vars_sp <- c(
+  "PC3_lbp_min",
+  #"score_median",
+  "diameter_sd"
+  #"PC1_lbp_sd"
+  
+)
+vars_train <- c(vars_train,vars_sp)
 dataset_final_f <- dataset_final[,.SD,.SDcols = unique(c(vars_train,"patientid","cancer"))]
 data_train <- dataset_final_f[patientid %in% patients_train]
 scoring <- dataset_final_f[!patientid %in% patients_train]
@@ -109,7 +118,7 @@ LogLossBinary(target,preds)
 preds = predictCv(final_model, scoring)
 
 submission = data.table(id=patients_scoring, cancer=preds)
-write.csv(submission, paste0(path_repo,"data/submissions/10_submission.csv"), quote=F, row.names=F)
+write.csv(submission, paste0(path_repo,"data/submissions/11_submission.csv"), quote=F, row.names=F)
 
 
 # GENERATING PREDICTIONS FOR TRAINING ----------------------------------------------------------------------------
