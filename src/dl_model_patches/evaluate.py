@@ -164,7 +164,7 @@ def listener(q):
 
     total = 0
 
-    f = open(OUTPUT_CSV, 'wb')
+    f = open(OUTPUT_CSV, 'a')
     f.write('patientid,nslice,x,y,diameter,score,label\n')
     while 1:
         m = q.get()
@@ -198,7 +198,7 @@ def main():
 
     #fire off workers
     jobs = []
-    for filename in file_list[0:40]:
+    for filename in file_list[40:]:
         job = pool.apply_async(worker, (filename, q))
         jobs.append(job)
 
