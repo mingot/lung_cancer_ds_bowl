@@ -12,14 +12,14 @@ OUTPUT_PATH = '/mnt/hd2/preprocessed5_ls'
 filenames = os.listdir(INPUT_PATH)
 
 filenames = [
-'dsb_ebd601d40a18634b100c92e7db39f585',
-'dsb_08528b8817429d12b7ce2bf444d264f9',
-'dsb_d8a0ebe575539c2357c2365cdf0229a0',
-'dsb_043ed6cb6054cc13804a3dca342fa4d0',
-'dsb_043ed6cb6054cc13804a3dca342fa4d0',
+'dsb_ebd601d40a18634b100c92e7db39f585.npz',
+'dsb_08528b8817429d12b7ce2bf444d264f9.npz',
+'dsb_d8a0ebe575539c2357c2365cdf0229a0.npz',
+'dsb_043ed6cb6054cc13804a3dca342fa4d0.npz',
+'dsb_043ed6cb6054cc13804a3dca342fa4d0.npz',
 # z:
-'dsb_8c63c8ebd684911de92509a8a703d567',
-'dsb_380eb569a5750648434cc8ae8da4a0a9'
+'dsb_8c63c8ebd684911de92509a8a703d567.npz',
+'dsb_380eb569a5750648434cc8ae8da4a0a9.npz'
 ]
 
 
