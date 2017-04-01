@@ -141,10 +141,14 @@ import multiprocessing
 
 
 def worker(filename, q):
-    patient_data = np.load(filename)['arr_0']
-    X, y, rois, stats = common.load_patient(patient_data, discard_empty_nodules=False, output_rois=True, thickness=1)
-    logging.info("Patient: %s, stats: %s" % (filename.split('/')[-1], stats))
-    q.put((filename,X,y,rois))
+    while 1:
+        if q.qsize()<5:
+            logging.info("Entering! qsize: %d", q.qsize())
+            patient_data = np.load(filename)['arr_0']
+            X, y, rois, stats = common.load_patient(patient_data, discard_empty_nodules=False, output_rois=True, thickness=1)
+            logging.info("Patient: %s, stats: %s" % (filename.split('/')[-1], stats))
+            q.put((filename,X,y,rois))
+            break
 
 def listener(q):
     '''listens for messages on the q, writes to file. '''
@@ -161,6 +165,7 @@ def listener(q):
     total = 0
 
     f = open(OUTPUT_CSV, 'wb')
+    f.write('patientid,nslice,x,y,diameter,score,label\n')
     while 1:
         m = q.get()
         if m == 'kill':
@@ -193,7 +198,7 @@ def main():
 
     #fire off workers
     jobs = []
-    for filename in file_list[0:6]:
+    for filename in file_list[0:40]:
         job = pool.apply_async(worker, (filename, q))
         jobs.append(job)
 
