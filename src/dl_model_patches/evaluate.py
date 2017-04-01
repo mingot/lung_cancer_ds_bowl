@@ -197,13 +197,13 @@ def main():
     for job in jobs:
         job.get()
 
-    watcher.get()
 
+    pool.join()
     #now we are done, kill the listener
     logging.info('Sending kill...')
     q.put('kill')
     pool.close()
-    pool.join()
+
 
 if __name__ == "__main__":
    main()
