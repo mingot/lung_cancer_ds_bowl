@@ -19,7 +19,8 @@ from skimage import transform
 # PATHS
 wp = os.environ['LUNG_PATH']
 LUNA_ANNOTATIONS = wp + 'data/luna/annotations.csv'
-OUTPUT_DL1 = wp + 'output/nodules_patches_dl1_v11_solo_luna.csv'  # OUTPUT_DL1 = wp + 'personal/noduls_patches_v06.csv'
+OUTPUT_DL1 = wp + 'output/nodules_patches_dl1_v11.csv'  # OUTPUT_DL1 = wp + 'personal/noduls_patches_v06.csv'
+DSB_VALIDATION = wp + 'data/stage1_validation.csv'
 INPUT_PATH = '/mnt/hd2/preprocessed5/' # INPUT_PATH = wp + 'data/preprocessed5_sample'
 VALIDATION_PATH = '/mnt/hd2/preprocessed5_validation_luna/' # VALIDATION_PATH = wp + 'data/preprocessed5_sample'
 PATCHES_PATH = '/mnt/hd2/patches'  # PATCHES_PATH = wp + 'data/preprocessed5_patches'
@@ -52,12 +53,14 @@ nodules_df = pd.read_csv(OUTPUT_DL1)
 nodules_df = nodules_df[nodules_df['patientid'].str.startswith('dsb')]  # Filter DSB patients
 nodules_df = nodules_df[(nodules_df['score'] > SCORE_TH) | (nodules_df['diameter']>10)]
 nodules_df['nslice'] = nodules_df['nslice'].astype(int)
-logging.info("Shape nodules df: %s" % str(nodules_df.shape))
+logging.info("DSB selected nodules shape: %s" % str(nodules_df.shape))
 
 
 # Construction of training and testsets
+validation_df = pd.read_csv(DSB_VALIDATION)
+logging.info("DSB validation shape:%s" % str(validation_df.shape))
 filenames_train = [os.path.join(INPUT_PATH,f) for f in set(nodules_df['patientid']) if f[0:4]=='dsb' and f in os.listdir(INPUT_PATH)]
-filenames_test = [os.path.join(INPUT_PATH,f) for f in set(nodules_df['patientid']) if f[0:4]=='dsb' and f in []] # TODO: finish list
+filenames_test = [os.path.join(INPUT_PATH,f) for f in set(nodules_df['patientid']) if f[0:4]=='dsb' and f in validation_df['patientid']]
 
 
 def __load_and_store(filename):
@@ -68,16 +71,16 @@ def __load_and_store(filename):
     return X, y, stats
 
 
-common.multiproc_crop_generator(filenames_train,
-                                os.path.join(PATCHES_PATH,'x_train_dl3.npz'),
-                                os.path.join(PATCHES_PATH,'y_train_dl3.npz'),
-                                __load_and_store,
-                                parallel=True)
-
-
-common.multiproc_crop_generator(filenames_test,
-                                os.path.join(PATCHES_PATH,'x_test_dl3.npz'),
-                                os.path.join(PATCHES_PATH,'y_test_dl3.npz'),
-                                __load_and_store,
-                                parallel=True)
+# common.multiproc_crop_generator(filenames_train,
+#                                 os.path.join(PATCHES_PATH,'x_train_dl3.npz'),
+#                                 os.path.join(PATCHES_PATH,'y_train_dl3.npz'),
+#                                 __load_and_store,
+#                                 parallel=True)
+#
+#
+# common.multiproc_crop_generator(filenames_test,
+#                                 os.path.join(PATCHES_PATH,'x_test_dl3.npz'),
+#                                 os.path.join(PATCHES_PATH,'y_test_dl3.npz'),
+#                                 __load_and_store,
+#                                 parallel=True)
 
