@@ -112,10 +112,10 @@ def chunks(X, y, batch_size=32, augmentation_times=4, thickness=0, is_training=T
 
         # generator: if testing, do not augment data
         data_generator = train_datagen if is_training else test_datagen
-        #xx = data_generator.flow(X[selected_samples], y[selected_samples], batch_size=batch_size, shuffle=is_training)
+        xx = data_generator.flow(X[selected_samples], y[selected_samples], batch_size=batch_size, shuffle=is_training)
         i, good = 0, 0
         lenX = len(selected_samples)
-        for X_batch, y_batch in data_generator.flow(X[selected_samples], y[selected_samples], batch_size=batch_size, shuffle=is_training):
+        for X_batch, y_batch in xx:
             i += 1
             if good*batch_size > lenX*augmentation_times or i>100:  # stop when we have augmented enough the batch
                 break
@@ -123,7 +123,7 @@ def chunks(X, y, batch_size=32, augmentation_times=4, thickness=0, is_training=T
                 continue
             good += 1
             yield X_batch, y_batch
-        # del xx
+        del xx
 
 
 
