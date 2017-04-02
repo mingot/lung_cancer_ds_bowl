@@ -140,6 +140,10 @@ import multiprocessing
 ## MULTI PARALLEL ---------------------------------------------------------------------------------------------
 
 
+file_list = ['/mnt/hd2/preprocessing5/dsb_d8a0ebe575539c2357c2365cdf0229a0.npz',
+             '/mnt/hd2/preprocessing5/dsb_4b2f615f5498ee9d935b0229a2e6bb19.npz']
+
+
 def worker(filename, q):
     while 1:
         if q.qsize() < 10:
@@ -201,7 +205,7 @@ def main():
 
     #fire off workers
     jobs = []
-    for filename in file_list[725:]:
+    for filename in file_list:
         job = pool.apply_async(worker, (filename, q))
         jobs.append(job)
 
