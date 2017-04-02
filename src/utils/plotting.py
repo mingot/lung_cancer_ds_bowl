@@ -54,7 +54,7 @@ def plot_bb(img, regions):
         regions = [regions]
 
     fig, ax = plt.subplots(ncols=1, nrows=1, figsize=(6, 6))
-    ax.imshow(img)
+    ax.imshow(img, cmap="gray")
     for region in regions:
         minr, minc, maxr, maxc = region.bbox
         rect = mpatches.Rectangle((minc, minr), maxc - minc, maxr - minr, fill=False, edgecolor='red', linewidth=2)

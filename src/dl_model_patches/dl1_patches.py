@@ -34,8 +34,8 @@ if not os.path.exists(LOGS_PATH):
 
 
 # OTHER INITIALIZATIONS: tensorboard, model checkpoint and logging
-#tb = TensorBoard(log_dir=LOGS_PATH, histogram_freq=1, write_graph=False, write_images=False)  # replace keras.callbacks.TensorBoard
-#model_checkpoint = ModelCheckpoint(OUTPUT_MODEL, monitor='loss', save_best_only=True)
+tb = TensorBoard(log_dir=LOGS_PATH, histogram_freq=1, write_graph=False, write_images=False)  # replace keras.callbacks.TensorBoard
+model_checkpoint = ModelCheckpoint(OUTPUT_MODEL, monitor='loss', save_best_only=True)
 K.set_image_dim_ordering('th')
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s  %(levelname)-8s %(message)s',
@@ -62,23 +62,16 @@ def __load_and_store(filename):
     return X, y, stats
 
 
-def __load_and_store_test(filename):
-    patient_data = np.load(filename)['arr_0']
-    X, y, rois, stats = common.load_patient(patient_data, discard_empty_nodules=True, output_rois=True, debug=True, thickness=1)
-    logging.info("Patient: %s, stats: %s" % (filename.split('/')[-1], stats))
-    return X, y, stats
 
-
-
-common.multiproc_crop_generator(filenames_train,
-                                os.path.join(PATCHES_PATH,'x_train_dl1_full.npz'),
-                                os.path.join(PATCHES_PATH,'y_train_dl1_full.npz'),
-                                __load_and_store)
+# common.multiproc_crop_generator(filenames_train,
+#                                 os.path.join(PATCHES_PATH,'x_train_dl1_full.npz'),
+#                                 os.path.join(PATCHES_PATH,'y_train_dl1_full.npz'),
+#                                 __load_and_store)
 
 common.multiproc_crop_generator(filenames_test,
                                 os.path.join(PATCHES_PATH,'x_test_dl1_full.npz'),
                                 os.path.join(PATCHES_PATH,'y_test_dl1_full.npz'),
-                                __load_and_store_test)
+                                __load_and_store)
 
 
 ### TRAINING -----------------------------------------------------------------
@@ -174,29 +167,29 @@ common.multiproc_crop_generator(filenames_test,
 #
 # # LOADING PATCHES FROM DISK
 # logging.info("Loading training and test sets")
-# x_train = np.load(os.path.join(PATCHES_PATH, 'x_train_dl1_5.npz'))['arr_0']
-# y_train = np.load(os.path.join(PATCHES_PATH, 'y_train_dl1_5.npz'))['arr_0']
-# x_test = np.load(os.path.join(PATCHES_PATH, 'x_test_dl1_5.npz'))['arr_0']
-# y_test = np.load(os.path.join(PATCHES_PATH, 'y_test_dl1_5.npz'))['arr_0']
+# x_train = np.load(os.path.join(PATCHES_PATH, 'x_train_dl1_full.npz'))['arr_0']
+# y_train = np.load(os.path.join(PATCHES_PATH, 'y_train_dl1_full.npz'))['arr_0']
+# x_test = np.load(os.path.join(PATCHES_PATH, 'x_test_dl1_full.npz'))['arr_0']
+# y_test = np.load(os.path.join(PATCHES_PATH, 'y_test_dl1_full.npz'))['arr_0']
 # logging.info("Training set (1s/total): %d/%d" % (sum(y_train),len(y_train)))
 # logging.info("Test set (1s/total): %d/%d" % (sum(y_test), len(y_test)))
 #
 #
 #
 # # Load model
-# model = ResnetBuilder().build_resnet_34((5,40,40),1)
+# model = ResnetBuilder().build_resnet_50((3,40,40),1)
 # model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['accuracy','fmeasure'])
 # # logging.info('Loading exiting model...')
 # # model.load_weights(OUTPUT_MODEL)
 #
 #
-# model.fit_generator(generator=chunks_multichannel(x_train, y_train, batch_size=32, thickness=1),
+# model.fit_generator(generator=chunks(x_train, y_train, batch_size=32, thickness=1),
 #                     samples_per_epoch=1280,  # make it small to update TB and CHECKPOINT frequently
-#                     nb_epoch=500,
+#                     nb_epoch=1600,
 #                     verbose=1,
 #                     #class_weight={0:1., 1:4.},
 #                     callbacks=[tb, model_checkpoint],
-#                     validation_data=chunks_multichannel(x_test, y_test, batch_size=32, thickness=1),  # TODO: is_training=False
+#                     validation_data=chunks(x_test, y_test, batch_size=32, is_training=False, thickness=1),
 #                     nb_val_samples=32*10,
 #                     max_q_size=64,
 #                     nb_worker=1)  # a locker is needed if increased the number of parallel workers
