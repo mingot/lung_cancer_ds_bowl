@@ -24,8 +24,8 @@ VALIDATION_PATH = '/mnt/hd2/preprocessed5_validation_luna'
 NODULES_PATH = wp + 'data/luna/annotations.csv'
 PATCHES_PATH = '/mnt/hd2/patches'  # PATCHES_PATH = wp + 'data/preprocessed5_patches'
 
-OUTPUT_MODEL = wp + 'models/jm_patches_train_v17.hdf5'  # OUTPUT_MODEL = wp + 'personal/jm_patches_train_v06_local.hdf5'
-LOGS_PATH = wp + 'logs/%s' % str('v17')
+OUTPUT_MODEL = wp + 'models/jm_patches_train_v18.hdf5'  # OUTPUT_MODEL = wp + 'personal/jm_patches_train_v06_local.hdf5'
+LOGS_PATH = wp + 'logs/%s' % str('v18')
 
 #LOGS_PATH = wp + 'logs/%s' % str(int(time()))
 if not os.path.exists(LOGS_PATH):
@@ -57,22 +57,28 @@ filenames_test = [os.path.join(VALIDATION_PATH, fp) for fp in os.listdir(VALIDAT
 
 def __load_and_store(filename):
     patient_data = np.load(filename)['arr_0']
+    X, y, rois, stats = common.load_patient(patient_data, discard_empty_nodules=True, output_rois=True, debug=True, include_ground_truth=True, thickness=1)
+    logging.info("Patient: %s, stats: %s" % (filename.split('/')[-1], stats))
+    return X, y, stats
+
+
+def __load_and_store_test(filename):
+    patient_data = np.load(filename)['arr_0']
     X, y, rois, stats = common.load_patient(patient_data, discard_empty_nodules=True, output_rois=True, debug=True, thickness=1)
     logging.info("Patient: %s, stats: %s" % (filename.split('/')[-1], stats))
     return X, y, stats
 
 
-# TODO: INCLOURE TOTES LES REGIONS POSITIVES TAMBE!!
 
-common.multiproc_crop_generator(filenames_train[0:100],
-                                os.path.join(PATCHES_PATH,'x_train_dl1_5.npz'),
-                                os.path.join(PATCHES_PATH,'y_train_dl1_5.npz'),
-                                __load_and_store, store=False)
+common.multiproc_crop_generator(filenames_train,
+                                os.path.join(PATCHES_PATH,'x_train_dl1_full.npz'),
+                                os.path.join(PATCHES_PATH,'y_train_dl1_full.npz'),
+                                __load_and_store)
 
-# common.multiproc_crop_generator(filenames_test,
-#                                 os.path.join(PATCHES_PATH,'x_test_dl1_5.npz'),
-#                                 os.path.join(PATCHES_PATH,'y_test_dl1_5.npz'),
-#                                 __load_and_store)
+common.multiproc_crop_generator(filenames_test,
+                                os.path.join(PATCHES_PATH,'x_test_dl1_full.npz'),
+                                os.path.join(PATCHES_PATH,'y_test_dl1_full.npz'),
+                                __load_and_store_test)
 
 
 ### TRAINING -----------------------------------------------------------------
