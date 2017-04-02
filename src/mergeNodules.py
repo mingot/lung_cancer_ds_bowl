@@ -21,6 +21,7 @@ import pandas as pd
 import numpy as np
 import time
 import os
+import sys 
 
 #
 # Main function
@@ -152,4 +153,4 @@ if __name__ == '__main__':
             debug = sys.argv[3] == 'debug=True'
         except:
             debug = False
-        joinNodules.merge_nodules_csv(input_path, output_path, debug = debug)
+        merge_nodules_csv(input_path, output_path, debug = debug)
