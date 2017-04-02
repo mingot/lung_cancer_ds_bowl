@@ -140,8 +140,8 @@ import multiprocessing
 ## MULTI PARALLEL ---------------------------------------------------------------------------------------------
 
 
-file_list = ['/mnt/hd2/preprocessing5/dsb_d8a0ebe575539c2357c2365cdf0229a0.npz',
-             '/mnt/hd2/preprocessing5/dsb_4b2f615f5498ee9d935b0229a2e6bb19.npz']
+file_list = ['/mnt/hd2/preprocessed5/dsb_d8a0ebe575539c2357c2365cdf0229a0.npz',
+             '/mnt/hd2/preprocessed5/dsb_4b2f615f5498ee9d935b0229a2e6bb19.npz']
 
 
 def worker(filename, q):
@@ -187,8 +187,8 @@ def listener(q):
                 f.write('%s,%d,%d,%d,%.3f,%.5f,%d\n' % (filename, nslice, r.centroid[0], r.centroid[1], r.equivalent_diameter,preds[i],y[i]))
             total += 1
             f.flush()
-        except:
-            logging.error("Error processing filename, skipping")
+        except Exception as e:
+            logging.error("Error processing filename, skipping. %s" % str(e))
             errors += 1
 
     logging.info("Stats: %d patients, %d errors" % (total,errors))
