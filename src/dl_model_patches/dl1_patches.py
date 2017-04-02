@@ -102,6 +102,7 @@ def chunks(X, y, batch_size=32, augmentation_times=4, thickness=0, is_training=T
     while 1:
         prct1 = 0.2
         idx_1 = [i for i in range(len(y)) if y[i]==1]
+        idx_1 = random.sample(idx_1, int(0.5*len(idx_1)))
         idx_0 = [i for i in range(len(y)) if y[i]==0]
         idx_0 = random.sample(idx_0, int(len(idx_1)/prct1))
         selected_samples = idx_0 + idx_1
@@ -112,10 +113,10 @@ def chunks(X, y, batch_size=32, augmentation_times=4, thickness=0, is_training=T
 
         # generator: if testing, do not augment data
         data_generator = train_datagen if is_training else test_datagen
-        xx = data_generator.flow(X[selected_samples], y[selected_samples], batch_size=batch_size, shuffle=is_training)
+        #xx = data_generator.flow(X[selected_samples], y[selected_samples], batch_size=batch_size, shuffle=is_training)
         i, good = 0, 0
         lenX = len(selected_samples)
-        for X_batch, y_batch in xx:
+        for X_batch, y_batch in data_generator.flow(X[selected_samples], y[selected_samples], batch_size=batch_size, shuffle=is_training):
             i += 1
             if good*batch_size > lenX*augmentation_times or i>100:  # stop when we have augmented enough the batch
                 break
@@ -123,7 +124,7 @@ def chunks(X, y, batch_size=32, augmentation_times=4, thickness=0, is_training=T
                 continue
             good += 1
             yield X_batch, y_batch
-        del xx
+        #del xx
 
 
 
@@ -188,7 +189,7 @@ model.fit_generator(generator=chunks(x_train, y_train, batch_size=32, thickness=
                     callbacks=[tb, model_checkpoint],
                     validation_data=chunks(x_test, y_test, batch_size=32, is_training=False, thickness=1),
                     nb_val_samples=32*10,
-                    max_q_size=20,
+                    max_q_size=10,
                     nb_worker=1)  # a locker is needed if increased the number of parallel workers
 
 # ## CHECKS GENERATOR
