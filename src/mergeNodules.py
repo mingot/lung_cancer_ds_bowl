@@ -20,6 +20,7 @@ Output writes a  csv with:
 import pandas as pd
 import numpy as np
 import time
+import os
 
 #
 # Main function
