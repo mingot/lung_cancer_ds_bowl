@@ -88,7 +88,7 @@ def distance2D(a, b, pixels_to_mm = np.array([0.7, 0.7])):
     Gets the distance between two slices 
     """
     d = np.array([a.x - b.x, a.y - b.y])
-    return np.dot(d, pixels_to_mm)
+    return np.linalg.norm(d)
 
 def same_nodule_likelihood(nodule1, nodule2,  pixels_to_mm) :
     """
