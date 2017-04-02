@@ -42,6 +42,7 @@ logging.basicConfig(level=logging.INFO,
                     datefmt='%m-%d %H:%M:%S')
 
 
+
 ### PATCHES GENERATION -----------------------------------------------------------------
 
 # ## PATIENTS FILE LIST
@@ -99,15 +100,14 @@ def chunks(X_orig, y_orig, batch_size=32, augmentation_times=4, thickness=0, is_
      - thickness: number of slices up and down to add as a channel to the patch
     """
     while 1:
-        # downsample negatives (reduce 90%)
-        # if is_training:
-        #     idx_1 = [i for i in range(len(y_orig)) if y_orig[i]==1]
-        #     idx_0 = [i for i in range(len(y_orig)) if y_orig[i]==0]
-        #     idx_0 = random.sample(idx_0, len(idx_1))
-        #     selected_samples = idx_0 + idx_1
-        # else:
+        prct1 = 0.2
+        idx_1 = [i for i in range(len(y_orig)) if y_orig[i]==1]
+        idx_0 = [i for i in range(len(y_orig)) if y_orig[i]==0]
+        idx_0 = random.sample(idx_0, int(len(idx_1)/prct1))
+        selected_samples = idx_0 + idx_1
+        random.shuffle(selected_samples)
 
-        selected_samples  = [i for i in range(len(y_orig)) if y_orig[i]==1 or random.randint(0,9)==0]
+        #selected_samples  = [i for i in range(len(y_orig)) if y_orig[i]==1 or random.randint(0,9)==0]
         X = [X_orig[i] for i in selected_samples]
         y = [y_orig[i] for i in selected_samples]
         logging.info("Final downsampled dataset stats: TP:%d, FP:%d" % (sum(y), len(y)-sum(y)))
