@@ -81,9 +81,8 @@ def get_vessel_mask(data):
 
     rescaleFilter.Update()
 
-    #bin_image = binarize_image(itk.PyBuffer[OutputImageType].GetArrayFromImage(rescaleFilter.GetOutput()), 25)
-    im = itk.PyBuffer[OutputImageType].GetArrayFromImage(rescaleFilter.GetOutput())
-    return im
+    bin_image = binarize_image(itk.PyBuffer[OutputImageType].GetArrayFromImage(rescaleFilter.GetOutput()), 25)
+    return bin_image
 
 
 if __name__ == "__main__":
