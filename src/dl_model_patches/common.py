@@ -99,7 +99,7 @@ def extract_rois_from_lung_mask(lung_image, lung_mask, margin=5):
     sel_regions = []
     for region in regions_pred:
         area, ratio = calc_area(region), calc_ratio(region)
-        if 3*3<=area and area<=70*70 and 1.0/3<=ratio and ratio<=3:  # regions in [2.1mm, 40mm]
+        if 3*3<=area: #and area<=70*70 and 1.0/3<=ratio and ratio<=3:  # regions in [2.1mm, 40mm]
             sel_regions.append(region)
     regions_pred = sel_regions
 
@@ -177,11 +177,12 @@ def add_stats(stat1, stat2):
 
 
 def load_patient(patient_data, patient_nodules_df=None, discard_empty_nodules=False,
-                 output_rois=False, debug=False, thickness=0):
+                 output_rois=False, debug=False, include_ground_truth=False, thickness=0):
     """
     Returns images generated for each patient.
      - patient_nodules_df: pd dataframe with at least: x, y, nslice, diameter
      - thickness: number of slices up and down to be taken
+     - include_ground_truth: should the ground truth patches be included as regions?
     """
     X, Y, rois = [], [], []
     total_stats = {}
@@ -216,6 +217,7 @@ def load_patient(patient_data, patient_nodules_df=None, discard_empty_nodules=Fa
 
             # Filter ROIs to discard small and connected
             regions_pred = extract_rois_from_lung_mask(lung_image, lung_mask)
+            if include_ground_truth: regions_pred.extend(get_regions(nodules_mask,threshold=np.mean(nodules_mask)))
 
         else:
             sel_patient_nodules_df = patient_nodules_df[patient_nodules_df['nslice']==nslice]
