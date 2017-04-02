@@ -92,7 +92,7 @@ train_datagen = ImageDataGenerator(
 test_datagen = ImageDataGenerator(dim_ordering="th")  # dummy for testing to have the same structure
 
 
-def chunks(X_orig, y_orig, batch_size=32, augmentation_times=4, thickness=0, is_training=True):
+def chunks(X, y, batch_size=32, augmentation_times=4, thickness=0, is_training=True):
     """
     Batches generator for keras fit_generator. Returns batches of patches 40x40px
      - augmentation_times: number of time to return the data augmented
@@ -101,28 +101,20 @@ def chunks(X_orig, y_orig, batch_size=32, augmentation_times=4, thickness=0, is_
     """
     while 1:
         prct1 = 0.2
-        idx_1 = [i for i in range(len(y_orig)) if y_orig[i]==1]
-        idx_0 = [i for i in range(len(y_orig)) if y_orig[i]==0]
+        idx_1 = [i for i in range(len(y)) if y[i]==1]
+        idx_0 = [i for i in range(len(y)) if y[i]==0]
         idx_0 = random.sample(idx_0, int(len(idx_1)/prct1))
         selected_samples = idx_0 + idx_1
         random.shuffle(selected_samples)
 
         #selected_samples  = [i for i in range(len(y_orig)) if y_orig[i]==1 or random.randint(0,9)==0]
-        X = [X_orig[i] for i in selected_samples]
-        y = [y_orig[i] for i in selected_samples]
-        logging.info("Final downsampled dataset stats: TP:%d, FP:%d" % (sum(y), len(y)-sum(y)))
-
-        # convert to np array and add extra axis (needed for keras)
-        X, y = np.asarray(X), np.asarray(y)
-        y = np.expand_dims(y, axis=1)
-        if thickness==0:
-            X = np.expand_dims(X, axis=1)
+        logging.info("Final downsampled dataset stats: TP:%d, FP:%d" % (sum(y[selected_samples]), len(y[selected_samples])-sum(y[selected_samples])))
 
         # generator: if testing, do not augment data
         data_generator = train_datagen if is_training else test_datagen
 
         i, good = 0, 0
-        for X_batch, y_batch in data_generator.flow(X, y, batch_size=batch_size, shuffle=is_training):
+        for X_batch, y_batch in data_generator.flow(X[selected_samples], y[selected_samples], batch_size=batch_size, shuffle=is_training):
             i += 1
             if good*batch_size > len(X)*augmentation_times or i>100:  # stop when we have augmented enough the batch
                 break
@@ -130,6 +122,7 @@ def chunks(X_orig, y_orig, batch_size=32, augmentation_times=4, thickness=0, is_
                 continue
             good += 1
             yield X_batch, y_batch
+
 
 
 def chunks_multichannel(X_orig, y_orig, batch_size=32, augmentation_times=4, thickness=0, is_training=True):
@@ -169,8 +162,10 @@ def chunks_multichannel(X_orig, y_orig, batch_size=32, augmentation_times=4, thi
 logging.info("Loading training and test sets")
 x_train = np.load(os.path.join(PATCHES_PATH, 'x_train_dl1_full.npz'))['arr_0']
 y_train = np.load(os.path.join(PATCHES_PATH, 'y_train_dl1_full.npz'))['arr_0']
+y_train = np.expand_dims(y_train, axis=1)
 x_test = np.load(os.path.join(PATCHES_PATH, 'x_test_dl1_full.npz'))['arr_0']
 y_test = np.load(os.path.join(PATCHES_PATH, 'y_test_dl1_full.npz'))['arr_0']
+y_test = np.expand_dims(y_test, axis=1)
 logging.info("Training set (1s/total): %d/%d" % (sum(y_train),len(y_train)))
 logging.info("Test set (1s/total): %d/%d" % (sum(y_test), len(y_test)))
 
