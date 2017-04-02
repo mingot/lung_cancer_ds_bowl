@@ -70,7 +70,7 @@ def merge_nodules_csv(path_csv, path_result,nodule_threshold = 0.7,  pixels_to_m
     tFinal = time.time()
     print 'Finished merging. Total %d nodules, in total %d nodules where merged' % ( len(pd_nodules_filtered), number_nodes_concatenated) 
     print 'Time needed: %f' % (tFinal - tStart)
-    df_merged_nodules.to_csv(path_result)
+    df_merged_nodules.to_csv(path_result, index = False)
 #
 # Auxiliary functions
 #
