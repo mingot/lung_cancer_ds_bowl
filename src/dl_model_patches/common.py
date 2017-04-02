@@ -216,6 +216,7 @@ def load_patient(patient_data, patient_nodules_df=None, discard_empty_nodules=Fa
 
             # Filter ROIs to discard small and connected
             regions_pred = extract_rois_from_lung_mask(lung_image, lung_mask)
+            regions_pred.extend(get_regions(nodules_mask,threshold=np.mean(nodules_mask)))
 
         else:
             sel_patient_nodules_df = patient_nodules_df[patient_nodules_df['nslice']==nslice]
