@@ -23,6 +23,7 @@ OUTPUT_DL1 = wp + 'output/nodules_patches_dl1_v11.csv'  # OUTPUT_DL1 = wp + 'per
 
 DSB_VALIDATION = wp + 'data/stage1_validation.csv'
 DSB_LABELS = wp + 'data/stage1_labels.csv'
+
 INPUT_PATH = '/mnt/hd2/preprocessed5/' # INPUT_PATH = wp + 'data/preprocessed5_sample'
 VALIDATION_PATH = '/mnt/hd2/preprocessed5_validation_luna/' # VALIDATION_PATH = wp + 'data/preprocessed5_sample'
 PATCHES_PATH = '/mnt/hd2/patches'  # PATCHES_PATH = wp + 'data/preprocessed5_patches'
@@ -45,37 +46,34 @@ logging.basicConfig(level=logging.INFO,
 # Load the output of DL-I and load just the 1's (TP or FN's) and the FP's for a given score
 # to train DL-II
 
-# luna annotated samples (do not train over the samples not annotated)
-luna_df = pd.read_csv(LUNA_ANNOTATIONS)
-annotated = list(set(['luna_%s.npz' % p.split('.')[-1] for p in luna_df['seriesuid']]))
-
 # filter TP and FP of the suggested by DL1
 SCORE_TH = 0.9
+label_df = pd.read_csv(DSB_LABELS)
+label_df['id'] = ["dsb_%s.npz" % p for p in list(label_df['id'])]
+validation_df = pd.read_csv(DSB_VALIDATION)
 nodules_df = pd.read_csv(OUTPUT_DL1)
 nodules_df = nodules_df[nodules_df['patientid'].str.startswith('dsb')]  # Filter DSB patients
+nodules_df = nodules_df[~nodules_df.patientid.isin(list(label_df['id']))]# remove test set patients
 nodules_df = nodules_df[(nodules_df['score'] > SCORE_TH) | (nodules_df['diameter']>10)]
 nodules_df['nslice'] = nodules_df['nslice'].astype(int)
 logging.info("DSB selected nodules shape: %s" % str(nodules_df.shape))
 
 
 # Construction of training and testsets
-label_df = pd.read_csv(DSB_LABELS)
-validation_df = pd.read_csv(DSB_VALIDATION)
 logging.info("DSB validation shape:%s" % str(validation_df.shape))
-filenames_train = [os.path.join(INPUT_PATH,f) for f in set(nodules_df['patientid']) if f not in validation_df['patientid']]
-filenames_test = [os.path.join(INPUT_PATH,f) for f in set(nodules_df['patientid']) if f in validation_df['patientid']]
+filenames_train = [os.path.join(INPUT_PATH,f) for f in set(nodules_df['patientid']) if f not in list(validation_df['patientid'])]
+filenames_test = [os.path.join(INPUT_PATH,f) for f in set(nodules_df['patientid']) if f in list(validation_df['patientid'])]
 
 logging.info("Patients train:%d, test:%d" % (len(filenames_train), len(filenames_test)))
 
 def __load_and_store(filename):
     patient_data = np.load(filename)['arr_0']
-    short_filename = filename.split('/')[-1]
-    ndf = nodules_df[nodules_df['patientid']==short_filename]
+    patid = filename.split('/')[-1]
+    ndf = nodules_df[nodules_df['patientid']==patid]
     X, y, rois, stats = common.load_patient(patient_data, ndf, output_rois=True, thickness=1)
-    patid = short_filename.split('.')[0].split('_')[-1]
     label = int(label_df[label_df['id']==patid]['cancer'])
     y = [label]*len(X)
-    logging.info("Patient: %s, cancer:%d, stats: %s" % (short_filename, label, stats))
+    logging.info("Patient: %s, cancer:%d, stats: %s" % (patid, label, stats))
     return X, y, stats
 
 
