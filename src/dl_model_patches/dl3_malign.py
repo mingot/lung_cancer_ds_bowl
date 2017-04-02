@@ -22,7 +22,7 @@ LUNA_ANNOTATIONS = wp + 'data/luna/annotations.csv'
 OUTPUT_DL1 = wp + 'output/nodules_patches_dl1_v11.csv'  # OUTPUT_DL1 = wp + 'personal/noduls_patches_v06.csv'
 
 DSB_VALIDATION = wp + 'data/stage1_validation.csv'
-DSB_LABELS = wp + 'data/dtage1_labels.csv'
+DSB_LABELS = wp + 'data/stage1_labels.csv'
 INPUT_PATH = '/mnt/hd2/preprocessed5/' # INPUT_PATH = wp + 'data/preprocessed5_sample'
 VALIDATION_PATH = '/mnt/hd2/preprocessed5_validation_luna/' # VALIDATION_PATH = wp + 'data/preprocessed5_sample'
 PATCHES_PATH = '/mnt/hd2/patches'  # PATCHES_PATH = wp + 'data/preprocessed5_patches'
