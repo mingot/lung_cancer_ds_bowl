@@ -188,7 +188,7 @@ def listener(q):
             total += 1
             f.flush()
         except Exception as e:
-            logging.error("Error processing filename, skipping. %s" % str(e))
+            logging.error("[LISTENER] Error processing result, skipping. %s" % str(e))
             errors += 1
 
     logging.info("Stats: %d patients, %d errors" % (total,errors))
