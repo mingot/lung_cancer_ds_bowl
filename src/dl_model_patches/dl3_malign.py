@@ -53,7 +53,7 @@ label_df['id'] = ["dsb_%s.npz" % p for p in list(label_df['id'])]
 validation_df = pd.read_csv(DSB_VALIDATION)
 nodules_df = pd.read_csv(OUTPUT_DL1)
 nodules_df = nodules_df[nodules_df['patientid'].str.startswith('dsb')]  # Filter DSB patients
-nodules_df = nodules_df[~nodules_df.patientid.isin(list(label_df['id']))]# remove test set patients
+nodules_df = nodules_df[nodules_df.patientid.isin(list(label_df['id']))]  # keep only train patients
 nodules_df = nodules_df[(nodules_df['score'] > SCORE_TH) | (nodules_df['diameter']>10)]
 nodules_df['nslice'] = nodules_df['nslice'].astype(int)
 logging.info("DSB selected nodules shape: %s" % str(nodules_df.shape))
