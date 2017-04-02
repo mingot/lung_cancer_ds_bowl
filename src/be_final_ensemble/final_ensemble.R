@@ -18,8 +18,8 @@ dataset_final <- generate_patient_dt(path_repo,path_dsb)
 # SEPARATING TRAIN AND SCORING ---------------------------------------------------------------------
 patients_train <- dataset_final[dataset == "training",patientid]
 dataset_final[,dataset := NULL]
-features_sp <- fread(paste0(path_dsb,"/sp_04_features.csv"))
-dataset_final <- merge(dataset_final,features_sp,all.x = T,by = "patientid")
+# features_sp <- fread(paste0(path_dsb,"/sp_04_features.csv"))
+# dataset_final <- merge(dataset_final,features_sp,all.x = T,by = "patientid")
 dataset_final <- na_to_zeros(dataset_final,names(dataset_final))
 nombres_m <- names(dataset_final)
 for(n in nombres_m) {
@@ -28,26 +28,23 @@ for(n in nombres_m) {
 
 
 vars_train <- c(
-  # "max_intensity",
+  #"max_intensity",
   # "max_diameter",
   "big_nodules_patches",
   # "nods_15",
   # "nods_20",
   # "nods_25",
   #"nods_30",
-  #"max_diameter_patches",
+  "max_diameter_patches",
   #"num_slices_patches",
   #"max_score",
   "max_score_patches",
   "nslice_nodule_patch",
   "consec_nods_patches",
   "diameter_nodule_patch",
-  #"total_nodules_patches"
+  #L"total_nodules_patches",
   #"score_2_patch",
-  "diameter_nodule_patch",
-  "bone_density",
-  "n_perc_std",
-  "n_perc_avg"
+  "diameter_nodule_patch"
   #"score_mean",
   #"nslice_sd",
   #"diameter_sd"
@@ -60,13 +57,13 @@ vars_train <- c(
   # "mean_intensity_nodule"
   )
 vars_sp <- c(
-  "PC3_lbp_min",
+  #"PC3_lbp_min",
   #"score_median",
-  "diameter_sd"
+  #"diameter_sd"
   #"PC1_lbp_sd"
 )
 vars_train <- c(vars_train,vars_sp)
-vars_train <- names(dataset_final)
+#vars_train <- names(dataset_final)
 dataset_final_f <- dataset_final[,.SD,.SDcols = unique(c(vars_train,"patientid","cancer"))]
 data_train <- dataset_final_f[patientid %in% patients_train]
 scoring <- dataset_final_f[!patientid %in% patients_train]
@@ -83,8 +80,8 @@ fv <- generateFilterValuesData(train_task, method = c("anova.test","chi.squared"
 vars_importance <- data.table(fv$data)
 vars_importance[chi.squared > 0]
 
-lrn = generateModel("classif.gbm")$lrn
-params = generateModel("classif.gbm")$ps
+lrn = generateModel("classif.logreg")$lrn
+#params = generateModel("classif.")$ps
 k_folds = 5
 rdesc = makeResampleDesc("CV", iters = k_folds, stratify = TRUE)
 
@@ -132,7 +129,7 @@ LogLossBinary(target,preds)
 preds = predictCv(final_model, scoring)
 
 submission = data.table(id=patients_scoring, cancer=preds)
-write.csv(submission, paste0(path_repo,"data/submissions/12_submission.csv"), quote=F, row.names=F)
+write.csv(submission, paste0(path_repo,"data/submissions/14_submission.csv"), quote=F, row.names=F)
 
 
 # GENERATING PREDICTIONS FOR TRAINING ----------------------------------------------------------------------------

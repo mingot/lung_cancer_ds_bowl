@@ -31,18 +31,29 @@ generate_patient_dt <- function(path_repo,path_dsb,path_output = NULL) {
   #vars_nodules_patches <- fread(paste0("D:/dsb/nodules_patches_v05_augmented.csv"))
   #vars_nodules_patches <- fread(paste0("D:/dsb/noduls_patches_v06_rectif.csv"))
   vars_nodules_patches <- fread(paste0(path_dsb,"nodules_patches_dl1_v11.csv")) ## PATH
+  vars_nodules_hard_negative <- fread(paste0(path_dsb,"nodules_patches_hardnegative_v03.csv"))
+  vars_nodules_hard_negative <- unique(vars_nodules_hard_negative)
+  setnames(vars_nodules_hard_negative, "score","score_2")
+  vars_nodules_patches <- merge(
+    vars_nodules_patches,
+    vars_nodules_hard_negative,
+    all.x=T,
+    by=c("patientid","nslice","x","y","diameter","label"))
   
-  if(!"scored_dl2" %in% names(vars_nodules_patches)){
-    vars_nodules_patches$scored_dl2 <- 0
-  } else {setnames(vars_nodules_patches,"score_dl1","score")}
   vars_nodules_patches <- vars_nodules_patches[grep("dsb_",patientid)][!is.na(x)]
   vars_nodules_patches[,patientid:=gsub(".npz|dsb_","",patientid)]
+  vars_nodules_patches[is.na(score_2),score_2 := score]
+  vars_nodules_patches[,score := (score + score_2)/2]
+  vars_nodules_patches[,score_2 := NULL]
   ### Filter by score
   #vars_nodules_patches[,score := (0.8*score + 0.2*scored_dl2)/2]
-  vars_nodules_patches = vars_nodules_patches[score>0.75]
+  vars_nodules_patches = vars_nodules_patches[score > 0.7]
   names_change <- c("x","y","diameter","score")
   setnames(vars_nodules_patches,names_change,paste0(names_change,"_patches"))
   vars_nodules_patches <- merge(vars_nodules_patches,patients,all.x=T,by = "patientid")
+  
+  # Nodules Filtered
+  nodules_filtered <- fread(paste0(path_dsb,"nodules_filtered.csv"))
   
   ## Merging al nodules variables
   vars_nodules <- rbind(vars_nodules,vars_nodules_patches,fill = TRUE)
@@ -65,7 +76,7 @@ generate_patient_dt <- function(path_repo,path_dsb,path_output = NULL) {
   # Extra features
   extra_feats <- fread(paste0(path_dsb,"stage1_extra_features_intercostal.csv"))
   setnames(extra_feats,"patient_id","patientid")
-  extra_feats[,patientid := gsub("dsb_","",patientid)]
+  extra_feats[,patientid := gsub(".npz|dsb_","",patientid)]
   
   ## Joining all the patient variables
   dataset_final <- merge(patients,dataset_nodules,all.x = T, by = "patientid")
@@ -91,8 +102,7 @@ aggregate_patient <- function(dt) {
     "mean_intensity",
     "nodule_pred",
     "diameter_patches",
-    "score_patches",
-    "scored_dl2")
+    "score_patches")
   )
   
   final_df = dt[,.(total_nodules_unet=sum(!is.na(x)), 
@@ -111,8 +121,7 @@ aggregate_patient <- function(dt) {
                    max_score = max(nodule_pred, na.rm=T),
                    mean_score = mean(nodule_pred),
                    max_score_patches = max(score_patches,na.rm=T),
-                   mean_score_patches = mean(score_patches,na.rm=T),
-                   max_score_2 = max(scored_dl2,na.rm=T)
+                   mean_score_patches = mean(score_patches,na.rm=T)
                    
   ),
   by=.(patientid)]
@@ -173,8 +182,7 @@ aggregate_patient <- function(dt) {
     max_score_patches == score_patches & max_score_patches > 0,
     .(patientid,
       nslice_nodule_patch = nslice,
-      diameter_nodule_patch = diameter_patches,
-      score_2_patch = scored_dl2)
+      diameter_nodule_patch = diameter_patches)
     ]
   max_score_nodule <- max_score_nodule[,.SD[1],patientid]
   final_df <- merge(final_df,max_score,all.x = T, by="patientid")
