@@ -456,7 +456,7 @@ def process_pipeline_patient(
     if patient_id in patient_inverted:
         perc_z = 1 - perc_z
     # return percentage of lung volume before the nodule
-    df_augmented['40_nodeverticalposition'] = [perc_z[x] for x in z_nodule]
+    df_augmented['40_nodeverticalposition'] = [perc_z[int(x)] for x in z_nodule]
     
     # (6) concat data frames to obtain the final augmented data frame for this patient
     # df_all = pd.merge(p_df.iloc[patch_nonnull], df_feat, how='cross')
