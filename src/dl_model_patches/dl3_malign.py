@@ -20,7 +20,9 @@ from skimage import transform
 wp = os.environ['LUNG_PATH']
 LUNA_ANNOTATIONS = wp + 'data/luna/annotations.csv'
 OUTPUT_DL1 = wp + 'output/nodules_patches_dl1_v11.csv'  # OUTPUT_DL1 = wp + 'personal/noduls_patches_v06.csv'
+
 DSB_VALIDATION = wp + 'data/stage1_validation.csv'
+DSB_LABELS = wp + 'data/dtage1_labels.csv'
 INPUT_PATH = '/mnt/hd2/preprocessed5/' # INPUT_PATH = wp + 'data/preprocessed5_sample'
 VALIDATION_PATH = '/mnt/hd2/preprocessed5_validation_luna/' # VALIDATION_PATH = wp + 'data/preprocessed5_sample'
 PATCHES_PATH = '/mnt/hd2/patches'  # PATCHES_PATH = wp + 'data/preprocessed5_patches'
@@ -57,31 +59,36 @@ logging.info("DSB selected nodules shape: %s" % str(nodules_df.shape))
 
 
 # Construction of training and testsets
+label_df = pd.read_csv(DSB_LABELS)
 validation_df = pd.read_csv(DSB_VALIDATION)
 logging.info("DSB validation shape:%s" % str(validation_df.shape))
-filenames_train = [os.path.join(INPUT_PATH,f) for f in set(nodules_df['patientid']) if f[0:4]=='dsb' and f not in validation_df['patientid']]
-filenames_test = [os.path.join(INPUT_PATH,f) for f in set(nodules_df['patientid']) if f[0:4]=='dsb' and f in validation_df['patientid']]
+filenames_train = [os.path.join(INPUT_PATH,f) for f in set(nodules_df['patientid']) if f not in validation_df['patientid']]
+filenames_test = [os.path.join(INPUT_PATH,f) for f in set(nodules_df['patientid']) if f in validation_df['patientid']]
 
 logging.info("Patients train:%d, test:%d" % (len(filenames_train), len(filenames_test)))
 
 def __load_and_store(filename):
     patient_data = np.load(filename)['arr_0']
-    ndf = nodules_df[nodules_df['patientid']==filename.split('/')[-1]]
+    short_filename = filename.split('/')[-1]
+    ndf = nodules_df[nodules_df['patientid']==short_filename]
     X, y, rois, stats = common.load_patient(patient_data, ndf, output_rois=True, thickness=1)
-    logging.info("Patient: %s, stats: %s" % (filename.split('/')[-1], stats))
+    patid = short_filename.split('.')[0].split('_')[-1]
+    label = int(label_df[label_df['id']==patid]['cancer'])
+    y = [label]*len(X)
+    logging.info("Patient: %s, cancer:%d, stats: %s" % (short_filename, label, stats))
     return X, y, stats
 
 
-# common.multiproc_crop_generator(filenames_train,
-#                                 os.path.join(PATCHES_PATH,'x_train_dl3.npz'),
-#                                 os.path.join(PATCHES_PATH,'y_train_dl3.npz'),
-#                                 __load_and_store,
-#                                 parallel=True)
-#
-#
-# common.multiproc_crop_generator(filenames_test,
-#                                 os.path.join(PATCHES_PATH,'x_test_dl3.npz'),
-#                                 os.path.join(PATCHES_PATH,'y_test_dl3.npz'),
-#                                 __load_and_store,
-#                                 parallel=True)
+common.multiproc_crop_generator(filenames_train[0:10],
+                                os.path.join(PATCHES_PATH,'x_train_dl3.npz'),
+                                os.path.join(PATCHES_PATH,'y_train_dl3.npz'),
+                                __load_and_store,
+                                parallel=True)
+
+
+common.multiproc_crop_generator(filenames_test[0:10],
+                                os.path.join(PATCHES_PATH,'x_test_dl3.npz'),
+                                os.path.join(PATCHES_PATH,'y_test_dl3.npz'),
+                                __load_and_store,
+                                parallel=True)
 
