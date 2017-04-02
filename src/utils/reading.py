@@ -118,10 +118,12 @@ def dicom_get_spacing(slices):
     return map(float, ([slices[0].SliceThickness] + slices[0].PixelSpacing))
 
 
-def load_scan(patient_path):
+def load_scan(patient_path, check_order = True):
     """
     Given a patient path, returns an array of scans from the DICOM files. Check that the files are dicoms, and the
     modality is CT.
+    
+    check_order = makes sure that the dicoms are ordered from head to feets.
     """
     slices = filter(lambda s: s.endswith('.dcm'), os.listdir(patient_path))
     slices = [dicom.read_file(os.path.join(patient_path, s)) for s in slices]
@@ -130,6 +132,9 @@ def load_scan(patient_path):
     if not slices or slices[0].Modality != 'CT':
         return []
     slices.sort(key=lambda x: int(x.InstanceNumber))
+    if  slices[0][0x20, 0x32].value[2] < slices[1][0x20, 0x32].value[2] and check_order:
+        slices = reversed(slices)
+        
     try:
         slice_thickness = np.abs(slices[0].ImagePositionPatient[2] - slices[1].ImagePositionPatient[2])
     except:

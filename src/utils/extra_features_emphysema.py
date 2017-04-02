@@ -15,7 +15,10 @@ if SERVER:
 else:
     path = '/Users/rdg/Documents/my_projects/DSB17/lung_cancer_ds_bowl/data/stage1'
     path_preprocessed = '/Users/rdg/Documents/my_projects/DSB17/lung_cancer_ds_bowl/data/stage1_proc'
-    output_file = '/Users/rdg/Documents/my_projects/DSB17/lung_cancer_ds_bowl/data/stage1_proc/var_emphysema_v05csv'
+    output_file = '/Users/rdg/Documents/my_projects/DSB17/lung_cancer_ds_bowl/data/stage1_proc/var_emphysema_v05.csv'
+
+csvfile = open(output_file, 'wb')
+csvwriter = csv.writer(csvfile, delimiter=',')
 
 
 def get_emphysema_predictors(img, mask):
@@ -53,7 +56,7 @@ def compute_emphysema_probability(img, mask):
 
 def process_patient_file(patient_name):
     file_name = os.path.join(path_preprocessed, patient_name)
-    patient_id = patient_file[4:-4]
+    patient_id = patient_name[4:-4]
 
     print('Processing patient {}'.format(patient_id))
 
@@ -62,7 +65,9 @@ def process_patient_file(patient_name):
     img = loaded_stack[0, :, :, :]
     mask = loaded_stack[1, :, :, :]
     p, f1, f2 = compute_emphysema_probability(img, mask)
-    csvwriter.writerow([patient_id, p, f1, f2])
+    new_row = [patient_id, p, f1, f2]
+    print new_row
+    csvwriter.writerow(new_row)
 
 
 if __name__ == "__main__":
@@ -73,9 +78,6 @@ if __name__ == "__main__":
     patient_files = [f for f in patient_files if f.startswith('dsb')]
     patient_files = sorted(patient_files)
 
-    csvfile = open(output_file, 'wb')
-    csvwriter = csv.writer(csvfile, delimiter=',')
-
     for patient_file in patient_files:
         try:
             process_patient_file(patient_file)
@@ -83,6 +85,4 @@ if __name__ == "__main__":
             print('There was some problem reading patient {}. Ignoring and live goes on.'.format(patient_file))
             print('Exception', e)
             continue
-
-
 
