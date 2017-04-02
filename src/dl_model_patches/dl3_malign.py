@@ -59,9 +59,10 @@ logging.info("DSB selected nodules shape: %s" % str(nodules_df.shape))
 # Construction of training and testsets
 validation_df = pd.read_csv(DSB_VALIDATION)
 logging.info("DSB validation shape:%s" % str(validation_df.shape))
-filenames_train = [os.path.join(INPUT_PATH,f) for f in set(nodules_df['patientid']) if f[0:4]=='dsb' and f in os.listdir(INPUT_PATH)]
+filenames_train = [os.path.join(INPUT_PATH,f) for f in set(nodules_df['patientid']) if f[0:4]=='dsb' and f not in validation_df['patientid']]
 filenames_test = [os.path.join(INPUT_PATH,f) for f in set(nodules_df['patientid']) if f[0:4]=='dsb' and f in validation_df['patientid']]
 
+logging.info("Patients train:%d, test:%d" % (len(filenames_train), len(filenames_test)))
 
 def __load_and_store(filename):
     patient_data = np.load(filename)['arr_0']
