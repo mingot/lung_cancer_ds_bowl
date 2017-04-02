@@ -102,7 +102,7 @@ def chunks(X, y, batch_size=32, augmentation_times=4, thickness=0, is_training=T
     while 1:
         prct1 = 0.2
         idx_1 = [i for i in range(len(y)) if y[i]==1]
-        idx_1 = random.sample(idx_1, int(0.5*len(idx_1)))
+        idx_1 = random.sample(idx_1, int(0.2*len(idx_1)))
         idx_0 = [i for i in range(len(y)) if y[i]==0]
         idx_0 = random.sample(idx_0, int(len(idx_1)/prct1))
         selected_samples = idx_0 + idx_1
