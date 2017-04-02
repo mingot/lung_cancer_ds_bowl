@@ -107,6 +107,8 @@ def chunks(X, y, batch_size=32, augmentation_times=4, thickness=0, is_training=T
         idx_0 = random.sample(idx_0, int(len(idx_1)/prct1))
         selected_samples = idx_0 + idx_1
         random.shuffle(selected_samples)
+        XX = X[selected_samples]
+        yy = y[selected_samples]
 
         #selected_samples  = [i for i in range(len(y_orig)) if y_orig[i]==1 or random.randint(0,9)==0]
         logging.info("Final downsampled dataset stats: TP:%d, FP:%d" % (sum(y[selected_samples]), len(y[selected_samples])-sum(y[selected_samples])))
@@ -116,7 +118,7 @@ def chunks(X, y, batch_size=32, augmentation_times=4, thickness=0, is_training=T
         #xx = data_generator.flow(X[selected_samples], y[selected_samples], batch_size=batch_size, shuffle=is_training)
         i, good = 0, 0
         lenX = len(selected_samples)
-        for X_batch, y_batch in data_generator.flow(X[selected_samples], y[selected_samples], batch_size=batch_size, shuffle=is_training):
+        for X_batch, y_batch in data_generator.flow(XX, yy, batch_size=batch_size, shuffle=is_training):
             i += 1
             if good*batch_size > lenX*augmentation_times or i>100:  # stop when we have augmented enough the batch
                 break
