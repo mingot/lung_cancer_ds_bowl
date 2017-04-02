@@ -114,9 +114,10 @@ def chunks(X, y, batch_size=32, augmentation_times=4, thickness=0, is_training=T
         data_generator = train_datagen if is_training else test_datagen
 
         i, good = 0, 0
+        lenX = len(selected_samples)
         for X_batch, y_batch in data_generator.flow(X[selected_samples], y[selected_samples], batch_size=batch_size, shuffle=is_training):
             i += 1
-            if good*batch_size > len(X)*augmentation_times or i>100:  # stop when we have augmented enough the batch
+            if good*batch_size > lenX*augmentation_times or i>100:  # stop when we have augmented enough the batch
                 break
             if X_batch.shape[0] != batch_size:  # ensure correct batch size
                 continue
