@@ -30,7 +30,7 @@ generate_patient_dt <- function(path_repo,path_dsb,path_output = NULL) {
   ## RESNET Data -------------------------------------------------------------------------------------
   #vars_nodules_patches <- fread(paste0("D:/dsb/nodules_patches_v05_augmented.csv"))
   #vars_nodules_patches <- fread(paste0("D:/dsb/noduls_patches_v06_rectif.csv"))
-  vars_nodules_patches <- fread(paste0(path_dsb,"nodules_patches_dl1_v18.csv")) ## PATH
+  vars_nodules_patches <- fread(paste0(path_dsb,"nodules_patches_dl1_v11.csv")) ## PATH
   vars_nodules_hard_negative <- fread(paste0(path_dsb,"nodules_patches_hardnegative_v03.csv"))
   vars_nodules_hard_negative <- unique(vars_nodules_hard_negative)
   setnames(vars_nodules_hard_negative, "score","score_2")
@@ -72,7 +72,7 @@ generate_patient_dt <- function(path_repo,path_dsb,path_output = NULL) {
   dataset_slices <- filter_and_patient_name(dataset_slices)
   
   # EMPHYSEMA
-  emphysema <- fread(paste0(path_dsb,"var_emphysema_v04.csv"))
+  emphysema <- fread(paste0(path_dsb,"var_emphysema_v05.csv"))
   setnames(emphysema,names(emphysema),c("patientid","var_emphy1","var_emphy2","var_emphy3"))
 
   # Extra features

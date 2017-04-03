@@ -18,8 +18,8 @@ dataset_final <- generate_patient_dt(path_repo,path_dsb)
 # SEPARATING TRAIN AND SCORING ---------------------------------------------------------------------
 patients_train <- dataset_final[dataset == "training",patientid]
 dataset_final[,dataset := NULL]
-# features_sp <- fread(paste0(path_dsb,"/sp_04_features.csv"))
-# dataset_final <- merge(dataset_final,features_sp,all.x = T,by = "patientid")
+features_sp <- fread(paste0(path_dsb,"/sp_04_features.csv"))
+dataset_final <- merge(dataset_final,features_sp,all.x = T,by = "patientid")
 dataset_final <- na_to_zeros(dataset_final,names(dataset_final))
 nombres_m <- names(dataset_final)
 for(n in nombres_m) {
@@ -69,7 +69,7 @@ vars_sp <- c(
   #"PC1_lbp_sd"
 )
 vars_train <- c(vars_train,vars_sp)
-#vars_train <- names(dataset_final)
+vars_train <- names(dataset_final)
 print(vars_train[!vars_train %in% names(dataset_final)])
 dataset_final_f <- dataset_final[,.SD,.SDcols = unique(c(vars_train,"patientid","cancer"))]
 data_train <- dataset_final_f[patientid %in% patients_train]
@@ -87,7 +87,7 @@ fv <- generateFilterValuesData(train_task, method = c("anova.test","chi.squared"
 vars_importance <- data.table(fv$data)
 vars_importance[chi.squared > 0]
 
-lrn = generateModel("classif.logreg")$lrn
+lrn = generateModel("classif.gbm")$lrn
 #params = generateModel("classif.")$ps
 k_folds = 5
 rdesc = makeResampleDesc("CV", iters = k_folds, stratify = TRUE)
@@ -136,7 +136,7 @@ LogLossBinary(target,preds)
 preds = predictCv(final_model, scoring)
 
 submission = data.table(id=patients_scoring, cancer=preds)
-write.csv(submission, paste0(path_repo,"data/submissions/15_submission.csv"), quote=F, row.names=F)
+write.csv(submission, paste0(path_repo,"data/submissions/16_submission.csv"), quote=F, row.names=F)
 
 
 # GENERATING PREDICTIONS FOR TRAINING ----------------------------------------------------------------------------
@@ -145,7 +145,7 @@ preds = predictCv(final_model, train_task)
 data_out <- copy(data_train)
 data_out$patientid = patients_train
 data_out$predicted=preds
-write.csv(data_out, paste0(path_repo,"data/final_model/scoring_train_15.csv"), quote=F, row.names=F)
+write.csv(data_out, paste0(path_repo,"data/final_model/scoring_train_16.csv"), quote=F, row.names=F)
 
 
 #---------------------------------------------------------------------------------------------------
