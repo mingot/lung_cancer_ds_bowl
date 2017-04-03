@@ -107,7 +107,7 @@ def chunks(X, y, batch_size=32, augmentation_times=4, thickness=0, is_training=T
      - thickness: number of slices up and down to add as a channel to the patch
     """
     while 1:
-        selected_samples = random.sample(range(y), 1000)
+        selected_samples = random.sample(range(len(y)), 1000)
 
         #selected_samples  = [i for i in range(len(y_orig)) if y_orig[i]==1 or random.randint(0,9)==0]
         logging.info("Final downsampled dataset stats: TP:%d, FP:%d" % (sum(y[selected_samples]), len(y[selected_samples])-sum(y[selected_samples])))
