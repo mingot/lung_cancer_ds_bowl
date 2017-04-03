@@ -15,13 +15,13 @@ wp = os.environ['LUNG_PATH']
 INPUT_PATH = '/mnt/hd2/preprocessed5'  # INPUT_PATH = wp + 'data/preprocessed5_sample'
 VALIDATION_PATH = '/mnt/hd2/preprocessed5_validation_luna'
 NODULES_PATH = wp + 'data/luna/annotations.csv'
-OUTPUT_MODEL = wp + 'models/jm_patches_hardnegative_v03.hdf5'
 
-# OUTPUT_CSV = wp + 'output/nodules_patches_dl1_v11_solo_luna.csv'
-OUTPUT_CSV = wp + 'output/nodules_patches_hardnegative_v03.csv'
+# OUTPUT_MODEL = wp + 'models/jm_patches_train_v18.hdf5'
+# OUTPUT_CSV = wp + 'output/nodules_patches_dl1_v18.csv'
 
-# OUTPUT_MODEL = wp + 'models/jm_patches_hardnegative_v02.hdf5'
-# OUTPUT_CSV = wp + 'output/nodules_patches_dl2_v02.csv'
+
+OUTPUT_MODEL = wp + 'models/jm_patches_malign_v01.hdf5'
+OUTPUT_CSV = wp + 'output/nodules_patches_dl3_v01.csv'
 
 
 
@@ -140,9 +140,6 @@ import multiprocessing
 ## MULTI PARALLEL ---------------------------------------------------------------------------------------------
 
 
-file_list = ['/mnt/hd2/preprocessed5/dsb_d8a0ebe575539c2357c2365cdf0229a0.npz',
-             '/mnt/hd2/preprocessed5/dsb_4b2f615f5498ee9d935b0229a2e6bb19.npz']
-
 
 def worker(filename, q):
     while 1:
@@ -168,8 +165,8 @@ def listener(q):
 
     total, errors = 0, 0
 
-    f = open(OUTPUT_CSV, 'a')
-    #f.write('patientid,nslice,x,y,diameter,score,label\n')
+    f = open(OUTPUT_CSV, 'w')
+    f.write('patientid,nslice,x,y,diameter,score,label\n')
     while 1:
         m = q.get()
         if m == 'kill':
