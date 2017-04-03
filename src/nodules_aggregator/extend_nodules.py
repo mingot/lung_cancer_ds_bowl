@@ -456,7 +456,7 @@ def process_pipeline_patient(
     if patient_id in patient_inverted:
         perc_z = 1 - perc_z
     # return percentage of lung volume before the nodule
-    df_augmented['40_nodeverticalposition'] = [perc_z[x] for x in z_nodule]
+    df_augmented['40_nodeverticalposition'] = [perc_z[int(x)] for x in z_nodule]
     
     # (6) concat data frames to obtain the final augmented data frame for this patient
     # df_all = pd.merge(p_df.iloc[patch_nonnull], df_feat, how='cross')
@@ -466,7 +466,8 @@ def process_pipeline_patient(
 def process_pipeline_csv(
     csv_in, 
     patient_path, 
-    csv_out, 
+    csv_out = None, 
+    csv_as_files = True,
     dmin = 3, 
     dmax = 100, 
     compress={'hog':3, 'lbp':3, 'hu':2},
@@ -479,12 +480,14 @@ def process_pipeline_csv(
     
     csv_in: csv file from dl
     patient_path: path where the .npz files are stored
-    csv_out: csv file to write
-    compress: dictionary, features as keys and number of principal 
-    components as values
+    csv_out: csv file to write, or None if result is a data frame
+    csv_as_files: true if both input and output are csv filenames, false if they are data frames 
+    dmin: minimum diameter (filtering)
+    dmax: maximum diameter (filtering)
+    compress: dictionary, features as keys and number of principal components as values
     nCores: number of cores to use 
     patient_colname: name of the patient column
-    patient_inverted: inverted patients as a list
+    patient_inverted: inverted patients as a list (same format as their notation in the data frame)
     verbose: show debug messages
     """
     # debug
@@ -494,8 +497,13 @@ def process_pipeline_csv(
     # verbose=False
     
     # Check format
-    df_dl = pd.read_csv(csv_in)
-    print 'Reading csv! Checking format is standard...'
+    if csv_as_files:
+        df_dl = pd.read_csv(csv_in)
+        print 'Reading csv! Checking format is standard...'
+    else:
+        df_dl = csv_in
+        print 'You have enterd data frame as input... function will return a data frame as well'
+        
     df_dl_header = list(df_dl)
     for i in [patient_colname, 'x', 'y', 'diameter']:
         if not i in df_dl_header:
@@ -565,9 +573,11 @@ def process_pipeline_csv(
     print 'Filtered data frame shape: {}'.format(df_dl_filter.shape)
     print 'Final shape (rows whose nodes were not found were dropped): {}'.format(df_list.shape)
     
-    print 'Done! Writing csv...'
-    df_list.to_csv(csv_out, index=False)
-
+    if csv_as_files:
+        print 'Done! Writing csv...'
+        df_list.to_csv(csv_out, index=False)
+    else:
+        return df_list
 
 # END CSV AUGMENTATION -----------------------------------------------------------------
 

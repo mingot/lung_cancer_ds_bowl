@@ -70,7 +70,7 @@ def merge_nodules_csv(path_csv, path_result,nodule_threshold = 0.7,  pixels_to_m
     tFinal = time.time()
     print 'Finished merging. Total %d nodules, in total %d nodules where merged' % ( len(pd_nodules_filtered), number_nodes_concatenated) 
     print 'Time needed: %f' % (tFinal - tStart)
-    df_merged_nodules.to_csv(path_result, index = False)
+    df_merged_nodules.to_csv(path_result)
 #
 # Auxiliary functions
 #
@@ -147,13 +147,9 @@ def merge_nodules(list_closed_nodules):
     data['nslicesSpread'] = (- list_closed_nodules[0].nslice + list_closed_nodules[-1].nslice) + 1
     return pd.Series(data)
 
+
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Merges modules that are in nearby slices, and writes them in a csv.')
-    parser.add_argument('input_csv', help='input csv ')
-    parser.add_argument('output_csv', help='output csv')
-    parser.add_argument('-threshold', type=float, default = 0.7,
-                    help='score threshold for nodule detection')
-    parser.add_argument('--debug',action = 'store_true',
-                    help='debug options (slow)')
-    args = parser.parse_args()
-    merge_nodules_csv(args.input_csv, args.output_csv, debug = args.debug, nodule_threshold = args.threshold)
+    input_path = 'D:/dsb/nodules_patches_dl1_v11.csv'
+    output_path = 'D:/dsb/nodules_filtered.csv'
+    debug = False
+    merge_nodules_csv(input_path, output_path, debug = debug)
