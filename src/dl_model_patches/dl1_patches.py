@@ -75,6 +75,30 @@ logging.basicConfig(level=logging.INFO,
 #                                 __load_and_store)
 
 
+IF = wp + 'data/preprocessed5_sample/'
+filenames = [IF+f for f in os.listdir(IF)]
+filename = random.choice(filenames)
+patient_data = np.load(filename)['arr_0']
+X, y, rois, stats = common.load_patient(patient_data, discard_empty_nodules=False, output_rois=True, debug=True, thickness=1)
+
+nslices = list(set([r[0] for r in rois]))
+nslice = random.choice(nslices)
+regions = [r[1] for r in rois if r[0]==nslice]
+plotting.plot_bb(patient_data[0,nslice], regions)
+
+# big ratio
+# 1.0/3<=ratio and ratio<=3
+idxs = [i for i in range(len(rois)) if common.calc_ratio(rois[i][1])>3 or common.calc_ratio(rois[i][1])<1.0/3]
+idxs = [i for i in range(len(rois)) if common.calc_area(rois[i][1])>70*70]
+idxs_2 = [i for i in range(len(y)) if y[i]==1]
+
+[i for i in idxs if i in idxs_2]
+
+idx = idxs[15]
+plotting.plot_bb(patient_data[0,rois[idx][0]], [rois[idx][1]])
+plotting.multiplot(X[idx])
+
+
 ### TRAINING -----------------------------------------------------------------
 
 # Data augmentation generator
@@ -127,7 +151,6 @@ def chunks(X, y, batch_size=32, augmentation_times=4, thickness=0, is_training=T
             good += 1
             yield X_batch, y_batch
         #del xx
-
 
 
 def chunks_multichannel(X_orig, y_orig, batch_size=32, augmentation_times=4, thickness=0, is_training=True):

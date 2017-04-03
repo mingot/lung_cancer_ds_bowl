@@ -16,8 +16,12 @@ INPUT_PATH = '/mnt/hd2/preprocessed5'  # INPUT_PATH = wp + 'data/preprocessed5_s
 VALIDATION_PATH = '/mnt/hd2/preprocessed5_validation_luna'
 NODULES_PATH = wp + 'data/luna/annotations.csv'
 
-OUTPUT_MODEL = wp + 'models/jm_patches_train_v18.hdf5'
-OUTPUT_CSV = wp + 'output/nodules_patches_dl1_v18.csv'
+# OUTPUT_MODEL = wp + 'models/jm_patches_train_v18.hdf5'
+# OUTPUT_CSV = wp + 'output/nodules_patches_dl1_v18.csv'
+
+
+OUTPUT_MODEL = wp + 'models/jm_patches_malign_v01.hdf5'
+OUTPUT_CSV = wp + 'output/nodules_patches_dl3_v01.csv'
 
 
 
