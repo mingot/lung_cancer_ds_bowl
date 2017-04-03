@@ -131,8 +131,10 @@ def chunks(X, y, batch_size=32, augmentation_times=4, thickness=0, is_training=T
 logging.info("Loading training and test sets")
 x_train = np.load(os.path.join(PATCHES_PATH, 'x_train_dl3.npz'))['arr_0']
 y_train = np.load(os.path.join(PATCHES_PATH, 'y_train_dl3.npz'))['arr_0']
+y_train = np.expand_dims(y_train, axis=1)
 x_test = np.load(os.path.join(PATCHES_PATH, 'x_test_dl3.npz'))['arr_0']
 y_test = np.load(os.path.join(PATCHES_PATH, 'y_test_dl3.npz'))['arr_0']
+y_test = np.expand_dims(y_test, axis=1)
 logging.info("Training set (1s/total): %d/%d" % (sum(y_train),len(y_train)))
 logging.info("Test set (1s/total): %d/%d" % (sum(y_test), len(y_test)))
 
