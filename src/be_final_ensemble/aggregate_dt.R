@@ -30,7 +30,7 @@ generate_patient_dt <- function(path_repo,path_dsb,path_output = NULL) {
   ## RESNET Data -------------------------------------------------------------------------------------
   #vars_nodules_patches <- fread(paste0("D:/dsb/nodules_patches_v05_augmented.csv"))
   #vars_nodules_patches <- fread(paste0("D:/dsb/noduls_patches_v06_rectif.csv"))
-  vars_nodules_patches <- fread(paste0(path_dsb,"nodules_patches_dl1_v11.csv")) ## PATH
+  vars_nodules_patches <- fread(paste0(path_dsb,"nodules_patches_dl1_v18.csv")) ## PATH
   vars_nodules_hard_negative <- fread(paste0(path_dsb,"nodules_patches_hardnegative_v03.csv"))
   vars_nodules_hard_negative <- unique(vars_nodules_hard_negative)
   setnames(vars_nodules_hard_negative, "score","score_2")
@@ -40,8 +40,7 @@ generate_patient_dt <- function(path_repo,path_dsb,path_output = NULL) {
     all.x=T,
     by=c("patientid","nslice","x","y","diameter","label"))
   
-  vars_nodules_patches <- vars_nodules_patches[grep("dsb_",patientid)][!is.na(x)]
-  vars_nodules_patches[,patientid:=gsub(".npz|dsb_","",patientid)]
+  vars_nodules_patches <- filter_and_patient_name(vars_nodules_patches)
   vars_nodules_patches[is.na(score_2),score_2 := score]
   vars_nodules_patches[,score := (score + score_2)/2]
   vars_nodules_patches[,score_2 := NULL]
@@ -54,6 +53,11 @@ generate_patient_dt <- function(path_repo,path_dsb,path_output = NULL) {
   
   # Nodules Filtered
   nodules_filtered <- fread(paste0(path_dsb,"nodules_filtered.csv"))
+  nodules_filtered <- filter_and_patient_name(nodules_filtered)
+  nodules_filtered <- nodules_filtered[nslicesSpread > 1]
+  nodules_filtered[,V1 := NULL]
+  nodules_filtered <- aggregate_filtered(nodules_filtered)
+  
   
   ## Merging al nodules variables
   vars_nodules <- rbind(vars_nodules,vars_nodules_patches,fill = TRUE)
@@ -64,10 +68,8 @@ generate_patient_dt <- function(path_repo,path_dsb,path_output = NULL) {
   ## SLICES OUTPUT Data ------------------------------------------------------------------------------
   
   dataset_slices <- fread(paste0(path_repo,"/src/dl_model_slices/output.csv"))
-  dataset_slices <- dataset_slices[grep("dsb_",id)]
-  setnames(dataset_slices,names(dataset_slices),paste0("patient_",names(dataset_slices)))
-  dataset_slices[,patient_id := gsub(".npz|dsb_","",patient_id)]
-  setnames(dataset_slices,"patient_id","patientid")
+  setnames(dataset_slices,names(dataset_slices),paste0("patient",names(dataset_slices)))
+  dataset_slices <- filter_and_patient_name(dataset_slices)
   
   # EMPHYSEMA
   emphysema <- fread(paste0(path_dsb,"var_emphysema_v04.csv"))
@@ -76,13 +78,14 @@ generate_patient_dt <- function(path_repo,path_dsb,path_output = NULL) {
   # Extra features
   extra_feats <- fread(paste0(path_dsb,"stage1_extra_features_intercostal.csv"))
   setnames(extra_feats,"patient_id","patientid")
-  extra_feats[,patientid := gsub(".npz|dsb_","",patientid)]
+  extra_feats <- filter_and_patient_name(extra_feats)
   
   ## Joining all the patient variables
   dataset_final <- merge(patients,dataset_nodules,all.x = T, by = "patientid")
   dataset_final <- merge(dataset_final,dataset_slices,all.x = T, by = "patientid")
   dataset_final <- merge(dataset_final,emphysema,all.x=T,by="patientid")
   dataset_final <- merge(dataset_final,extra_feats,all.x=T,by="patientid")
+  dataset_final <- merge(dataset_final,nodules_filtered,all.x = T, by = "patientid")
   dataset_final <- na_to_zeros(dataset_final,names(dataset_final))
   if(is.null(path_output)) {
     return(dataset_final)
@@ -91,6 +94,12 @@ generate_patient_dt <- function(path_repo,path_dsb,path_output = NULL) {
     return(invisible())
   }
 
+}
+
+filter_and_patient_name <- function(dt) {
+  dt <- dt[grep("dsb_",patientid)]
+  dt[,patientid := gsub(".npz|dsb_","",patientid)]
+  return(dt)
 }
 
 ## EXTRA FUNCTIONS----------------------------------------------------------------------------------
@@ -207,4 +216,36 @@ na_to_zeros <- function(dt,name_vars) {
     setnames(dt,"id",name_var)
   }
   return(dt)
+}
+
+aggregate_filtered <- function(dt) {
+  dt[,`:=`(max_score_filtered = max(score),max_nslicesSpread = max(nslicesSpread)), by = patientid]
+  dt1 <- dt[, .(
+    max_nsliceSpread = max(nslicesSpread),
+    max_score_filtered = max(score),
+    max_diameter_filtered = max(diameter),
+    n_nodules_filtered = .N),patientid]
+  dt2 <- dt[
+    max_score_filtered == score,.SD[1],patientid][,
+    .(patientid,
+      diameter_score_filtered = diameter,
+      nslice_score_filtered = nslice,
+      nsliceSpread_max = nslicesSpread,
+      x_score_filtered = x,
+      y_score_filtered = y)
+    ]
+  dt3 <- dt[
+    max_nslicesSpread == nslicesSpread,.SD[1],patientid][,
+    .(patientid,
+     max_score_spread = score,
+     diameter_slices_filtered = diameter,
+     nslice_slices_filtered = nslice,
+     x_score_spread = x,
+     y_score_spread = y
+     )]
+  dt_patient <- merge(dt1,dt2,all.x=T,by="patientid")
+  dt_patient <- merge(dt_patient,dt3,all.x=T,by="patientid")
+  return(dt_patient)
+  
+  
 }

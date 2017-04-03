@@ -30,21 +30,27 @@ for(n in nombres_m) {
 vars_train <- c(
   #"max_intensity",
   # "max_diameter",
-  "big_nodules_patches",
+  #"big_nodules_patches",
   # "nods_15",
   # "nods_20",
   # "nods_25",
   #"nods_30",
   "max_diameter_patches",
+  #"max_score_filtered",
+  "max_nsliceSpread",
+  #"max_diameter_filtered",
   #"num_slices_patches",
   #"max_score",
   "max_score_patches",
   "nslice_nodule_patch",
   "consec_nods_patches",
-  "diameter_nodule_patch",
-  #L"total_nodules_patches",
-  #"score_2_patch",
-  "diameter_nodule_patch"
+  #"diameter_nodule_patch",
+  #"n_nodules_filtered",
+  #"max_score_filtered",
+  #"diameter_score_filtered",
+  "nsliceSpread_max",
+  #"max_score_spread",
+  "diameter_slices_filtered"
   #"score_mean",
   #"nslice_sd",
   #"diameter_sd"
@@ -64,6 +70,7 @@ vars_sp <- c(
 )
 vars_train <- c(vars_train,vars_sp)
 #vars_train <- names(dataset_final)
+print(vars_train[!vars_train %in% names(dataset_final)])
 dataset_final_f <- dataset_final[,.SD,.SDcols = unique(c(vars_train,"patientid","cancer"))]
 data_train <- dataset_final_f[patientid %in% patients_train]
 scoring <- dataset_final_f[!patientid %in% patients_train]
@@ -96,7 +103,7 @@ knitr::knit_print(tr_cv$measures.test)
 summary(tr_cv$measures.test$auc)
 summary(tr_cv$measures.test$logloss)
 # ctrlT = makeTuneControlGenSA(maxit = 10)
-# ctrlF = makeFeatSelControlGA(maxit = 4000)
+ctrlF = makeFeatSelControlGA(maxit = 4000)
 # res = tuneParams(
 #   learner = lrn,
 #   task = train_task,
@@ -129,7 +136,7 @@ LogLossBinary(target,preds)
 preds = predictCv(final_model, scoring)
 
 submission = data.table(id=patients_scoring, cancer=preds)
-write.csv(submission, paste0(path_repo,"data/submissions/14_submission.csv"), quote=F, row.names=F)
+write.csv(submission, paste0(path_repo,"data/submissions/15_submission.csv"), quote=F, row.names=F)
 
 
 # GENERATING PREDICTIONS FOR TRAINING ----------------------------------------------------------------------------
@@ -138,7 +145,7 @@ preds = predictCv(final_model, train_task)
 data_out <- copy(data_train)
 data_out$patientid = patients_train
 data_out$predicted=preds
-write.csv(data_out, paste0(path_repo,"data/final_model/scoring_train_12.csv"), quote=F, row.names=F)
+write.csv(data_out, paste0(path_repo,"data/final_model/scoring_train_15.csv"), quote=F, row.names=F)
 
 
 #---------------------------------------------------------------------------------------------------

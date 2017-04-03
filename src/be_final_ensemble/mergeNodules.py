@@ -22,11 +22,11 @@ import numpy as np
 import time
 import os
 import sys 
-
+import argparse
 #
 # Main function
 #
-def merge_nodules_csv(path_csv, path_result,nodule_threshold = 0.7,  pixels_to_mm = np.array([2, 0.7, 0.7]), debug = False):
+def merge_nodules_csv(path_csv, path_result,nodule_threshold = 0.7,  pixels_to_mm = np.array([2, 0.7, 0.7]), debug = False, filterPatients = None):
     """
     reads all the nodules from a csv, and creates another csv with the nodules merged if they are near and in different slices 
     """
@@ -35,10 +35,15 @@ def merge_nodules_csv(path_csv, path_result,nodule_threshold = 0.7,  pixels_to_m
     pd_nodules_filtered = pd_nodules[pd_nodules['score'] > nodule_threshold]
     nodules_by_patient = pd_nodules_filtered.groupby('patientid')
     print 'finished reading the original nodules'
+    
+    if filterPatients:
+        patients = filterPatients
+    else:
+        patients = nodules_by_patient.groups.keys()
 
     number_nodes_concatenated = 0
     df_merged_nodules = pd.DataFrame()
-    for nPatient, pId in enumerate(nodules_by_patient.groups.keys()):
+    for nPatient, pId in enumerate(patients):
         if nPatient % 50 == 0:
             print '%d / %d' % (nPatient, len(nodules_by_patient.groups))
         patient_nodules = nodules_by_patient.get_group(pId).sort_values('nslice')
@@ -52,9 +57,9 @@ def merge_nodules_csv(path_csv, path_result,nodule_threshold = 0.7,  pixels_to_m
                 open_nodules.append([nodule])
             else:
                 number_nodes_concatenated += 1
+                open_nodules[concatenateIdx].append(nodule)
                 if debug:
                     print 'meow', nodule, open_nodules[concatenateIdx][-1]
-                    open_nodules[concatenateIdx].append(nodule)
                     print '----------'
             if i % 20 == 0:
                 close_nodules(open_nodules, closed_nodules, patient_nodules.iloc[i].nslice)
@@ -83,7 +88,7 @@ def distance2D(a, b, pixels_to_mm = np.array([0.7, 0.7])):
     Gets the distance between two slices 
     """
     d = np.array([a.x - b.x, a.y - b.y])
-    return np.dot(d, pixels_to_mm)
+    return np.linalg.norm(d)
 
 def same_nodule_likelihood(nodule1, nodule2,  pixels_to_mm) :
     """
@@ -134,13 +139,14 @@ def merge_nodules(list_closed_nodules):
     """
     data = {}
     data['patientid'] = list_closed_nodules[0].patientid
-    data['nslice'] = (list_closed_nodules[0].nslice + list_closed_nodules[-1].nslice)/2
+    data['nslice'] = (list_closed_nodules[0].nslice + list_closed_nodules[-1].nslice)/2.
     data['x'] =  np.mean(map(lambda n: n.x , list_closed_nodules))
     data['y'] =  np.mean(map(lambda n: n.y , list_closed_nodules))
     data['diameter'] = max(map(lambda n: n.diameter , list_closed_nodules))
     data['score'] = max(map(lambda n: n.score , list_closed_nodules))
     data['nslicesSpread'] = (- list_closed_nodules[0].nslice + list_closed_nodules[-1].nslice) + 1
     return pd.Series(data)
+
 
 if __name__ == '__main__':
     input_path = 'D:/dsb/nodules_patches_dl1_v11.csv'
