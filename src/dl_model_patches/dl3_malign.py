@@ -60,8 +60,8 @@ nodules_df = nodules_df[nodules_df.patientid.isin(list(label_df['id']))]  # keep
 
 # Join DL2
 dl2_df = pd.read_csv(OUTPUT_DL2)
-merge_df = pd.merge(nodules_df, dl2_df, on=['patientid','nslice','x','y'], how='inner', suffixes=('_dl1', '_dl2'))
-nodules_df = merge_df[((merge_df['score_dl1']+merge_df['score_dl2'])/2 > 0.5) & (merge_df['diameter_dl1']>7)]   # 12k candidates
+merge_df = pd.merge(nodules_df, dl2_df, on=['patientid','nslice','x','y','diameter'], how='inner', suffixes=('_dl1', '_dl2'))
+nodules_df = merge_df[((merge_df['score_dl1']+merge_df['score_dl2'])/2 > 0.5) & (merge_df['diameter']>7)]   # 12k candidates
 logging.info("DSB selected nodules shape: %s" % str(nodules_df.shape))
 
 
