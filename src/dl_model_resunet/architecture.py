@@ -27,8 +27,8 @@ def _bn_relu(input):
     """Helper to build a BN -> relu block
     """
     norm = BatchNormalization(axis=CHANNEL_AXIS)(input)
-    #return Activation("relu")(norm)
-    return Activation("relu")(input) # disabling batch normalization
+    return Activation("relu")(norm)
+    #return Activation("relu")(input) # disabling batch normalization
 
 
 def _conv_bn_relu(**conv_params):
@@ -94,7 +94,7 @@ def _shortcut(input, residual):
                                  nb_row=1, nb_col=1,
                                  subsample=(stride_width, stride_height),
                                  init="he_normal", border_mode="valid",
-                                 W_regularizer=l2(0.0001))(shortcut)
+                                 W_regularizer=l2regularization)(shortcut)
 
     return merge([shortcut, residual], mode="sum")
 
@@ -126,7 +126,7 @@ def basic_block(nb_filter, init_subsample=(1, 1), init_upsample=(1, 1), is_first
                                  nb_row=3, nb_col=3,
                                  subsample=init_subsample,
                                  init="he_normal", border_mode="same",
-                                 W_regularizer=l2(0.0001))(input)
+                                 W_regularizer=l2regularization)(input)
         else:
             conv1 = _bn_relu_conv(nb_filter=nb_filter, nb_row=3, nb_col=3,
                                   subsample=init_subsample)(input)
@@ -154,7 +154,7 @@ def bottleneck(nb_filter, init_subsample=(1, 1),init_upsample=(1,1), is_first_bl
                                  nb_row=1, nb_col=1,
                                  subsample=init_subsample,
                                  init="he_normal", border_mode="same",
-                                 W_regularizer=l2(0.0001))(input)
+                                 W_regularizer=l2regularization)(input)
         else:
             conv_1_1 = _bn_relu_conv(nb_filter=nb_filter, nb_row=1, nb_col=1,
                                      subsample=init_subsample)(input)
@@ -190,7 +190,7 @@ def residual_unet_model(inp_shape):
     down1=Convolution2D(32,nb_row=3, nb_col=3,
                         subsample=(1,1),
                         init="he_normal", border_mode="same",
-                        W_regularizer=l2(0.0001))(inputs)
+                        W_regularizer=l2regularization)(inputs)
     print(down1.get_shape())
 
     down2=basic_block(32,init_subsample=(2,2))(down1)
@@ -201,39 +201,39 @@ def residual_unet_model(inp_shape):
     print(down3.get_shape())
 
     down4= bottleneck(64,init_subsample=(2,2))(down3)
-    down4= bottleneck(64,init_subsample=(1,1))(down4)
-    down4= bottleneck(64,init_subsample=(1,1))(down4)
-    down4= bottleneck(64,init_subsample=(1,1))(down4)
-    down4= bottleneck(64,init_subsample=(1,1))(down4)
-    down4= bottleneck(64,init_subsample=(1,1))(down4)
-    down4= bottleneck(64,init_subsample=(1,1))(down4)
-    down4= bottleneck(64,init_subsample=(1,1))(down4)
+    #down4= bottleneck(64,init_subsample=(1,1))(down4)
+    #down4= bottleneck(64,init_subsample=(1,1))(down4)
+    #down4= bottleneck(64,init_subsample=(1,1))(down4)
+    #down4= bottleneck(64,init_subsample=(1,1))(down4)
+    #down4= bottleneck(64,init_subsample=(1,1))(down4)
+    #down4= bottleneck(64,init_subsample=(1,1))(down4)
+    #down4= bottleneck(64,init_subsample=(1,1))(down4)
     print(down4.get_shape())
 
     down5= bottleneck(128,init_subsample=(2,2))(down4)
-    down5= bottleneck(128,init_subsample=(1,1))(down5)
-    down5= bottleneck(128,init_subsample=(1,1))(down5)
-    down5= bottleneck(128,init_subsample=(1,1))(down5)
-    down5= bottleneck(128,init_subsample=(1,1))(down5)
-    down5= bottleneck(128,init_subsample=(1,1))(down5)
-    down5= bottleneck(128,init_subsample=(1,1))(down5)
-    down5= bottleneck(128,init_subsample=(1,1))(down5)
-    down5= bottleneck(128,init_subsample=(1,1))(down5)
-    down5= bottleneck(128,init_subsample=(1,1))(down5)
+    #down5= bottleneck(128,init_subsample=(1,1))(down5)
+    #down5= bottleneck(128,init_subsample=(1,1))(down5)
+    #down5= bottleneck(128,init_subsample=(1,1))(down5)
+    #down5= bottleneck(128,init_subsample=(1,1))(down5)
+    #down5= bottleneck(128,init_subsample=(1,1))(down5)
+    #down5= bottleneck(128,init_subsample=(1,1))(down5)
+    #down5= bottleneck(128,init_subsample=(1,1))(down5)
+    #down5= bottleneck(128,init_subsample=(1,1))(down5)
+    #down5= bottleneck(128,init_subsample=(1,1))(down5)
     print(down5.get_shape())
 
     across=bottleneck(256,init_subsample=(1,1))(down5)
-    across=bottleneck(256,init_subsample=(1,1))(across)
-    across=bottleneck(256,init_subsample=(1,1))(across)
+    #across=bottleneck(256,init_subsample=(1,1))(across)
+    #across=bottleneck(256,init_subsample=(1,1))(across)
     print(across.get_shape())
     
     up1 = bottleneck(128,init_upsample=(1,1))(across)
-    up1 = bottleneck(128,init_upsample=(1,1))(up1)
-    up1 = bottleneck(128,init_upsample=(1,1))(up1)
-    up1 = bottleneck(128,init_upsample=(1,1))(up1)
-    up1 = bottleneck(128,init_upsample=(1,1))(up1)
-    up1 = bottleneck(128,init_upsample=(1,1))(up1)
-    up1 = bottleneck(128,init_upsample=(1,1))(up1)
+    #up1 = bottleneck(128,init_upsample=(1,1))(up1)
+    #up1 = bottleneck(128,init_upsample=(1,1))(up1)
+    #up1 = bottleneck(128,init_upsample=(1,1))(up1)
+    #up1 = bottleneck(128,init_upsample=(1,1))(up1)
+    #up1 = bottleneck(128,init_upsample=(1,1))(up1)
+    #up1 = bottleneck(128,init_upsample=(1,1))(up1)
     up1 = bottleneck(128,init_upsample=(2,2))(up1)
     print(up1.get_shape())
 
@@ -241,7 +241,7 @@ def residual_unet_model(inp_shape):
     print(up1.get_shape())
 
     up2 = bottleneck(64,init_upsample=(1,1))(up1)
-    up2 = bottleneck(64,init_upsample=(1,1))(up2)
+    #up2 = bottleneck(64,init_upsample=(1,1))(up2)
     up2 = bottleneck(64,init_upsample=(2,2))(up2)
     print(up2.get_shape())
 
@@ -263,7 +263,7 @@ def residual_unet_model(inp_shape):
     up5 = Convolution2D(32,nb_row=3, nb_col=3,
                         subsample=(1,1),
                         init="he_normal", border_mode="same",
-                        W_regularizer=l2(0.0001))(up4)
+                        W_regularizer=l2regularization)(up4)
 
     print(up5.get_shape())
 
