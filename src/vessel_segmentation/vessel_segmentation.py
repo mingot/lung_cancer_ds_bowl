@@ -72,7 +72,7 @@ def get_vessel_mask(data):
     # Get the vesselness filter and set the parameters
     vesselnessFilter = VesselnessFilterType.New()
     vesselnessFilter.SetAlpha1(0.5)
-    vesselnessFilter.SetAlpha2(0.5)
+    vesselnessFilter.SetAlpha2(2)
     multiScaleEnhancementFilter.SetHessianToMeasureFilter(vesselnessFilter)
 
     RescaleFilterType = itk.RescaleIntensityImageFilter[InputImageType, OutputImageType]
@@ -81,8 +81,9 @@ def get_vessel_mask(data):
 
     rescaleFilter.Update()
 
-    bin_image = binarize_image(itk.PyBuffer[OutputImageType].GetArrayFromImage(rescaleFilter.GetOutput()), 25)
-    return bin_image
+    im = itk.PyBuffer[OutputImageType].GetArrayFromImage(rescaleFilter.GetOutput())
+    bin_image = binarize_image(im.copy(), 25)
+    return im, bin_image
 
 
 if __name__ == "__main__":
