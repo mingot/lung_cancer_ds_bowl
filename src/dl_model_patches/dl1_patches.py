@@ -65,13 +65,13 @@ def __load_and_store(filename):
 
 
 common.multiproc_crop_generator(filenames_train,
-                                os.path.join(PATCHES_PATH,'v19_x_train_dl1.npz'),
-                                os.path.join(PATCHES_PATH,'v19_y_train_dl1.npz'),
+                                os.path.join(PATCHES_PATH,'dl1_v19_x_train.npz'),
+                                os.path.join(PATCHES_PATH,'dl1_v19_y_train.npz'),
                                 __load_and_store)
 
 common.multiproc_crop_generator(filenames_test,
-                                os.path.join(PATCHES_PATH,'v19_x_test_dl1.npz'),
-                                os.path.join(PATCHES_PATH,'v19_y_test_dl1.npz'),
+                                os.path.join(PATCHES_PATH,'dl1_v19_x_test.npz'),
+                                os.path.join(PATCHES_PATH,'dl1_v19_y_test.npz'),
                                 __load_and_store)
 
 
