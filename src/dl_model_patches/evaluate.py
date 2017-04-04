@@ -19,20 +19,16 @@ NODULES_PATH = wp + 'data/luna/annotations.csv'
 # OUTPUT_MODEL = wp + 'models/jm_patches_train_v18.hdf5'
 # OUTPUT_CSV = wp + 'output/nodules_patches_dl1_v18.csv'
 
-
-OUTPUT_MODEL = wp + 'models/jm_patches_malign_v01.hdf5'
-OUTPUT_CSV = wp + 'output/nodules_patches_dl3_v01.csv'
-
+OUTPUT_MODEL = wp + 'models/jm_patches_malign_v02.hdf5'
+OUTPUT_CSV = wp + 'output/nodules_patches_dl3_v02.csv'
 
 
 ## Params and filepaths
-# NOTA: Cargando validation luna i dsb
 THICKNESS = 1
-#file_list = [os.path.join(VALIDATION_PATH, fp) for fp in os.listdir(VALIDATION_PATH)]
 file_list = [os.path.join(INPUT_PATH, fp) for fp in os.listdir(INPUT_PATH) if fp.startswith('dsb_')]
 
 
-# # ## if the OUTPUT_CSV file already exists, continue it
+# ## if the OUTPUT_CSV file already exists, continue it
 # previous_filenames = set()
 # if os.path.exists(OUTPUT_CSV):
 #     write_method = 'a'
@@ -41,103 +37,23 @@ file_list = [os.path.join(INPUT_PATH, fp) for fp in os.listdir(INPUT_PATH) if fp
 #             previous_filenames.add(l.split(',')[0])
 
 
-# # Load model
-# model = ResnetBuilder().build_resnet_50((3,40,40),1)
-# model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['accuracy','fmeasure'])
-# logging.info('Loading existing model...')
-# model.load_weights(OUTPUT_MODEL)
+## Loading DF (if necessary)
+import pandas as pd
 
-# PARALLEL -------------------------------------------------------------------------------------------------------
+wp = os.environ['LUNG_PATH']
+OUTPUT_DL1 = wp + 'output/nodules_patches_dl1_v11.csv'  # OUTPUT_DL1 = wp + 'personal/noduls_patches_v06.csv'
+OUTPUT_DL2 = wp + 'output/nodules_patches_hardnegative_v03.csv'  # OUTPUT_DL1 = wp + 'personal/noduls_patches_v06.csv'
 
-
-import multiprocessing
-
-#
-# def load_patient_func(filename):
-#     patient_data = np.load(filename)['arr_0']
-#     X, y, rois, stats = common.load_patient(patient_data, discard_empty_nodules=False, output_rois=True, thickness=1)
-#     logging.info("Patient: %s, stats: %s" % (filename.split('/')[-1], stats))
-#     return X, y, rois, stats
-#
-#
-# def pred(q,xf,rois):
-#     preds = model.predict(xf, verbose=1)
-#     logging.info("Batch results: %d/%d (th=0.7)" % (len([p for p in preds if p>0.7]),len(preds)))
-#     for i in range(len(preds)):
-#         nslice, r = roisf[i]
-#         file.write('%s,%d,%d,%d,%.3f,%.5f,%d\n' % (ref_filenames[i].split('/')[-1], nslice, r.centroid[0], r.centroid[1], r.equivalent_diameter,preds[i],yf[i]))
-#
-#
-# with open(OUTPUT_CSV, 'w') as file:
-#     file.write('patientid,nslice,x,y,diameter,score,label\n')
-#
-#     NUM_CONC = 16
-#     for j in range(0, len(file_list), NUM_CONC):
-#         filenames = file_list[j:j + NUM_CONC]
-#         pool =  multiprocessing.Pool(4)
-#         x, y, rois, stats = zip(*pool.map(load_patient_func, filenames))
-#         logging.info("Batch %d loaded" % j)
-#
-#         xf, yf, ref_filenames, roisf = [], [], [], []
-#         for i in range(len(x)):
-#             ref_filenames.extend([filenames[i]]*len(x[i]))
-#             xf.extend(x[i])
-#             yf.extend(y[i])
-#             roisf.extend(rois[i])
-#         pool.close()
-#         pool.join()
-#
-#         xf = np.asarray(xf)
-#         preds = model.predict(xf, verbose=1)
-#         logging.info("Batch results: %d/%d (th=0.7)" % (len([p for p in preds if p>0.7]),len(preds)))
-#         for i in range(len(preds)):
-#             nslice, r = roisf[i]
-#             file.write('%s,%d,%d,%d,%.3f,%.5f,%d\n' % (ref_filenames[i].split('/')[-1], nslice, r.centroid[0], r.centroid[1], r.equivalent_diameter,preds[i],yf[i]))
-
-
-# NON PARALLEL ------------------------------------------------------------------------------------------------------
-
-# with open(OUTPUT_CSV, write_method) as file:
-#
-#     # write the header if the file is new
-#     if write_method=='w':
-#         file.write('patientid,nslice,x,y,diameter,score,label\n')
-#
-#     for idx, filename in enumerate(file_list):
-#         if filename in previous_filenames:
-#             continue
-#
-#         tstart = time()
-#         logging.info("Patient %s (%d/%d)" % (filename, idx, len(file_list)))
-#         try:
-#             patient_data = np.load(filename)['arr_0']
-#             X, y, rois, stats = common.load_patient(patient_data, output_rois=True, thickness=THICKNESS)
-#
-#             if len(X)==0:
-#                 continue
-#
-#             X = np.asarray(X)
-#             if THICKNESS==0:
-#                 X = np.expand_dims(X, axis=1)
-#             preds = model.predict(X, verbose=1)
-#         except:
-#             logging.info("Error in patient %s, skipping" % filename)
-#             continue
-#
-#         for i in range(len(preds)):
-#             nslice, r = rois[i]
-#             file.write('%s,%d,%d,%d,%.3f,%.5f,%d\n' % (filename.split('/')[-1], nslice, r.centroid[0], r.centroid[1], r.equivalent_diameter,preds[i],y[i]))
-#
-#             # if preds[i]>0.8:
-#             #     logging.info("++ Good candidate found with (nslice,x,y,diam,score): %d,%d,%d,%.2f,%.2f" % (nslice,r.centroid[0], r.centroid[1], r.equivalent_diameter,preds[i]))
-#
-#         logging.info("Total ROIS:%d, Good Candidates:%d, Time processnig:%.2f" % (len(preds), len([p for p in preds if p>0.5
-#         ]), time()-tstart))
-
+dl1_df = pd.read_csv(OUTPUT_DL1)
+dl1_df = dl1_df[dl1_df['patientid'].str.startswith('dsb')]  # Filter DSB patients
+dl2_df = pd.read_csv(OUTPUT_DL2)
+merge_df = pd.merge(dl1_df, dl2_df, on=['patientid','nslice','x','y','diameter'], how='inner', suffixes=('_dl1', '_dl2'))
+nodules_df = merge_df[((merge_df['score_dl1'] + merge_df['score_dl2'])/2 > 0.5) & (merge_df['diameter']>7)]   # 12k candidates
 
 
 
 ## MULTI PARALLEL ---------------------------------------------------------------------------------------------
+import multiprocessing
 
 
 
@@ -145,7 +61,8 @@ def worker(filename, q):
     while 1:
         if q.qsize() < 10:
             patient_data = np.load(filename)['arr_0']
-            X, y, rois, stats = common.load_patient(patient_data, discard_empty_nodules=False, output_rois=True, thickness=1)
+            ndf = nodules_df[nodules_df['patientid']==filename.split('/')[-1]]
+            X, y, rois, stats = common.load_patient(patient_data, ndf, discard_empty_nodules=False, output_rois=True, thickness=1)
             logging.info("Patient: %s, stats: %s" % (filename.split('/')[-1], stats))
             q.put((filename,X,y,rois))
             break
@@ -158,7 +75,7 @@ def listener(q):
 
     # Model loading inside the listener thread (otherwise keras complains)
     K.set_image_dim_ordering('th')
-    model = ResnetBuilder().build_resnet_50((3,40,40),1)
+    model = ResnetBuilder().build_resnet_34((3,40,40),1)
     model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['accuracy','fmeasure'])
     logging.info('Loading existing model...')
     model.load_weights(OUTPUT_MODEL)
@@ -222,4 +139,50 @@ if __name__ == "__main__":
     tstart = time()
     main()
     print "Total time:", time() - tstart
+
+
+# NON PARALLEL ------------------------------------------------------------------------------------------------------
+
+# # Load model
+# model = ResnetBuilder().build_resnet_50((3,40,40),1)
+# model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['accuracy','fmeasure'])
+# logging.info('Loading existing model...')
+# model.load_weights(OUTPUT_MODEL)
+
+# with open(OUTPUT_CSV, write_method) as file:
+#
+#     # write the header if the file is new
+#     if write_method=='w':
+#         file.write('patientid,nslice,x,y,diameter,score,label\n')
+#
+#     for idx, filename in enumerate(file_list):
+#         if filename in previous_filenames:
+#             continue
+#
+#         tstart = time()
+#         logging.info("Patient %s (%d/%d)" % (filename, idx, len(file_list)))
+#         try:
+#             patient_data = np.load(filename)['arr_0']
+#             X, y, rois, stats = common.load_patient(patient_data, output_rois=True, thickness=THICKNESS)
+#
+#             if len(X)==0:
+#                 continue
+#
+#             X = np.asarray(X)
+#             if THICKNESS==0:
+#                 X = np.expand_dims(X, axis=1)
+#             preds = model.predict(X, verbose=1)
+#         except:
+#             logging.info("Error in patient %s, skipping" % filename)
+#             continue
+#
+#         for i in range(len(preds)):
+#             nslice, r = rois[i]
+#             file.write('%s,%d,%d,%d,%.3f,%.5f,%d\n' % (filename.split('/')[-1], nslice, r.centroid[0], r.centroid[1], r.equivalent_diameter,preds[i],y[i]))
+#
+#             # if preds[i]>0.8:
+#             #     logging.info("++ Good candidate found with (nslice,x,y,diam,score): %d,%d,%d,%.2f,%.2f" % (nslice,r.centroid[0], r.centroid[1], r.equivalent_diameter,preds[i]))
+#
+#         logging.info("Total ROIS:%d, Good Candidates:%d, Time processnig:%.2f" % (len(preds), len([p for p in preds if p>0.5
+#         ]), time()-tstart))
 

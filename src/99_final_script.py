@@ -3,6 +3,7 @@ import os
 import numpy as np
 import pandas as pd
 from utils import preprocessing, lung_segmentation, reading
+from dl_model_patches import common
 
 INPUT_FOLDER = ''
 DL1_MODEL = ''

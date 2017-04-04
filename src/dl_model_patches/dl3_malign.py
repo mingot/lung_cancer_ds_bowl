@@ -47,52 +47,52 @@ logging.basicConfig(level=logging.INFO,
 # Load the output of DL-I and load just the 1's (TP or FN's) and the FP's for a given score
 # to train DL-II
 
-# # filter TP and FP of the suggested by DL1
-# label_df = pd.read_csv(DSB_LABELS)
-# label_df['id'] = ["dsb_%s.npz" % p for p in list(label_df['id'])]
-# validation_df = pd.read_csv(DSB_VALIDATION)
-# nodules_df = pd.read_csv(OUTPUT_DL1)
-# nodules_df = nodules_df[nodules_df['patientid'].str.startswith('dsb')]  # Filter DSB patients
-# nodules_df = nodules_df[nodules_df.patientid.isin(list(label_df['id']))]  # keep only train patients
-# #nodules_df = nodules_df[(nodules_df['score'] > 0.9) | (nodules_df['diameter']>10)]
-#
-# # Join DL2
-# dl2_df = pd.read_csv(OUTPUT_DL2)
-# merge_df = pd.merge(nodules_df, dl2_df, on=['patientid','nslice','x','y','diameter'], how='inner', suffixes=('_dl1', '_dl2'))
-# nodules_df = merge_df[((merge_df['score_dl1']+merge_df['score_dl2'])/2 > 0.5) & (merge_df['diameter']>7)]   # 12k candidates
-# logging.info("DSB selected nodules shape: %s" % str(nodules_df.shape))
-#
-#
-# # Construction of training and testsets
-# logging.info("DSB validation shape:%s" % str(validation_df.shape))
-# filenames_train = [os.path.join(INPUT_PATH,f) for f in set(nodules_df['patientid']) if f not in list(validation_df['patientid'])]
-# filenames_test = [os.path.join(INPUT_PATH,f) for f in set(nodules_df['patientid']) if f in list(validation_df['patientid'])]
-#
-# logging.info("Patients train:%d, test:%d" % (len(filenames_train), len(filenames_test)))
-#
-# def __load_and_store(filename):
-#     patient_data = np.load(filename)['arr_0']
-#     patid = filename.split('/')[-1]
-#     ndf = nodules_df[nodules_df['patientid']==patid]
-#     X, y, rois, stats = common.load_patient(patient_data, ndf, output_rois=True, thickness=1)
-#     label = int(label_df[label_df['id']==patid]['cancer'])
-#     y = [label]*len(X)
-#     logging.info("Patient: %s, cancer:%d, stats: %s" % (patid, label, stats))
-#     return X, y, stats
-#
-#
-# common.multiproc_crop_generator(filenames_train,
-#                                 os.path.join(PATCHES_PATH,'dl3_v02_x_train.npz'),
-#                                 os.path.join(PATCHES_PATH,'dl3_v02_y_train.npz'),
-#                                 __load_and_store,
-#                                 parallel=True)
-#
-#
-# common.multiproc_crop_generator(filenames_test,
-#                                 os.path.join(PATCHES_PATH,'dl3_v02_x_test.npz'),
-#                                 os.path.join(PATCHES_PATH,'dl3_v02_y_test.npz'),
-#                                 __load_and_store,
-#                                 parallel=True)
+# labels
+label_df = pd.read_csv(DSB_LABELS)
+label_df['id'] = ["dsb_%s.npz" % p for p in list(label_df['id'])]
+
+# Join DL1 and DL2 to filter TP and FP of the suggested by DL1
+dl1_df = pd.read_csv(OUTPUT_DL1)
+dl1_df = dl1_df[dl1_df['patientid'].str.startswith('dsb')]  # Filter DSB patients
+dl1_df = dl1_df[dl1_df.patientid.isin(list(label_df['id']))]  # keep only train patients
+dl2_df = pd.read_csv(OUTPUT_DL2)
+merge_df = pd.merge(dl1_df, dl2_df, on=['patientid','nslice','x','y','diameter'], how='inner', suffixes=('_dl1', '_dl2'))
+nodules_df = merge_df[((merge_df['score_dl1'] + merge_df['score_dl2'])/2 > 0.5) & (merge_df['diameter']>7)]   # 12k candidates
+#nodules_df = nodules_df[(nodules_df['score'] > 0.9) | (nodules_df['diameter']>10)]
+logging.info("DSB selected nodules shape: %s" % str(nodules_df.shape))
+
+
+# Construction of training and testsets
+validation_df = pd.read_csv(DSB_VALIDATION)
+logging.info("DSB validation shape:%s" % str(validation_df.shape))
+filenames_train = [os.path.join(INPUT_PATH,f) for f in set(nodules_df['patientid']) if f not in list(validation_df['patientid'])]
+filenames_test = [os.path.join(INPUT_PATH,f) for f in set(nodules_df['patientid']) if f in list(validation_df['patientid'])]
+
+logging.info("Patients train:%d, test:%d" % (len(filenames_train), len(filenames_test)))
+
+def __load_and_store(filename):
+    patient_data = np.load(filename)['arr_0']
+    patid = filename.split('/')[-1]
+    ndf = nodules_df[nodules_df['patientid']==patid]
+    X, y, rois, stats = common.load_patient(patient_data, ndf, output_rois=True, thickness=1)
+    label = int(label_df[label_df['id']==patid]['cancer'])
+    y = [label]*len(X)
+    logging.info("Patient: %s, cancer:%d, stats: %s" % (patid, label, stats))
+    return X, y, stats
+
+
+common.multiproc_crop_generator(filenames_train,
+                                os.path.join(PATCHES_PATH,'dl3_v02_x_train.npz'),
+                                os.path.join(PATCHES_PATH,'dl3_v02_y_train.npz'),
+                                __load_and_store,
+                                parallel=True)
+
+
+common.multiproc_crop_generator(filenames_test,
+                                os.path.join(PATCHES_PATH,'dl3_v02_x_test.npz'),
+                                os.path.join(PATCHES_PATH,'dl3_v02_y_test.npz'),
+                                __load_and_store,
+                                parallel=True)
 
 
 ### TRAINING -------------------------------------------------------------------------------------------------------
