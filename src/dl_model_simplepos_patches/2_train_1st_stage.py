@@ -44,8 +44,8 @@ NODULES_PATH = wp + 'data/luna/annotations.csv'
 PATCHES_PATH = '/mnt/hd2/patches'  # PATCHES_PATH = wp + 'data/preprocessed5_patches'
 #PATCHES_PATH = '/home/jose/patches_temp'
 
-OUTPUT_MODEL = wp + 'models/jc_simplepos_patches_train_v02.hdf5'  # OUTPUT_MODEL = wp + 'personal/jm_patches_train_v06_local.hdf5'
-LOGS_PATH = wp + 'logs/%s' % str('simplepos_v02')
+OUTPUT_MODEL = wp + 'models/jc_simplepos_patches_train_v03.hdf5'  # OUTPUT_MODEL = wp + 'personal/jm_patches_train_v06_local.hdf5'
+LOGS_PATH = wp + 'logs/%s' % str('simplepos_v03')
 
 if not os.path.exists(LOGS_PATH):
     os.makedirs(LOGS_PATH)
@@ -88,8 +88,11 @@ def chunks_multichannel(X, y, batch_size=32, augmentation_times=4, thickness=0, 
         y = y[selected_samples]
         logging.info("Final downsampled dataset stats: TP:%d, FP:%d" % (sum(y), len(y)-sum(y)))
 
-        flip = np.random.randint(2, size = (len(X),2)) * 2 -1
-        a = np.array([X[i][0][:,::flip[i][0],::flip[i][1]] for i in range(len(X))]) # This one implements flips horizontal and vertical... simple data augmentation. THe flip array contains 1s and -1s meaning flip or o flip
+        ## CODIGO CON ATA AUGMENTATION... HA SIDO UN PUTO DRAMA; LO COMENTO!
+        #flip = np.random.randint(2, size = (len(X),2)) * 2 -1
+        #a = np.array([X[i][0][:,::flip[i][0],::flip[i][1]] for i in range(len(X))]) # This one implements flips horizontal and vertical... simple data augmentation. THe flip array contains 1s and -1s meaning flip or o flip
+
+        a = np.array([X[i][0] for i in range(len(X))])
         b = np.array([X[i][1] for i in range(len(X))])
         yield [a,b], y
 
