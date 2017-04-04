@@ -7,7 +7,7 @@ import pandas as pd
 from time import time
 import matplotlib.pyplot as plt
 from utils import plotting
-from dl_model_pos_patches import  common
+from dl_model_simplepos_patches import  common
 from sklearn import metrics
 from keras import backend as K
 from keras.preprocessing.image import ImageDataGenerator
@@ -34,7 +34,6 @@ from dl_utils.tb_callback import TensorBoard
 
 
 
-
 # PATHS
 wp = os.environ['LUNG_PATH']
 
@@ -45,8 +44,8 @@ NODULES_PATH = wp + 'data/luna/annotations.csv'
 PATCHES_PATH = '/mnt/hd2/patches'  # PATCHES_PATH = wp + 'data/preprocessed5_patches'
 #PATCHES_PATH = '/home/jose/patches_temp'
 
-OUTPUT_MODEL = wp + 'models/jc_pos_patches_train_v03.hdf5'  # OUTPUT_MODEL = wp + 'personal/jm_patches_train_v06_local.hdf5'
-LOGS_PATH = wp + 'logs/%s' % str('pos_v03')
+OUTPUT_MODEL = wp + 'models/jc_simplepos_patches_train_v02.hdf5'  # OUTPUT_MODEL = wp + 'personal/jm_patches_train_v06_local.hdf5'
+LOGS_PATH = wp + 'logs/%s' % str('simplepos_v02')
 
 if not os.path.exists(LOGS_PATH):
     os.makedirs(LOGS_PATH)
@@ -89,23 +88,27 @@ def chunks_multichannel(X, y, batch_size=32, augmentation_times=4, thickness=0, 
         y = y[selected_samples]
         logging.info("Final downsampled dataset stats: TP:%d, FP:%d" % (sum(y), len(y)-sum(y)))
 
-
-        a = np.array([X[i][0] for i in range(len(X))])
-        b = np.array([X[i][1][2:18] for i in range(len(X))])
+        flip = np.random.randint(2, size = (len(X),2)) * 2 -1
+        a = np.array([X[i][0][:,::flip[i][0],::flip[i][1]] for i in range(len(X))]) # This one implements flips horizontal and vertical... simple data augmentation. THe flip array contains 1s and -1s meaning flip or o flip
+        b = np.array([X[i][1] for i in range(len(X))])
         yield [a,b], y
+
+PATCHES_PATH = '/mnt/hd2/patches'  # PATCHES_PATH = wp + 'data/preprocessed5_patches'
 
 # LOADING PATCHES FROM DISK
 logging.info("Loading training and test sets")
-x_train = np.load(os.path.join(PATCHES_PATH, 'x_train_dl_pos_0.npz'))['arr_0']
-y_train = np.load(os.path.join(PATCHES_PATH, 'y_train_dl_pos_0.npz'))['arr_0']
-x_test = np.load(os.path.join(PATCHES_PATH, 'x_test_dl_pos_0.npz'))['arr_0']
-y_test = np.load(os.path.join(PATCHES_PATH, 'y_test_dl_pos_0.npz'))['arr_0']
+x_train = np.load(os.path.join(PATCHES_PATH, 'x_train_dl_simplepos_0.npz'))['arr_0']
+y_train = np.load(os.path.join(PATCHES_PATH, 'y_train_dl_simplepos_0.npz'))['arr_0']
+x_test = np.load(os.path.join(PATCHES_PATH, 'x_test_dl_simplepos_0.npz'))['arr_0']
+y_test = np.load(os.path.join(PATCHES_PATH, 'y_test_dl_simplepos_0.npz'))['arr_0']
 logging.info("Training set (1s/total): %d/%d" % (sum(y_train),len(y_train)))
 logging.info("Test set (1s/total): %d/%d" % (sum(y_test), len(y_test)))
 
+N_extra_features = len(x_train[0][1])
 
-from dl_networks.pos_resnet import posResnet
-model = posResnet().get_posResnet((3,40,40),(16,18,18))
+
+from dl_networks.simplepos_resnet import simpleposResnet
+model = simpleposResnet().get_posResnet((3,40,40),[N_extra_features])
 model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['accuracy','fmeasure'])
 # logging.info('Loading exiting model...')
 # model.load_weights(OUTPUT_MODEL)

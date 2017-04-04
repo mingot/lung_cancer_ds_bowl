@@ -9,7 +9,8 @@ from keras.layers import (
     Activation,
     merge,
     Dense,
-    Flatten
+    Flatten,
+    Dropout
 )
 from keras.layers.convolutional import (
     Convolution2D,
@@ -250,15 +251,18 @@ class ResnetNetAsBlock(object):
     def build_resnet_152(input_shape, input, num_outputs):
         return ResnetNetAsBlock.build(input_shape, input, num_outputs, bottleneck, [3, 8, 36, 3])
 
-class posResnet(object):    
+class simpleposResnet(object):    
     @staticmethod        
     def get_posResnet(signal_shape, atlas_shape):
         input_signal = Input(shape=signal_shape)
         input_atlas = Input(shape=atlas_shape)
 
         out_A = ResnetNetAsBlock.build_resnet_50(signal_shape, input_signal, 20)
-        out_B = ResnetNetAsBlock.build_resnet_18(atlas_shape, input_atlas, 3)
-        out_global = merge([out_A, out_B], mode='concat', concat_axis=-1)
+        out_global = merge([out_A, input_atlas], mode='concat', concat_axis=-1)
+
+        dense = Dense(output_dim=10, init="he_normal", activation="sigmoid")(out_global)  
+        ## TODO: Posarli un dropout aqui que tal???
+        dense = Dropout(0.5)(dense)
         dense = Dense(output_dim=1, init="he_normal", activation="sigmoid")(out_global)
         model = Model(input=[input_signal, input_atlas], output=dense)
         return model
