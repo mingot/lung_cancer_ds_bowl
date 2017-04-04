@@ -47,7 +47,7 @@ class ThickRESUNET(object):
             try:
                 self.model.load_weights(saved_file)
             except:
-                print 'EXPECTED MODEL'+self.model.get_config()
+                #print 'EXPECTED MODEL'+self.model.get_config()
                 print '-------------------'
                 print 'SAVED MODEL'+load_model(saved_file, custom_objects={'weighted_loss': weighted_loss}).get_config()
                 raise Exception("WARNING: the file does not contain a model matching this arquitecture!!")
@@ -230,7 +230,7 @@ def load_patient(filename,thickness=5, full=True,max_slices=0):
         slices.append(zrange)
 
         X.append(normalize(lung_image))
-        Y.append(np.max(nodules_mask,axis=0))  # nodules_mask
+        Y.append(np.max(lung_mask,axis=0))  # nodules_mask
         #if len(slices)>5:  # at most 6 slices per patient
         #    break
     logging.info('patient %s added %d thickslices: %s' % (filename, len(slices), str(slices)))
