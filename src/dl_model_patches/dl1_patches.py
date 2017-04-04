@@ -77,122 +77,82 @@ common.multiproc_crop_generator(filenames_test,
 
 ### TRAINING -----------------------------------------------------------------
 
-# # Data augmentation generator
-# train_datagen = ImageDataGenerator(
-#     #rotation_range=10,  # .06,
-#     #width_shift_range=0.05, #0.02,
-#     #height_shift_range=0.05, #0.02,
-#     #shear_range=0.0002,
-#     #zoom_range=0.0002,
-#     dim_ordering="th",
-#     horizontal_flip=True,
-#     vertical_flip=True
-#     )
-#
-# test_datagen = ImageDataGenerator(dim_ordering="th")  # dummy for testing to have the same structure
-#
-#
-# def chunks(X, y, batch_size=32, augmentation_times=4, thickness=0, is_training=True):
-#     """
-#     Batches generator for keras fit_generator. Returns batches of patches 40x40px
-#      - augmentation_times: number of time to return the data augmented
-#      - concurrent_patients: number of patients to load at the same time to add diversity
-#      - thickness: number of slices up and down to add as a channel to the patch
-#     """
-#     while 1:
-#         prct1 = 0.2
-#         idx_1 = [i for i in range(len(y)) if y[i]==1]
-#         idx_1 = random.sample(idx_1, int(0.2*len(idx_1)))
-#         idx_0 = [i for i in range(len(y)) if y[i]==0]
-#         idx_0 = random.sample(idx_0, int(len(idx_1)/prct1))
-#         selected_samples = idx_0 + idx_1
-#         random.shuffle(selected_samples)
-#         XX = X[selected_samples]
-#         yy = y[selected_samples]
-#
-#         #selected_samples  = [i for i in range(len(y_orig)) if y_orig[i]==1 or random.randint(0,9)==0]
-#         logging.info("Final downsampled dataset stats: TP:%d, FP:%d" % (sum(y[selected_samples]), len(y[selected_samples])-sum(y[selected_samples])))
-#
-#         # generator: if testing, do not augment data
-#         data_generator = train_datagen if is_training else test_datagen
-#         #xx = data_generator.flow(X[selected_samples], y[selected_samples], batch_size=batch_size, shuffle=is_training)
-#         i, good = 0, 0
-#         lenX = len(selected_samples)
-#         for X_batch, y_batch in data_generator.flow(XX, yy, batch_size=batch_size, shuffle=is_training):
-#             i += 1
-#             if good*batch_size > lenX*augmentation_times or i>100:  # stop when we have augmented enough the batch
-#                 break
-#             if X_batch.shape[0] != batch_size:  # ensure correct batch size
-#                 continue
-#             good += 1
-#             yield X_batch, y_batch
-#         #del xx
-#
-#
-# def chunks_multichannel(X_orig, y_orig, batch_size=32, augmentation_times=4, thickness=0, is_training=True):
-#     """
-#     Batches generator for keras fit_generator. Returns batches of patches 40x40px
-#      - augmentation_times: number of time to return the data augmented
-#      - concurrent_patients: number of patients to load at the same time to add diversity
-#      - thickness: number of slices up and down to add as a channel to the patch
-#     """
-#     while 1:
-#         # downsample negatives (reduce 90%)
-#         if is_training:
-#             len1 = int(0.25*batch_size)
-#             idx_1 = [i for i in range(len(y_orig)) if y_orig[i]==1]
-#             idx_1 = random.sample(idx_1, len1)
-#             idx_0 = [i for i in range(len(y_orig)) if y_orig[i]==0]
-#             idx_0 = random.sample(idx_0, batch_size - len1)
-#             selected_samples = idx_0 + idx_1
-#             random.shuffle(selected_samples)
-#         else:
-#             selected_samples = range(len(y_orig))
-#
-#         #selected_samples  = [i for i in range(len(y_orig)) if y_orig[i]==1 or random.randint(0,9)==0]
-#         X = [X_orig[i] for i in selected_samples]
-#         y = [y_orig[i] for i in selected_samples]
-#         logging.info("Final downsampled dataset stats: TP:%d, FP:%d" % (sum(y), len(y)-sum(y)))
-#
-#         # convert to np array and add extra axis (needed for keras)
-#         X, y = np.asarray(X), np.asarray(y)
-#         y = np.expand_dims(y, axis=1)
-#         if thickness==0:
-#             X = np.expand_dims(X, axis=1)
-#
-#         yield X, y
-#
-# # LOADING PATCHES FROM DISK
-# logging.info("Loading training and test sets")
-# x_train = np.load(os.path.join(PATCHES_PATH, 'x_train_dl1_full.npz'))['arr_0']
-# y_train = np.load(os.path.join(PATCHES_PATH, 'y_train_dl1_full.npz'))['arr_0']
-# y_train = np.expand_dims(y_train, axis=1)
-# x_test = np.load(os.path.join(PATCHES_PATH, 'x_test_dl1_full.npz'))['arr_0']
-# y_test = np.load(os.path.join(PATCHES_PATH, 'y_test_dl1_full.npz'))['arr_0']
-# y_test = np.expand_dims(y_test, axis=1)
-# logging.info("Training set (1s/total): %d/%d" % (sum(y_train),len(y_train)))
-# logging.info("Test set (1s/total): %d/%d" % (sum(y_test), len(y_test)))
-#
-#
-#
-# # Load model
-# model = ResnetBuilder().build_resnet_50((3,40,40),1)
-# model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['accuracy','fmeasure'])
+# Data augmentation generator
+train_datagen = ImageDataGenerator(
+    rotation_range=30,  # .06,
+    width_shift_range=0.1, #0.02,
+    height_shift_range=0.1, #0.02,
+    #shear_range=0.0002,
+    #zoom_range=0.0002,
+    dim_ordering="th",
+    horizontal_flip=True,
+    vertical_flip=True
+    )
+
+test_datagen = ImageDataGenerator(dim_ordering="th")  # dummy for testing to have the same structure
+
+
+def chunks(X, y, batch_size=32, augmentation_times=4, thickness=0, is_training=True):
+    """
+    Batches generator for keras fit_generator. Returns batches of patches 40x40px
+     - augmentation_times: number of time to return the data augmented
+     - concurrent_patients: number of patients to load at the same time to add diversity
+     - thickness: number of slices up and down to add as a channel to the patch
+    """
+    while 1:
+        prct_pop, prct1 = 0.2, 0.2  # (1) of all the training set, how much we keep (2) % of 1's
+        idx_1 = [i for i in range(len(y)) if y[i]==1]
+        idx_1 = random.sample(idx_1, int(prct_pop*len(idx_1)))
+        idx_0 = [i for i in range(len(y)) if y[i]==0]
+        idx_0 = random.sample(idx_0, int(len(idx_1)/prct1))
+        selected_samples = idx_0 + idx_1
+        random.shuffle(selected_samples)
+        logging.info("Final downsampled dataset stats: TP:%d, FP:%d" % (sum(y[selected_samples]), len(y[selected_samples])-sum(y[selected_samples])))
+
+        # generator: if testing, do not augment data
+        data_generator = train_datagen if is_training else test_datagen
+
+        i, good = 0, 0
+        lenX = len(selected_samples)
+        for X_batch, y_batch in data_generator.flow(X[selected_samples], y[selected_samples], batch_size=batch_size, shuffle=is_training):
+            i += 1
+            if good*batch_size > lenX*augmentation_times or i>100:  # stop when we have augmented enough the batch
+                break
+            if X_batch.shape[0] != batch_size:  # ensure correct batch size
+                continue
+            good += 1
+            yield X_batch, y_batch
+
+# LOADING PATCHES FROM DISK
+logging.info("Loading training and test sets")
+x_train = np.load(os.path.join(PATCHES_PATH, 'dl1_v19_x_train.npz'))['arr_0']
+y_train = np.load(os.path.join(PATCHES_PATH, 'dl1_v19_y_train.npz'))['arr_0']
+y_train = np.expand_dims(y_train, axis=1)
+x_test = np.load(os.path.join(PATCHES_PATH, 'dl1_v19_x_test.npz'))['arr_0']
+y_test = np.load(os.path.join(PATCHES_PATH, 'dl1_v19_y_test.npz'))['arr_0']
+y_test = np.expand_dims(y_test, axis=1)
+logging.info("Training set (1s/total): %d/%d" % (sum(y_train),len(y_train)))
+logging.info("Test set (1s/total): %d/%d" % (sum(y_test), len(y_test)))
+
+
+# Load model
+model = ResnetBuilder().build_resnet_50((3,40,40),1)
+model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['accuracy','fmeasure'])
 # logging.info('Loading exiting model...')
 # model.load_weights(OUTPUT_MODEL)
-#
-#
-# model.fit_generator(generator=chunks(x_train, y_train, batch_size=32, thickness=1),
-#                     samples_per_epoch=1280,  # make it small to update TB and CHECKPOINT frequently
-#                     nb_epoch=1600,
-#                     verbose=1,
-#                     #class_weight={0:1., 1:4.},
-#                     callbacks=[tb, model_checkpoint],
-#                     validation_data=chunks(x_test, y_test, batch_size=32, is_training=False, thickness=1),
-#                     nb_val_samples=32*10,
-#                     max_q_size=10,
-#                     initial_epoch=1120,
-#                     nb_worker=1)  # a locker is needed if increased the number of parallel workers
+
+
+model.fit_generator(generator=chunks(x_train, y_train, batch_size=32, thickness=1),
+                    samples_per_epoch=1280,  # make it small to update TB and CHECKPOINT frequently
+                    nb_epoch=1600,
+                    verbose=1,
+                    #class_weight={0:1., 1:4.},
+                    callbacks=[tb, model_checkpoint],
+                    validation_data=chunks(x_test, y_test, batch_size=32, thickness=1, is_training=False,),
+                    nb_val_samples=32*10,
+                    max_q_size=10,
+                    initial_epoch=1120,
+                    nb_worker=1)  # a locker is needed if increased the number of parallel workers
 
 # ## CHECKS GENERATOR
 # for i in range(10):

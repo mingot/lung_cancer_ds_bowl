@@ -29,8 +29,8 @@ INPUT_PATH = '/mnt/hd2/preprocessed5/' # INPUT_PATH = wp + 'data/preprocessed5_s
 VALIDATION_PATH = '/mnt/hd2/preprocessed5_validation_luna/' # VALIDATION_PATH = wp + 'data/preprocessed5_sample'
 PATCHES_PATH = '/mnt/hd2/patches'  # PATCHES_PATH = wp + 'data/preprocessed5_patches'
 
-OUTPUT_MODEL =  wp + 'models/jm_patches_malign_v02.hdf5'  # OUTPUT_MODEL = wp + 'personal/jm_patches_train_v06_local.hdf5'
-LOGS_PATH = wp + 'logs/%s' % 'malign_v02' #str(int(time()))
+OUTPUT_MODEL =  wp + 'models/jm_patches_malign_v03.hdf5'  # OUTPUT_MODEL = wp + 'personal/jm_patches_train_v06_local.hdf5'
+LOGS_PATH = wp + 'logs/%s' % 'malign_v03' #str(int(time()))
 if not os.path.exists(LOGS_PATH):
     os.makedirs(LOGS_PATH)
 
@@ -65,7 +65,7 @@ logging.info("DSB selected nodules shape: %s" % str(nodules_df.shape))
 # Construction of training and testsets
 validation_df = pd.read_csv(DSB_VALIDATION)
 logging.info("DSB validation shape:%s" % str(validation_df.shape))
-filenames_train = [os.path.join(INPUT_PATH,f) for f in set(nodules_df['patientid']) if f not in list(validation_df['patientid'])]
+filenames_train = [os.path.join(INPUT_PATH,f) for f in set(nodules_df['patientid'])]# if f not in list(validation_df['patientid'])]
 filenames_test = [os.path.join(INPUT_PATH,f) for f in set(nodules_df['patientid']) if f in list(validation_df['patientid'])]
 
 logging.info("Patients train:%d, test:%d" % (len(filenames_train), len(filenames_test)))
@@ -82,15 +82,15 @@ def __load_and_store(filename):
 
 
 common.multiproc_crop_generator(filenames_train,
-                                os.path.join(PATCHES_PATH,'dl3_v02_x_train.npz'),
-                                os.path.join(PATCHES_PATH,'dl3_v02_y_train.npz'),
+                                os.path.join(PATCHES_PATH,'dl3_v03_x_train.npz'),
+                                os.path.join(PATCHES_PATH,'dl3_v03_y_train.npz'),
                                 __load_and_store,
                                 parallel=True)
 
 
 common.multiproc_crop_generator(filenames_test,
-                                os.path.join(PATCHES_PATH,'dl3_v02_x_test.npz'),
-                                os.path.join(PATCHES_PATH,'dl3_v02_y_test.npz'),
+                                os.path.join(PATCHES_PATH,'dl3_v03_x_test.npz'),
+                                os.path.join(PATCHES_PATH,'dl3_v03_y_test.npz'),
                                 __load_and_store,
                                 parallel=True)
 
@@ -133,17 +133,17 @@ def chunks(X, y, batch_size=32, augmentation_times=4, thickness=0, is_training=T
 
 # LOADING PATCHES FROM DISK
 logging.info("Loading training and test sets")
-x_train = np.load(os.path.join(PATCHES_PATH, 'dl3_v02_x_train.npz'))['arr_0']
-y_train = np.load(os.path.join(PATCHES_PATH, 'dl3_v02_y_train.npz'))['arr_0']
+x_train = np.load(os.path.join(PATCHES_PATH, 'dl3_v03_x_train.npz'))['arr_0']
+y_train = np.load(os.path.join(PATCHES_PATH, 'dl3_v03_y_train.npz'))['arr_0']
 y_train = np.expand_dims(y_train, axis=1)
-x_test = np.load(os.path.join(PATCHES_PATH, 'dl3_v02_x_test.npz'))['arr_0']
-y_test = np.load(os.path.join(PATCHES_PATH, 'dl3_v02_y_test.npz'))['arr_0']
+x_test = np.load(os.path.join(PATCHES_PATH, 'dl3_v03_x_test.npz'))['arr_0']
+y_test = np.load(os.path.join(PATCHES_PATH, 'dl3_v03_y_test.npz'))['arr_0']
 y_test = np.expand_dims(y_test, axis=1)
 logging.info("Training set (1s/total): %d/%d" % (sum(y_train),len(y_train)))
 logging.info("Test set (1s/total): %d/%d" % (sum(y_test), len(y_test)))
 
 # Load model
-model = ResnetBuilder().build_resnet_34((3,40,40),1)
+model = ResnetBuilder().build_resnet_50((3,40,40),1)
 model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['accuracy','fmeasure'])
 model_checkpoint = ModelCheckpoint(OUTPUT_MODEL, monitor='loss', save_best_only=True)
 # logging.info('Loading exiting model...')
@@ -152,7 +152,7 @@ model_checkpoint = ModelCheckpoint(OUTPUT_MODEL, monitor='loss', save_best_only=
 
 model.fit_generator(generator=chunks(x_train, y_train, batch_size=32, thickness=1, augmentation_times=8),
                     samples_per_epoch=1280,  # make it small to update TB and CHECKPOINT frequently
-                    nb_epoch=500,
+                    nb_epoch=500*4,
                     verbose=1,
                     callbacks=[tb, model_checkpoint],
                     validation_data=chunks(x_test, y_test, batch_size=32, thickness=1, is_training=False),

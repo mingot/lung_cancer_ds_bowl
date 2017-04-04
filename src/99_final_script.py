@@ -7,6 +7,7 @@ from dl_model_patches import common
 
 INPUT_FOLDER = ''
 DL1_MODEL = ''
+DL2_MODEL = ''
 COMMON_SPACING = [2, 0.7, 0.7]
 
 
@@ -51,13 +52,23 @@ from keras.optimizers import Adam
 # Model loading inside the listener thread (otherwise keras complains)
 K.set_image_dim_ordering('th')
 
-model = ResnetBuilder().build_resnet_50((3,40,40),1)
-model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['accuracy', 'fmeasure'])
-model.load_weights(DL1_MODEL)
+model_dl1 = ResnetBuilder().build_resnet_50((3,40,40),1)
+model_dl1.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['accuracy', 'fmeasure'])
+model_dl1.load_weights(DL1_MODEL)
+
+model_dl2 = ResnetBuilder().build_resnet_50((3,40,40),1)
+model_dl2.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['accuracy', 'fmeasure'])
+model_dl2.load_weights(DL2_MODEL)
 
 
 X, y, rois, stats = common.load_patient(patient_data, discard_empty_nodules=False, output_rois=True, thickness=1)
-preds = model.predict(np.asarray(X), verbose=1)
+preds_dl1 = model_dl1.predict(np.asarray(X), verbose=1)
+preds_dl2 = model_dl2.predict(np.asarray(X), verbose=1)
+
+
+# Initial filtering for applying DL3
+# TODO
+
 
 
 ## FINAL PREDICTOR
