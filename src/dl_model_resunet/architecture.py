@@ -21,7 +21,7 @@ from keras import backend as K
 K.set_image_dim_ordering('th')
 
 
-l2regularization = l2(1.e-5) # it was 1.e-4
+l2regularization = l2(0) # it was 1.e-4
 
 def _bn_relu(input):
     """Helper to build a BN -> relu block
