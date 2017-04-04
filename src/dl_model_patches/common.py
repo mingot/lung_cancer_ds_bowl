@@ -95,7 +95,7 @@ def extract_rois_from_lung_mask(lung_image, lung_mask, margin=5):
     # mask = morphology.opening(mask)
     regions_pred = get_regions(mask, threshold=np.mean(mask))
 
-    # discard small regions or long connected regions
+    # discard small and big regions or long connected regions
     sel_regions = []
     for region in regions_pred:
         area, ratio = calc_area(region), calc_ratio(region)
