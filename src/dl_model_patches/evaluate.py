@@ -44,6 +44,7 @@ wp = os.environ['LUNG_PATH']
 OUTPUT_DL1 = wp + 'output/nodules_patches_dl1_v11.csv'  # OUTPUT_DL1 = wp + 'personal/noduls_patches_v06.csv'
 OUTPUT_DL2 = wp + 'output/nodules_patches_hardnegative_v03.csv'  # OUTPUT_DL1 = wp + 'personal/noduls_patches_v06.csv'
 
+logging.info("Loading DL1 and DL2 data frames...")
 dl1_df = pd.read_csv(OUTPUT_DL1)
 dl1_df = dl1_df[dl1_df['patientid'].str.startswith('dsb')]  # Filter DSB patients
 dl2_df = pd.read_csv(OUTPUT_DL2)

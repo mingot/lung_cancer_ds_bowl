@@ -50,6 +50,8 @@ class AuxRegion():
             self.equivalent_diameter = region.equivalent_diameter
         elif bbox is not None:
             self.bbox = bbox
+            x1,y1,x2,y2 = self.bbox
+            self.centroid = [int((x1+x2)/2.0), int((y1+y2)/2.0)]
 
     def augment_region(self, margin=5):
         self.bbox = [max(self.bbox[0]-margin,0), max(self.bbox[1]-margin,0), self.bbox[2]+margin, self.bbox[3]+margin]
