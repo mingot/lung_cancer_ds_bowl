@@ -23,11 +23,20 @@ source(paste0(path_repo,"src/jm_final_ensemble/aggregate_dt.R"))
 
 dataset_final <- generate_patient_dt(path_repo,path_dsb)
 
+
+
+# Other features ----------------------------------------------------------
+
+dl3_df = fread(paste0(path_dsb,"resnet/nodules_patches_dl3_v02.csv"))
+dl3_df = dl3_df[,.(dl3_max=max(score), dl3_num_maligns=sum(score>0.2)),by=patientid]
+dl3_df[,patientid:=gsub(".npz|dsb_","",patientid)]
+features_sp <- fread(paste0(path_dsb,"/sp_04_features.csv"))
+
 # SEPARATING TRAIN AND SCORING ---------------------------------------------------------------------
 patients_train <- dataset_final[dataset == "training",patientid]
 dataset_final[,dataset := NULL]
-features_sp <- fread(paste0(path_dsb,"/sp_04_features.csv"))
 dataset_final <- merge(dataset_final,features_sp,all.x = T,by = "patientid")
+dataset_final <- merge(dataset_final,dl3_df,all.x = T,by = "patientid")
 dataset_final <- na_to_zeros(dataset_final,names(dataset_final))
 nombres_m <- names(dataset_final)
 for(n in nombres_m) {
@@ -83,6 +92,14 @@ dataset_final_f <- dataset_final[,.SD,.SDcols = unique(c(vars_train,"patientid",
 data_train <- dataset_final_f[patientid %in% patients_train]
 scoring <- dataset_final_f[!patientid %in% patients_train]
 patients_scoring <- scoring[,patientid]
+
+
+# validation
+validation = fread(paste0(path_repo, 'data/stage1_validation.csv'))
+validation[,patientid:=gsub(".npz|dsb_","",patientid)]
+data_train = data_train[patientid%in%validation$patientid]
+
+
 data_train[,patientid := NULL]
 scoring[,patientid := NULL]
 
@@ -144,7 +161,8 @@ LogLossBinary(target,preds)
 preds = predictCv(final_model, scoring)
 
 submission = data.table(id=patients_scoring, cancer=preds)
-write.csv(submission, paste0(path_repo,"data/submissions/16_submission.csv"), quote=F, row.names=F)
+mean(submission$cancer)
+write.csv(submission, paste0(path_repo,"data/submissions/19_submission.csv"), quote=F, row.names=F)
 
 
 # GENERATING PREDICTIONS FOR TRAINING ----------------------------------------------------------------------------
@@ -153,7 +171,7 @@ preds = predictCv(final_model, train_task)
 data_out <- copy(data_train)
 data_out$patientid = patients_train
 data_out$predicted=preds
-write.csv(data_out, paste0(path_repo,"data/final_model/scoring_train_16.csv"), quote=F, row.names=F)
+write.csv(data_out, paste0(path_repo,"data/final_model/scoring_train_19.csv"), quote=F, row.names=F)
 
 
 #---------------------------------------------------------------------------------------------------
