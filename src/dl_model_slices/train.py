@@ -70,5 +70,6 @@ train_gen, X_valid, Y_valid = dataset.get_dataset()
 #print('Training...\n')
 # model_checkpoint = keras.callbacks.ModelCheckpoint(model_path + 'jm_slowunet_v3.hdf5', monitor='loss', save_best_only=True)
 for i in range(NUM_EPOCHS):
-    model.fit_generator(train_gen, 100, verbose=1, nb_epoch=5, validation_data=(X_valid, Y_valid), callbacks=[tb], class_weight={0:1.,1:5.}, nb_worker=1)
+    print("My epoch %d" %i)
+    model.fit_generator(train_gen, 10000, verbose=1, nb_epoch=1, validation_data=(X_valid, Y_valid), callbacks=[tb], class_weight={0:1.,1:5.}, nb_worker=1)
     model.save(model_path + 'jc_sampleresnet18_v1.hdf5')

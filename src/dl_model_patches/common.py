@@ -1,6 +1,7 @@
-import numpy as np
 import logging
 import multiprocessing
+import math
+import numpy as np
 from time import time
 from skimage import measure, transform, morphology
 logging.basicConfig(level=logging.INFO,
@@ -50,6 +51,9 @@ class AuxRegion():
             self.equivalent_diameter = region.equivalent_diameter
         elif bbox is not None:
             self.bbox = bbox
+            x1,y1,x2,y2 = self.bbox
+            self.centroid = [int((x1+x2)/2.0), int((y1+y2)/2.0)]
+            self.equivalent_diameter = 2*math.sqrt((x2-x1)*(y2-y1)/math.pi)
 
     def augment_region(self, margin=5):
         self.bbox = [max(self.bbox[0]-margin,0), max(self.bbox[1]-margin,0), self.bbox[2]+margin, self.bbox[3]+margin]
@@ -95,11 +99,11 @@ def extract_rois_from_lung_mask(lung_image, lung_mask, margin=5):
     # mask = morphology.opening(mask)
     regions_pred = get_regions(mask, threshold=np.mean(mask))
 
-    # discard small regions or long connected regions
+    # discard small and big regions or long connected regions
     sel_regions = []
     for region in regions_pred:
         area, ratio = calc_area(region), calc_ratio(region)
-        if 3*3<=area: #and area<=70*70 and 1.0/3<=ratio and ratio<=3:  # regions in [2.1mm, 40mm]
+        if 3*3<=area and area<=70*70 and 1.0/3<=ratio and ratio<=3:  # regions in [2.1mm, 40mm]
             sel_regions.append(region)
     regions_pred = sel_regions
 

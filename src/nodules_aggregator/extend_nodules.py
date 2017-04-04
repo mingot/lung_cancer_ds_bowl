@@ -88,6 +88,10 @@ def extract_patch(
     np_pat = np.load(patient_path + '/' + patient_id)['arr_0']
     df_pat = df[df[patient_colname] == patient_id]
     
+    # compute volume of lung accumulated in the z axis
+    sum_xy = np.sum(np_pat[1], axis=(1, 2))
+    #perc_z = np.cumsum(sum_xy)/float(np.sum(sum_xy))
+    
     patches = []
     for ind, row in df_pat.iterrows(): 
         z = int(row['nslice'])
@@ -128,7 +132,7 @@ def extract_patch(
                         'resc_hu': resc_hu, 
                         'resc_lung': resc_lung
         })
-    return patches, df_pat
+    return patches, df_pat, sum_xy
 
 
 
@@ -358,6 +362,7 @@ def process_pipeline_patient(
     df, 
     patient_path, 
     patient_colname='patientid',
+    patient_inverted=[], 
     verbose=False):
     """
     This function processes a single patient from a data frame. 
@@ -367,6 +372,7 @@ def process_pipeline_patient(
     df: whole data frame
     patient_path: path to find npy files
     patient_colname: name of the data frame column containing patients (should be patientid)
+    patient_inverted: inverted patients as a list
     verbose: show debug messages
     """
     print 'Processing patient {} ...'.format(patient_id)
@@ -374,7 +380,7 @@ def process_pipeline_patient(
     # pat = list_patient[0]
     
     # (1) Extract patchs from data frame and one patient
-    p_patch, p_df = extract_patch(
+    p_patch, p_df, sum_xy = extract_patch(
         df, 
         patient_id=patient_id, 
         patient_path=patient_path, 
@@ -439,32 +445,49 @@ def process_pipeline_patient(
     # recover indices
     # 
     
+    df_original = p_df.iloc[patch_nonnull]
+    
+    # map position of the nodule (upper lobe, etc)
+    # vertical positions of nodules
+    z_nodule = df_original.nslice
+    # first, compute accum volume in the z axis
+    perc_z = np.cumsum(sum_xy)/float(np.sum(sum_xy))
+    # reverse if patient is reversed
+    if patient_id in patient_inverted:
+        perc_z = 1 - perc_z
+    # return percentage of lung volume before the nodule
+    df_augmented['40_nodeverticalposition'] = [perc_z[int(x)] for x in z_nodule]
     
     # (6) concat data frames to obtain the final augmented data frame for this patient
     # df_all = pd.merge(p_df.iloc[patch_nonnull], df_feat, how='cross')
-    df_all = pd.concat([p_df.iloc[patch_nonnull], df_augmented], axis=1)
+    df_all = pd.concat([df_original, df_augmented], axis=1)
     return df_all
 
 def process_pipeline_csv(
     csv_in, 
     patient_path, 
-    csv_out, 
+    csv_out = None, 
+    csv_as_files = True,
     dmin = 3, 
     dmax = 100, 
     compress={'hog':3, 'lbp':3, 'hu':2},
     nCores=1,
     patient_colname='patientid',
+    patient_inverted=[], 
     verbose=False):
     """
     This function creates an augmented features csv file
     
     csv_in: csv file from dl
     patient_path: path where the .npz files are stored
-    csv_out: csv file to write
-    compress: dictionary, features as keys and number of principal 
-    components as values
+    csv_out: csv file to write, or None if result is a data frame
+    csv_as_files: true if both input and output are csv filenames, false if they are data frames 
+    dmin: minimum diameter (filtering)
+    dmax: maximum diameter (filtering)
+    compress: dictionary, features as keys and number of principal components as values
     nCores: number of cores to use 
     patient_colname: name of the patient column
+    patient_inverted: inverted patients as a list (same format as their notation in the data frame)
     verbose: show debug messages
     """
     # debug
@@ -474,8 +497,13 @@ def process_pipeline_csv(
     # verbose=False
     
     # Check format
-    df_dl = pd.read_csv(csv_in)
-    print 'Reading csv! Checking format is standard...'
+    if csv_as_files:
+        df_dl = pd.read_csv(csv_in)
+        print 'Reading csv! Checking format is standard...'
+    else:
+        df_dl = csv_in
+        print 'You have enterd data frame as input... function will return a data frame as well'
+        
     df_dl_header = list(df_dl)
     for i in [patient_colname, 'x', 'y', 'diameter']:
         if not i in df_dl_header:
@@ -506,6 +534,7 @@ def process_pipeline_csv(
         df = df_dl_filter, 
         patient_path = patient_path, 
         patient_colname=patient_colname,
+        patient_inverted=patient_inverted,
         verbose=False)
             
         #     def f_map(pat):
@@ -544,9 +573,11 @@ def process_pipeline_csv(
     print 'Filtered data frame shape: {}'.format(df_dl_filter.shape)
     print 'Final shape (rows whose nodes were not found were dropped): {}'.format(df_list.shape)
     
-    print 'Done! Writing csv...'
-    df_list.to_csv(csv_out, index=False)
-
+    if csv_as_files:
+        print 'Done! Writing csv...'
+        df_list.to_csv(csv_out, index=False)
+    else:
+        return df_list
 
 # END CSV AUGMENTATION -----------------------------------------------------------------
 
