@@ -26,9 +26,9 @@ def worker(filename, q):
     while 1:
         if q.qsize() < 10:
             patient_data = np.load(filename)['arr_0']
-            logging.info("[WORKER] "+str(filename)+" patient_data shape " +str(patient_data.shape)) 
-            X, y, rois, stats = common.load_patient_3d_atlas(patient_data, discard_empty_nodules=True, output_rois=True, debug=True, thickness=1)
-            logging.info("[WORKER] len X " +str(len(X)))
+            #logging.info("[WORKER] "+str(filename)+" patient_data shape " +str(patient_data.shape)) 
+            X, y, rois, stats = common.load_patient_3d_atlas(patient_data, discard_empty_nodules=False, output_rois=True, debug=False, thickness=1)
+            #logging.info("[WORKER] len X " +str(len(X)))
             logging.info("Patient: %s, stats: %s" % (filename.split('/')[-1], stats))
             q.put((filename,X,y,rois))
             break
@@ -59,11 +59,14 @@ def listener(q):
                 break
 
             try:
-                filename, x, _, _ = m
+                filename, X, _, _ = m
                 filename = filename.split('/')[-1]
-                if 0 == len(x): continue
-                print x #np.asarray(x).shape
-                preds = model.predict(np.asarray(x), verbose=1)
+                if 0 == len(X): continue ##
+                #print x #np.asarray(x).shape
+                a = np.array([X[i][0] for i in range(len(X))])
+                b = np.array([X[i][1] for i in range(len(X))])
+                #x_numpy = np.asarray(x)
+                preds = model.predict([a,b], verbose=0)
                 logging.info("[LISTENER] Predicted patient %d %s" % (total, filename))
                 writer.writerow({'patientid':filename,'min':preds.min(),'max':preds.max(),'std':preds.std(),'mean':preds.mean()})
                 total += 1
