@@ -26,11 +26,8 @@ PATCHES_PATH = '/mnt/hd2/patches'  # PATCHES_PATH = wp + 'data/preprocessed5_pat
 
 OUTPUT_MODEL = wp + 'models/jm_patches_train_v19.hdf5'  # OUTPUT_MODEL = wp + 'personal/jm_patches_train_v06_local.hdf5'
 LOGS_PATH = wp + 'logs/%s' % str('v19')
-
-#LOGS_PATH = wp + 'logs/%s' % str(int(time()))
 if not os.path.exists(LOGS_PATH):
     os.makedirs(LOGS_PATH)
-
 
 
 # OTHER INITIALIZATIONS: tensorboard, model checkpoint and logging

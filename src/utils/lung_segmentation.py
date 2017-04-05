@@ -325,20 +325,33 @@ def __seperate_lungs(image):
     return lungfilter
 
 
-# tstart = time()
-# test_segmented, test_lungfilter, test_outline, test_watershed, test_sobel_gradient, \
-# test_marker_internal, test_marker_external, test_marker_watershed = _seperate_lungs(image_wrong[67])
-# print time()-tstart
-#
-# plt.imshow(image_wrong[65])
-# plt.imshow(test_lungfilter)
-# plt.show()
-#
-# tstart = time()
-# lung_mask = segment_lungs(image_wrong, method="Thresholding2")
-# print time()-tstart
-#
-# plt.imshow(lung_mask[70])
-# plt.show()
-#
-# plotting.cube_show_slider(lung_mask)
+# SEGMENTATION 3 : ---------------------------------------------------------------------------------------------------
+
+def __bbox2_3D(img):
+    """Returns the boundaries of a 3d mask."""
+    r = np.any(img, axis=(1, 2))
+    c = np.any(img, axis=(0, 2))
+    z = np.any(img, axis=(0, 1))
+
+    rmin, rmax = np.where(r)[0][[0, -1]]
+    cmin, cmax = np.where(c)[0][[0, -1]]
+    zmin, zmax = np.where(z)[0][[0, -1]]
+
+    return rmin, rmax, cmin, cmax, zmin, zmax
+
+
+def is_lung_segmentation_correct(lung_mask, debug=False):
+    out_bbox = __bbox2_3D(lung_mask)
+    zmin, zmax, xmin, xmax, ymin, ymax = out_bbox
+    error = False
+    if xmin>300 or xmax<300:
+        if debug: print "Error in x!"
+        error = True
+    if ymax<300 or ymin>300:
+        if debug: print "Error in y!"
+        error = True
+    if zmin*100.0/lung_mask.shape[0]>30 or zmax*100.0/lung_mask.shape[0]<70:
+        if debug: print "Error in z!"
+        error = True
+
+    return error
