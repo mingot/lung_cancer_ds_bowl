@@ -1,4 +1,5 @@
 import os
+import sys
 import logging
 import numpy as np
 import pandas as pd
@@ -39,6 +40,23 @@ merge_df = pd.merge(dl1_df, dl2_df, on=['patientid','nslice','x','y','diameter']
 nodules_df = merge_df[((merge_df['score_dl1'] + merge_df['score_dl2'])/2 > 0.5) & (merge_df['diameter']>7)]   # 12k candidates
 
 
+## TERMINAL ARGUMENTS ---------------------------------------------------------------------------------------------
+
+#--input_path=%s --model=%s input_csv=%s --output_file=%s
+for arg in sys.argv[1:]:
+    if arg.startswith('--input_path='):
+        INPUT_PATH = ''.join(arg.split('=')[1:])
+    elif arg.startswith('--model='):
+        OUTPUT_MODEL = ''.join(arg.split('=')[1:])
+    elif arg.startswith('--output_file='):
+        OUTPUT_CSV = ''.join(arg.split('=')[1:])
+    elif arg.startswith('--input_csv='):
+        nodules_df = ''.join(arg.split('=')[1:])
+        nodules_df = pd.read_csv(nodules_df)
+    else:
+        print('Unknown argument {}. Ignoring.'.format(arg))
+
+
 ## MULTI PARALLEL ---------------------------------------------------------------------------------------------
 import multiprocessing
 
@@ -47,8 +65,11 @@ def worker(filename, q):
     while 1:
         if q.qsize() < 10:
             patient_data = np.load(filename)['arr_0']
-            ndf = nodules_df[nodules_df['patientid']==filename.split('/')[-1]]
-            X, y, rois, stats = common.load_patient(patient_data, ndf, discard_empty_nodules=False, output_rois=True, thickness=1)
+            if nodules_df is not None:
+                ndf = nodules_df[nodules_df['patientid']==filename.split('/')[-1]]
+                X, y, rois, stats = common.load_patient(patient_data, ndf, discard_empty_nodules=False, output_rois=True, thickness=1)
+            else:
+                X, y, rois, stats = common.load_patient(patient_data, discard_empty_nodules=False, output_rois=True, thickness=1)
             logging.info("Patient: %s, stats: %s" % (filename.split('/')[-1], stats))
             q.put((filename,X,y,rois))
             break
