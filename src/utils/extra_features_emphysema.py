@@ -16,11 +16,11 @@ MULTITHREAD = False
 if SERVER:
     path = '/home/shared/data/stage1'
     path_preprocessed = '/mnt/hd2/preprocessed5'
-    output_file = '/home/ricard/var_emphysema_v05.csv'
+    output_file = '/home/ricard/var_emphysema_v07.csv'
 else:
     path = '/Users/rdg/Documents/my_projects/DSB17/lung_cancer_ds_bowl/data/stage1'
     path_preprocessed = '/Users/rdg/Documents/my_projects/DSB17/lung_cancer_ds_bowl/data/stage1_proc'
-    output_file = '/Users/rdg/Documents/my_projects/DSB17/lung_cancer_ds_bowl/data/stage1_proc/var_emphysema_v05.csv'
+    output_file = '/Users/rdg/Documents/my_projects/DSB17/lung_cancer_ds_bowl/data/stage1_proc/var_emphysema_v07.csv'
 
 csvfile = open(output_file, 'wb')
 csvwriter = csv.writer(csvfile, delimiter=',')
