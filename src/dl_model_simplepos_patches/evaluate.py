@@ -35,9 +35,9 @@ def listener(q):
     # Model loading inside the listener thread (otherwise keras complains)
     K.set_image_dim_ordering('th')
     from dl_networks.simplepos_resnet import simpleposResnet
-	model = simpleposResnet().get_posResnet((3,40,40),5) # 5 == N_extra_features
-	model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['accuracy','fmeasure'])
-	model.load_weights(OUTPUT_MODEL)
+    model = simpleposResnet().get_posResnet((3,40,40),5) # 5 == N_extra_features
+    model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['accuracy','fmeasure'])
+    model.load_weights(OUTPUT_MODEL)
     logging.info('Loading existing model...')
 
     total, errors = 0, 0
