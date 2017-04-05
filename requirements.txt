@@ -27,3 +27,4 @@ h5py==2.6.0
 tensorflow-gpu==0.12.1
 Pillow==4.0.0
 Cython==0.23
+PyWavelets==0.5.2

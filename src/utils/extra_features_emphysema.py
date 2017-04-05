@@ -2,6 +2,10 @@ import os
 import csv
 import pickle
 import numpy as np
+from scipy.stats import entropy
+import pywt
+from plotting import multiplot_single_image
+
 
 from scipy import stats
 
@@ -24,9 +28,49 @@ csvwriter = csv.writer(csvfile, delimiter=',')
 COMMON_SPACING = [2, 0.7, 0.7]
 
 
+def __entropy2__(labels):
+    """ Computes entropy of label distribution. """
+
+    min_val = np.min(labels)
+    max_val = np.max(labels)
+    data_array = labels.flatten()
+
+    hist, bin_edges = np.histogram(data_array, bins=range(int(min_val), int(max_val), 1))
+    ent = entropy(hist)
+
+    return ent
+
+
+def __compute_emphysema_entropy__(img, mask):
+    img_masked = img[mask == 1]
+    data_array = img_masked.flatten()
+    ent = __entropy2__(data_array)
+
+    return ent
+
+
 def compute_emphysema_amfm(img, mask):
     """automated texture-based adaptive multiple feature method"""
-    pass
+
+    ent = __compute_emphysema_entropy__(img, mask)
+
+    img_masked = img * mask
+    coeffs = pywt.wavedecn(img_masked, 'db1')
+
+    c0 = np.log(np.mean(np.abs(coeffs[0].flatten())))
+    c1 = np.log(np.mean(np.abs(coeffs[1]["ddd"].flatten())))
+    c2 = np.log(np.mean(np.abs(coeffs[2]["ddd"].flatten())))
+    c3 = np.log(np.mean(np.abs(coeffs[3]["ddd"].flatten())))
+    c4 = np.log(np.mean(np.abs(coeffs[4]["ddd"].flatten())))
+    c5 = np.log(np.mean(np.abs(coeffs[5]["ddd"].flatten())))
+    c6 = np.log(np.mean(np.abs(coeffs[6]["ddd"].flatten())))
+    c7 = np.log(np.mean(np.abs(coeffs[7]["ddd"].flatten())))
+
+    x = np.array([1, 2, 3, 4, 5, 6, 7, 8])
+    y = np.array([c0, c1, c2, c3, c4, c5, c6, c7])
+    slope = (len(x)*np.sum(x*y)-np.sum(x)*np.sum(y))/(len(x)*np.sum(x*x)-np.sum(x)*np.sum(x))
+
+    return ent, slope
 
 
 def compute_emphysema_mld(img, mask):
@@ -95,7 +139,10 @@ def compute_emphysema_probability(img, mask):
     temp[0, 1] = feat4
     probability = clf.predict_proba(temp)
 
-    return probability[0, 1], feat3, feat4
+    # more extra features
+    feat5, feat6 = compute_emphysema_amfm(img, mask)
+
+    return probability[0, 1], feat3, feat4, feat5, feat6
 
 
 def process_patient_file(patient_name):
@@ -108,9 +155,9 @@ def process_patient_file(patient_name):
     loaded_stack = saved_data['arr_0']
     img = loaded_stack[0, :, :, :]
     mask = loaded_stack[1, :, :, :]
-    p, f1, f2 = compute_emphysema_probability(img, mask)
-    new_row = [patient_id, p, f1, f2]
-    print new_row
+    p, f1, f2, f3, f4 = compute_emphysema_probability(img, mask)
+    new_row = [patient_id, p, f1, f2, f3, f4]
+    print(new_row)
     csvwriter.writerow(new_row)
 
 
