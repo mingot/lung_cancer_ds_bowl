@@ -20,13 +20,12 @@ dl3_df[,patientid:=gsub(".npz|dsb_","",patientid)]
 
 # Contruct partial training set (over 993 patients)
 xx = fread(paste0(path_dsb,'dl3_train/partial_submission_16.csv'))
-data_train = dt
 data_train[,patientid:=gsub(".npz|dsb_","",patientid)]
 data_train = merge(data_train, dl3_df, by='patientid', all.x=T)
 data_train[is.na(dl3_nohas), dl3_nohas:=1]
 data_train[is.na(data_train)] = 0  # replace NA's with 0's
 data_train = data_train[patientid%in%xx$patientid]
-View(data_train)
+data_train
 
 # Cross validation --------------------------------------------------------
 
@@ -36,14 +35,11 @@ MultiLogLoss = function(act, pred){
   sum(act * log(pred) + (1 - act) * log(1 - pred)) * -1/NROW(act)
 }
 
-vars_sel = c('max_diameter_patches', 'max_nsliceSpread', 'max_score_patches', 'PC1_lbp', 'man_nslicespread_sd', 'dl3_has')#, 'dl3_has', 'dl3_nohas')
+vars_sel = c('max_diameter_patches', 'max_score_patches', 'PC1_lbp', 'man_nslicespread_sd','dl3_max')#, 'dl3_has', 'dl3_nohas')
 
-aucs = c()
-lls = c()
+aucs = c(); lls = c()
 for (j in 1:50){
-k = 3 #Folds
-data_train$id = sample(1:k, nrow(data_train), replace = TRUE)
-list = 1:k
+  k = 3; data_train$id = sample(1:k, nrow(data_train), replace = TRUE); list = 1:k
   for (i in 1:k){
     trainingset = subset(data_train, id %in% list[-i])
     testset = subset(data_train, id %in% c(i))
@@ -59,10 +55,9 @@ list = 1:k
     # store results
     aucs = c(aucs, auc(real,pred))
     lls = c(lls, MultiLogLoss(real,pred))
-  }}
-summary(mymodel)
-summary(aucs)
-summary(lls)
+  }
+}
+summary(mymodel);summary(aucs);summary(lls)
 
 
 trainingset = data_train
@@ -73,12 +68,6 @@ summary(mymodel)
 
 # final model -------------------------------------------------------------
 
-# dl3_final_df = fread(paste0(path_dsb,'resnet/nodules_patches_dl3_v03.csv'))
-# dl3_final_df = dl3_final_df[,.(dl3_max=max(score), dl3_num_maligns=sum(score>0.2)),by=patientid]
-# dl3_final_df[,patientid:=gsub(".npz|dsb_","",patientid)]
-# 
-# hist(data_submission$dl3_max.y)
-# hist(data_submission$dl3_max.x)
 
 data_submission = fread(paste0(path_dsb,'dl3_train/total_submission_16.csv'))
 data_submission = merge(data_submission, dl3_df, by='patientid', all.x=T)

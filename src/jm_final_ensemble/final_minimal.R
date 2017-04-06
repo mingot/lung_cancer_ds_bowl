@@ -1,4 +1,3 @@
-library(xgboost)
 library(data.table)
 library(pROC)
 library(dplyr)
@@ -26,8 +25,8 @@ source("/Users/mingot/Projectes/kaggle/ds_bowl_lung/src/jm_final_ensemble/config
 # DL3_VALIDATION_FILE = paste0(path_repo, 'data/stage1_validation.csv')
 # FINAL_MODEL_01 = "final_model_01.rda"
 # FINAL_MODEL_02 = "final_model_02.rda"
-# SUBMISSION_OUTPUT01 = ""
-# SUBMISSION_OUTPUT02 = ""
+# SUBMISSION_OUTPUT01 = paste0(path_dsb, 'submissions/final_submission_01.csv')
+# SUBMISSION_OUTPUT02 = paste0(path_dsb, 'submissions/final_submission_02.csv')
 
 
 # FEATURES -----------------------------------------------------------------
@@ -180,7 +179,9 @@ data_test[is.na(data_test)] = 0
 
 load(FINAL_MODEL_02)
 preds02 = predict(final_model_02, data_test[,vars_sel,with=F], type="response")
-submission02 = data.table(id=gsub(".npz|dsb_","",data_test$patientid), preds=preds02)
-mean(submission02$preds)
+submission02 = data.table(id=gsub(".npz|dsb_","",data_test$patientid), cancer=preds02)
+mean(submission02$cancer)
+# submission02[,cancer:=cancer-mean(cancer)+0.2591267]  # fix bias in the 400 patients data
+# summary(submission02$cancer)
 write.csv(submission02, SUBMISSION_OUTPUT02, quote=F, row.names=F)
 
