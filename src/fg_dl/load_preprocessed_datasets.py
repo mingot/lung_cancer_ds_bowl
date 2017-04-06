@@ -2,7 +2,7 @@ import numpy as np
 import os
 import os.path
 
-# see src/00_preprocess.py and in particular
+# see src/preprocess.py and in particular
 # np.savez_compressed(os.path.join(OUTPUT_FOLDER, "%s_%s.npz") % (PIPELINE, pat_id), output)
 
 DATASET_DSB = 'dsb'

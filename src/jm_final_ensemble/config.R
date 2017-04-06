@@ -1,17 +1,17 @@
-path_repo <<- "~/lung_cancer_ds_bowl/"
-path_dsb <<- "/home/shared/output/"
+path_repo <<- "/Users/mingot/Projectes/kaggle/ds_bowl_lung/"
+path_dsb <<- "/Users/mingot/Projectes/kaggle/ds_bowl_lung/personal/execute_model/"
 
 # file locations
-ANNOTATIONS_FILE = paste0(path_repo,"/data/stage1_labels.csv")  # JUST FOR TRAINING
-SUBMISSIONS_FILE = paste0(path_repo,"/data/stage1_sample_submission.csv")
-DL1_FILE = paste0(path_dsb,"resnet/nodules_patches_dl1_v11.csv")
-DL2_FILE = paste0(path_dsb,"resnet/nodules_patches_hardnegative_v03.csv")
-NODULES_AGGREGATED_FILE = paste0(path_dsb,"resnet/nodules_patches_dl1_v11_score07_noduleaggr_augmented.csv")
-DL3_FILE = paste0(path_dsb,"resnet/nodules_patches_dl3_v02.csv")
+ANNOTATIONS_FILE = paste0(path_repo,"data/stage1_labels.csv")  # JUST FOR TRAINING
+SUBMISSIONS_FILE = paste0(path_dsb, 'output_csv/todo_submission.csv')  # CONTAINS THE FILENAMES TO BE SUBMITTED
+DL1_FILE = paste0(path_dsb,"output_csv/dl1.csv")
+DL2_FILE = paste0(path_dsb,"output_csv/dl2.csv")
+NODULES_EXTENDED_FILE = paste0(path_dsb,"output_csv/nodules_extended.csv")
+DL3_FILE = paste0(path_dsb,"output_csv/dl3.csv")
 DL3_VALIDATION_FILE = paste0(path_repo, 'data/stage1_validation.csv')
-FINAL_MODEL_01 = "final_model_01.rda"
-FINAL_MODEL_02 = "final_model_02.rda"
-SUBMISSION_OUTPUT01 = ""
-SUBMISSION_OUTPUT02 = ""
+FINAL_MODEL_01 = paste0(path_repo, 'model/final_model_01.rda')
+FINAL_MODEL_02 = paste0(path_repo, 'model/final_model_02.rda')
+SUBMISSION_OUTPUT01 = paste0(path_repo, 'output_csv/submission01.csv')
+SUBMISSION_OUTPUT02 = paste0(path_repo, 'output_csv/submission02.csv')
 
 

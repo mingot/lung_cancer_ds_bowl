@@ -21,9 +21,8 @@ import logging
 import SimpleITK as sitk
 import numpy as np
 import pandas as pd
-from utils import preprocessing
-from utils import reading
-from utils import lung_segmentation
+from utils import preprocessing, reading, lung_segmentation
+
 
 import matplotlib.pyplot as plt
 from utils import plotting
@@ -41,7 +40,7 @@ COMMON_SPACING = [2, 0.7, 0.7]
 def process_filename(patient_file, output_folder, pipeline='dsb', df_nodules=None):
 
     nodule_mask = None
-    print('Processing patient: %s' % patient_file)
+    logging.info('Processing patient: %s' % patient_file)
     
     # Read
     try:
@@ -66,8 +65,8 @@ def process_filename(patient_file, output_folder, pipeline='dsb', df_nodules=Non
                 nodule_mask = np.zeros(patient_pixels.shape, dtype=np.int)
 
     except Exception as e:  # Some patients have no data, ignore them
-        print('There was some problem reading patient {}. Ignoring and live goes on.'.format(patient_file))
-        print('Exception', e)
+        logging.error('There was some problem reading patient {}. Ignoring and live goes on.'.format(patient_file))
+        logging.error('Exception', e)
         return
 
     # SET BACKGROUND: set to air parts that fell outside
@@ -78,7 +77,7 @@ def process_filename(patient_file, output_folder, pipeline='dsb', df_nodules=Non
     pix_resampled, new_spacing = preprocessing.resample(patient_pixels, spacing=originalSpacing, new_spacing=COMMON_SPACING)
     if nodule_mask is not None:
         nodule_mask, new_spacing = preprocessing.resample(nodule_mask, spacing=originalSpacing, new_spacing=COMMON_SPACING)
-    print('Resampled image size: {}'.format(pix_resampled.shape))
+    logging.info('Resampled image size: {}'.format(pix_resampled.shape))
 
 
     # LUNG SEGMENTATION (if TH1 fails, choose TH2)
@@ -92,8 +91,7 @@ def process_filename(patient_file, output_folder, pipeline='dsb', df_nodules=Non
     lung_mask = preprocessing.resize_image(lung_mask, size=512)
     if nodule_mask is not None:
         nodule_mask = preprocessing.resize_image(nodule_mask, size=512)
-    print('Cropped image size: {}'.format(pix.shape))
-
+    logging.info('Cropped image size: {}'.format(pix.shape))
 
     # STACK and save results
     output = np.stack((pix, lung_mask, nodule_mask)) if nodule_mask is not None else np.stack((pix, lung_mask))
@@ -118,7 +116,7 @@ def preprocess_files(file_list, output_folder, pipeline='dsb'):
 
     pool.close()
     pool.join()
-    logging.info("Finished preprocessing in %.3f% s" % (time()-tstart))
+    logging.info("Finished preprocessing in %.3f s" % (time()-tstart))
 
 
 

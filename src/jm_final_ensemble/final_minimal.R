@@ -12,7 +12,7 @@ MultiLogLoss = function(act, pred){
 }
 
 # global paths
-source("~/lung_cancer_ds_bowl/src/jm_final_ensemble/config.R")
+source("/Users/mingot/Projectes/kaggle/ds_bowl_lung/src/jm_final_ensemble/config.R")
 
 # # file locations
 # path_repo <<- "~/lung_cancer_ds_bowl/"
@@ -21,7 +21,7 @@ source("~/lung_cancer_ds_bowl/src/jm_final_ensemble/config.R")
 # SUBMISSIONS_FILE = paste0(path_repo,"/data/stage1_sample_submission.csv")
 # DL1_FILE = paste0(path_dsb,"resnet/nodules_patches_dl1_v11.csv")
 # DL2_FILE = paste0(path_dsb,"resnet/nodules_patches_hardnegative_v03.csv")
-# NODULES_AGGREGATED_FILE = paste0(path_dsb,"resnet/nodules_patches_dl1_v11_score07_noduleaggr_augmented.csv")
+# NODULES_EXTENDED_FILE = paste0(path_dsb,"resnet/nodules_patches_dl1_v11_score07_noduleaggr_augmented.csv")
 # DL3_FILE = paste0(path_dsb,"resnet/nodules_patches_dl3_v02.csv")
 # DL3_VALIDATION_FILE = paste0(path_repo, 'data/stage1_validation.csv')
 # FINAL_MODEL_01 = "final_model_01.rda"
@@ -48,7 +48,7 @@ dl12_final = dl12[,.(max_diameter_patches = max(diameter, na.rm=T),
                   by=patientid]
 
 # FEATURES augment (previous with aggregation and augmentation)
-df_nodule = fread(NODULES_AGGREGATED_FILE)
+df_nodule = fread(NODULES_EXTENDED_FILE)
 df_nodule = plyr::ddply(
   df_nodule, "patientid", 
   function(df)  {
@@ -118,8 +118,8 @@ data_test[is.na(data_test)] = 0
 
 load(FINAL_MODEL_01)
 preds01 = predict(final_model_01, data_test[,vars_sel,with=F], type="response")
-submission01 = data.table(id=gsub(".npz|dsb_","",data_test$patientid), preds=preds01)
-mean(submission01$preds)
+submission01 = data.table(id=gsub(".npz|dsb_","",data_test$patientid), cancer=preds01)
+mean(submission01$cancer)
 write.csv(submission01, SUBMISSION_OUTPUT01, quote=F, row.names=F)
 
 # model 02 TRAIN ----------------------------------------------------------------

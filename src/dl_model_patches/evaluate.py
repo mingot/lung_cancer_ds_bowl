@@ -1,22 +1,12 @@
 import os
 import sys
 import logging
+import argparse
 import numpy as np
 import pandas as pd
 from time import time
 from dl_model_patches import  common
 
-# PATHS
-wp = os.environ['LUNG_PATH']
-INPUT_PATH = '/mnt/hd2/preprocessed5'  # INPUT_PATH = wp + 'data/preprocessed5_sample'
-OUTPUT_MODEL = wp + 'models/jm_patches_malign_v03.hdf5'
-OUTPUT_CSV = wp + 'output/nodules_patches_dl3_v03.csv'
-
-
-## Params and filepaths
-#VALIDATION_PATH = '/mnt/hd2/preprocessed5_validation_luna'
-#NODULES_PATH = wp + 'data/luna/annotations.csv'
-file_list = [os.path.join(INPUT_PATH, fp) for fp in os.listdir(INPUT_PATH) if fp.startswith('dsb_')]
 
 
 # ## if the OUTPUT_CSV file already exists, continue it
@@ -28,40 +18,24 @@ file_list = [os.path.join(INPUT_PATH, fp) for fp in os.listdir(INPUT_PATH) if fp
 #             previous_filenames.add(l.split(',')[0])
 
 
-## Loading DF (if necessary)
-OUTPUT_DL1 = wp + 'output/nodules_patches_dl1_v11.csv'  # OUTPUT_DL1 = wp + 'personal/noduls_patches_v06.csv'
-OUTPUT_DL2 = wp + 'output/nodules_patches_hardnegative_v03.csv'  # OUTPUT_DL1 = wp + 'personal/noduls_patches_v06.csv'
+# ## Loading DF (if necessary)
+# OUTPUT_DL1 = wp + 'output/nodules_patches_dl1_v11.csv'  # OUTPUT_DL1 = wp + 'personal/noduls_patches_v06.csv'
+# OUTPUT_DL2 = wp + 'output/nodules_patches_hardnegative_v03.csv'  # OUTPUT_DL1 = wp + 'personal/noduls_patches_v06.csv'
+#
+# logging.info("Loading DL1 and DL2 data frames...")
+# dl1_df = pd.read_csv(OUTPUT_DL1)
+# dl1_df = dl1_df[dl1_df['patientid'].str.startswith('dsb')]  # Filter DSB patients
+# dl2_df = pd.read_csv(OUTPUT_DL2)
+# merge_df = pd.merge(dl1_df, dl2_df, on=['patientid','nslice','x','y','diameter'], how='inner', suffixes=('_dl1', '_dl2'))
+# nodules_df = merge_df[((merge_df['score_dl1'] + merge_df['score_dl2'])/2 > 0.5) & (merge_df['diameter']>7)]   # 12k candidates
 
-logging.info("Loading DL1 and DL2 data frames...")
-dl1_df = pd.read_csv(OUTPUT_DL1)
-dl1_df = dl1_df[dl1_df['patientid'].str.startswith('dsb')]  # Filter DSB patients
-dl2_df = pd.read_csv(OUTPUT_DL2)
-merge_df = pd.merge(dl1_df, dl2_df, on=['patientid','nslice','x','y','diameter'], how='inner', suffixes=('_dl1', '_dl2'))
-nodules_df = merge_df[((merge_df['score_dl1'] + merge_df['score_dl2'])/2 > 0.5) & (merge_df['diameter']>7)]   # 12k candidates
-
-
-## TERMINAL ARGUMENTS ---------------------------------------------------------------------------------------------
-
-#--input_path=%s --model=%s input_csv=%s --output_file=%s
-for arg in sys.argv[1:]:
-    if arg.startswith('--input_path='):
-        INPUT_PATH = ''.join(arg.split('=')[1:])
-    elif arg.startswith('--model='):
-        OUTPUT_MODEL = ''.join(arg.split('=')[1:])
-    elif arg.startswith('--output_file='):
-        OUTPUT_CSV = ''.join(arg.split('=')[1:])
-    elif arg.startswith('--input_csv='):
-        nodules_df = ''.join(arg.split('=')[1:])
-        nodules_df = pd.read_csv(nodules_df)
-    else:
-        print('Unknown argument {}. Ignoring.'.format(arg))
 
 
 ## MULTI PARALLEL ---------------------------------------------------------------------------------------------
 import multiprocessing
 
 
-def worker(filename, q):
+def worker(filename, q, nodules_df=None):
     while 1:
         if q.qsize() < 10:
             patient_data = np.load(filename)['arr_0']
@@ -74,7 +48,7 @@ def worker(filename, q):
             q.put((filename,X,y,rois))
             break
 
-def listener(q):
+def listener(q, model_path, output_csv):
     """Reads regions from queue, predicts nodules and stores in the output file."""
     from keras import backend as K
     from dl_networks.sample_resnet import ResnetBuilder
@@ -85,20 +59,20 @@ def listener(q):
     model = ResnetBuilder().build_resnet_50((3,40,40),1)
     model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['accuracy','fmeasure'])
     logging.info('Loading existing model...')
-    model.load_weights(OUTPUT_MODEL)
+    model.load_weights(model_path)
 
     total, errors = 0, 0
 
-    f = open(OUTPUT_CSV, 'w')
+    f = open(output_csv, 'w')
     f.write('patientid,nslice,x,y,diameter,score,label\n')
     while 1:
-        m = q.get()
-        if m == 'kill':
+        queue_element = q.get()
+        if queue_element == 'kill':
             logging.info('[LISTENER] Closing...')
             break
 
         try:
-            filename, x, y, rois = m
+            filename, x, y, rois = queue_element
             filename = filename.split('/')[-1]
 
             preds = model.predict(np.asarray(x), verbose=1)
@@ -116,18 +90,18 @@ def listener(q):
     f.close()
 
 
-def main():
+def evaluate_model(file_list, model_path, output_csv, nodules_df=None):
     manager = multiprocessing.Manager()
     q = manager.Queue()
     pool = multiprocessing.Pool(5)  # multiprocessing.cpu_count()
 
     #put listener to work first
-    watcher = pool.apply_async(listener, (q,))
+    watcher = pool.apply_async(listener, (q, model_path, output_csv))
 
     #fire off workers
     jobs = []
     for filename in file_list:
-        job = pool.apply_async(worker, (filename, q))
+        job = pool.apply_async(worker, (filename, q, nodules_df))
         jobs.append(job)
 
     # collect results from the workers through the pool result queue
@@ -143,9 +117,31 @@ def main():
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Evaluates a DL model over some patients')
+    parser.add_argument('--input_path', help='Path of the preprocessed patient files')
+    parser.add_argument('--model', help='DL model to use')
+    parser.add_argument('--ouput_csv', help='Output CSV with nodules and scores')
+    parser.add_argument('--input_csv',  help='Preselected nodules to pass to the DL')
+    args = parser.parse_args()
+
+    # DEFAULT VALUES
+    wp = os.environ['LUNG_PATH']
+    INPUT_PATH = '/mnt/hd2/preprocessed5'  # INPUT_PATH = wp + 'data/preprocessed5_sample'
+    MODEL = wp + 'models/jm_patches_malign_v03.hdf5'
+    OUTPUT_CSV = wp + 'output/nodules_patches_dl3_v03.csv'
+
+    if args.input_path: INPUT_PATH = args.input_path
+    if args.model: MODEL = args.model
+    if args.output_csv: OUTPUT_CSV = args.output_csv
+    if args.input_csv: nodules_df = pd.read_csv(args.input_csv)
+
+    ## Params and filepaths
+    file_list = [os.path.join(INPUT_PATH, fp) for fp in os.listdir(INPUT_PATH)] # if fp.startswith('dsb_')]
+
     tstart = time()
-    main()
+    evaluate_model(file_list, model_path=MODEL, output_csv=OUTPUT_CSV, nodules_df=nodules_df)
     print "Total time:", time() - tstart
+
 
 
 # NON PARALLEL ------------------------------------------------------------------------------------------------------
