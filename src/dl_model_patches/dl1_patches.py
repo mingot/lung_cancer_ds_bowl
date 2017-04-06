@@ -42,43 +42,43 @@ logging.basicConfig(level=logging.INFO,
 
 ### PATCHES GENERATION -----------------------------------------------------------------
 
-## PATIENTS FILE LIST
-patients_with_annotations = pd.read_csv(NODULES_PATH)  # filter patients with no annotations to avoid having to read them
-patients_with_annotations = list(set(patients_with_annotations['seriesuid']))
-patients_with_annotations = ["luna_%s.npz" % p.split('.')[-1] for p in patients_with_annotations]
-
-filenames = os.listdir(INPUT_PATH)
-filenames = [g for g in filenames if g.startswith('luna_')]
-filenames_train = [os.path.join(INPUT_PATH, fp) for fp in filenames if fp in patients_with_annotations]
-filenames_test = [os.path.join(VALIDATION_PATH, fp) for fp in os.listdir(VALIDATION_PATH) if fp in patients_with_annotations]
-
-
-def __load_and_store(filename):
-    patient_data = np.load(filename)['arr_0']
-    X, y, rois, stats = common.load_patient(patient_data, discard_empty_nodules=True, output_rois=True, debug=True, include_ground_truth=True, thickness=1)
-    logging.info("Patient: %s, stats: %s" % (filename.split('/')[-1], stats))
-    return X, y, stats
-
-
-
-common.multiproc_crop_generator(filenames_train,
-                                os.path.join(PATCHES_PATH,'dl1_v19_x_train.npz'),
-                                os.path.join(PATCHES_PATH,'dl1_v19_y_train.npz'),
-                                __load_and_store)
-
-common.multiproc_crop_generator(filenames_test,
-                                os.path.join(PATCHES_PATH,'dl1_v19_x_test.npz'),
-                                os.path.join(PATCHES_PATH,'dl1_v19_y_test.npz'),
-                                __load_and_store)
+# ## PATIENTS FILE LIST
+# patients_with_annotations = pd.read_csv(NODULES_PATH)  # filter patients with no annotations to avoid having to read them
+# patients_with_annotations = list(set(patients_with_annotations['seriesuid']))
+# patients_with_annotations = ["luna_%s.npz" % p.split('.')[-1] for p in patients_with_annotations]
+#
+# filenames = os.listdir(INPUT_PATH)
+# filenames = [g for g in filenames if g.startswith('luna_')]
+# filenames_train = [os.path.join(INPUT_PATH, fp) for fp in filenames if fp in patients_with_annotations]
+# filenames_test = [os.path.join(VALIDATION_PATH, fp) for fp in os.listdir(VALIDATION_PATH) if fp in patients_with_annotations]
+#
+#
+# def __load_and_store(filename):
+#     patient_data = np.load(filename)['arr_0']
+#     X, y, rois, stats = common.load_patient(patient_data, discard_empty_nodules=True, output_rois=True, debug=True, include_ground_truth=True, thickness=1)
+#     logging.info("Patient: %s, stats: %s" % (filename.split('/')[-1], stats))
+#     return X, y, stats
+#
+#
+#
+# common.multiproc_crop_generator(filenames_train,
+#                                 os.path.join(PATCHES_PATH,'dl1_v19_x_train.npz'),
+#                                 os.path.join(PATCHES_PATH,'dl1_v19_y_train.npz'),
+#                                 __load_and_store)
+#
+# common.multiproc_crop_generator(filenames_test,
+#                                 os.path.join(PATCHES_PATH,'dl1_v19_x_test.npz'),
+#                                 os.path.join(PATCHES_PATH,'dl1_v19_y_test.npz'),
+#                                 __load_and_store)
 
 
 ### TRAINING -----------------------------------------------------------------
 
 # Data augmentation generator
 train_datagen = ImageDataGenerator(
-    rotation_range=30,  # .06,
-    width_shift_range=0.1, #0.02,
-    height_shift_range=0.1, #0.02,
+    # rotation_range=30,  # .06,
+    # width_shift_range=0.1, #0.02,
+    # height_shift_range=0.1, #0.02,
     #shear_range=0.0002,
     #zoom_range=0.0002,
     dim_ordering="th",

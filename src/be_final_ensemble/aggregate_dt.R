@@ -30,8 +30,8 @@ generate_patient_dt <- function(path_repo,path_dsb,path_output = NULL) {
   ## RESNET Data -------------------------------------------------------------------------------------
   #vars_nodules_patches <- fread(paste0("D:/dsb/nodules_patches_v05_augmented.csv"))
   #vars_nodules_patches <- fread(paste0("D:/dsb/noduls_patches_v06_rectif.csv"))
-  vars_nodules_patches <- fread(paste0(path_dsb,"nodules_patches_dl1_v11.csv")) ## PATH
-  vars_nodules_hard_negative <- fread(paste0(path_dsb,"nodules_patches_hardnegative_v03.csv"))
+  vars_nodules_patches <- fread(paste0(path_dsb,"resnet/nodules_patches_dl1_v11.csv")) ## PATH
+  vars_nodules_hard_negative <- fread(paste0(path_dsb,"resnet/nodules_patches_hardnegative_v03.csv"))
   vars_nodules_hard_negative <- unique(vars_nodules_hard_negative)
   setnames(vars_nodules_hard_negative, "score","score_2")
   vars_nodules_patches <- merge(
@@ -52,7 +52,7 @@ generate_patient_dt <- function(path_repo,path_dsb,path_output = NULL) {
   vars_nodules_patches <- merge(vars_nodules_patches,patients,all.x=T,by = "patientid")
   
   # Nodules Filtered
-  nodules_filtered <- fread(paste0(path_dsb,"nodules_filtered.csv"))
+  nodules_filtered <- fread(paste0(path_dsb,"resnet/nodules_filtered.csv"))
   nodules_filtered <- filter_and_patient_name(nodules_filtered)
   nodules_filtered <- nodules_filtered[nslicesSpread > 1]
   nodules_filtered[,V1 := NULL]
@@ -72,11 +72,11 @@ generate_patient_dt <- function(path_repo,path_dsb,path_output = NULL) {
   dataset_slices <- filter_and_patient_name(dataset_slices)
   
   # EMPHYSEMA
-  emphysema <- fread(paste0(path_dsb,"var_emphysema_v05.csv"))
+  emphysema <- fread(paste0(path_dsb,"emphysema/var_emphysema_v05.csv"))
   setnames(emphysema,names(emphysema),c("patientid","var_emphy1","var_emphy2","var_emphy3"))
 
   # Extra features
-  extra_feats <- fread(paste0(path_dsb,"stage1_extra_features_intercostal.csv"))
+  extra_feats <- fread(paste0(path_dsb,"extrafeatures/stage1_extra_features_intercostal.csv"))
   setnames(extra_feats,"patient_id","patientid")
   extra_feats <- filter_and_patient_name(extra_feats)
   
