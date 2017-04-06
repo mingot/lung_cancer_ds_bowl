@@ -108,7 +108,7 @@ with open(SUBMISSIONS_FILE,'w') as file:
 
 
 # ## TODO: Execute final model 1
-cmnd = 'R CMD --input_csv_folder=XX --output_total_model1=%s' % (CSV_FOLDER,OUTPUT_TOTAL01)
+cmnd = 'R CMD final_minimal.R' % (CSV_FOLDER,OUTPUT_TOTAL01)
 execute_command(cmnd)
 #
 # ## TODO: Execute final model 2 (DL3)
