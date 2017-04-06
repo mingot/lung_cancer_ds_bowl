@@ -63,6 +63,7 @@ def extract_patch(
     patient_path, 
     patient_colname='patientid', 
     out_size=(25, 25), 
+    padding=1, # padding, deactivated by default
     swap_xy=False, 
     C=-500, 
     W=1500, 
@@ -78,7 +79,8 @@ def extract_patch(
     df: data_frame from deep learning
     patient_id: patient_code.npz to compute
     patient_path: path where the .npz files are stored
-    out_size: size of the resized patches
+    out_size: size of the resized patches (None for original size)
+    padding: function to add a padding to the diameter
     swap_xy: should x and y be swapped? Debug purposes
     C: center of filtering
     W: width of filtering
@@ -97,13 +99,13 @@ def extract_patch(
         z = int(row['nslice'])
         cx = int(row['x'])
         cy = int(row['y'])
-        r = int(ceil(row['diameter']/2.))
+        r = int(ceil(padding*(row['diameter'])/2.)) # now diameter is padded!
         
         if verbose: 
             print 'Slice: {} CX: {} CY: {}'.format(z, cx, cy)
         
-        x = range(max(0, cx - r), min(512, cx + r + 1))
-        y = range(max(0, cy - r), min(512, cy + r + 1))
+        x = range(max(0, cx - r), min(511, cx + r + 1))
+        y = range(max(0, cy - r), min(511, cy + r + 1))
     
         hu = np_pat[0, z]
         hu[hu < C - W/2] = C - W/2
@@ -117,9 +119,28 @@ def extract_patch(
             img_hu = hu[np.ix_(x, y)]
             img_lung = lung[np.ix_(x, y)]
         
+        # resizing is optional now
+        if verbose:
+            print 'Patch x: {} y: {} nslice: {} Original size: {}'.format(x, y, z, img_hu.shape)
         
-        resc_hu = spm.imresize(img_hu, out_size)
-        resc_lung = spm.imresize(img_lung, out_size, interp='lanczos')
+        if out_size is None:
+            if verbose:
+                print 'Using original size...'
+            if (img_hu.shape[0] < 15) | (img_hu.shape[1] < 15):
+                out_size2 = (15, 15)
+                if verbose:
+                    print 'Patch is too small! Resized to (15, 15)'
+            else:
+                out_size2 = img_hu.shape
+        else:
+            out_size2 = out_size
+        
+        if verbose:
+            print 'New size: {}'.format(out_size2)
+
+        
+        resc_hu = spm.imresize(img_hu, out_size2)
+        resc_lung = spm.imresize(img_lung, out_size2, interp='lanczos')
         resc_lung = np.where(resc_lung > 255/2., 1.0, 0.0)
         
         # if all the pixels are lung, mask should be all ones
@@ -132,6 +153,12 @@ def extract_patch(
                         'resc_hu': resc_hu, 
                         'resc_lung': resc_lung
         })
+    
+        if verbose:
+            print "Patient patch appended. Next..."
+    
+    if verbose:
+            print "Patient patches are processed! Next..."
     return patches, df_pat, sum_xy
 
 
@@ -328,11 +355,12 @@ def process_lbp(img_hu):
     """
     ans = skf.local_binary_pattern(img_hu, P=8*3, R=3, method='uniform').astype(int)
     ans_bins = np.bincount(ans.ravel())
+    ans_bins2 = ans_bins/float(sum(ans_bins))
     
     # complete zeros that could be missing
-    ans_bins = np.r_[ans_bins, np.zeros(26 - len(ans_bins))]
+    ans_bins2 = np.r_[ans_bins2, np.zeros(26 - len(ans_bins))]
     
-    return ans_bins
+    return ans_bins2
     
 
 def compress_feature(df, feature, n_components=3):
@@ -363,6 +391,9 @@ def process_pipeline_patient(
     patient_path, 
     patient_colname='patientid',
     patient_inverted=[], 
+    padding=1,
+    out_size=(25, 25), 
+    props_and_lbp='resc', 
     verbose=False):
     """
     This function processes a single patient from a data frame. 
@@ -373,6 +404,9 @@ def process_pipeline_patient(
     patient_path: path to find npy files
     patient_colname: name of the data frame column containing patients (should be patientid)
     patient_inverted: inverted patients as a list
+    padding: padding factor for the diameter in patch extraction
+    out_size: size of the resized patches (None for original size)
+    props_and_lbp: use 'resc' rescaled image, or 'img' original image
     verbose: show debug messages
     """
     print 'Processing patient {} ...'.format(patient_id)
@@ -380,19 +414,31 @@ def process_pipeline_patient(
     # pat = list_patient[0]
     
     # (1) Extract patchs from data frame and one patient
+    if verbose:
+        print "Extracting patches..."
     p_patch, p_df, sum_xy = extract_patch(
         df, 
         patient_id=patient_id, 
         patient_path=patient_path, 
         patient_colname=patient_colname,
+        out_size=out_size, 
+        padding=padding,
         swap_xy=False, 
         verbose=verbose)
     
+    
+    source_hu = props_and_lbp + '_hu'
+    source_lung = props_and_lbp + '_lung'
+    
     # (2) Extract properties (not features yet)
-    p_prop = [process_img(img['resc_hu'], img['resc_lung']) for img in p_patch]
+    if verbose:
+        print "Extracting props..."
+    p_prop = [process_img(img[source_hu], img[source_lung]) for img in p_patch]
     
     # (3.0) % of lung (differentiate walls from interior)
-    lungmask_feat = [float((img['resc_lung']).sum())/(img['resc_lung']).size for img in p_patch]
+    if verbose:
+        print "Extracting lungmask..."
+    lungmask_feat = [float((img['img_lung']).sum())/(img['img_lung']).size for img in p_patch]
     lungmask_df = pd.DataFrame.from_records([{'10_lungmask':feat} for feat in lungmask_feat])
     
     # Extract meaningful features
@@ -400,12 +446,16 @@ def process_pipeline_patient(
     # this returns 1-row dfs for each patch, or None 
     
     # (3.1) HOG features
+    if verbose:
+        print "Extracting hogs..."
     hog_feat = [skf.hog(img['resc_hu'], pixels_per_cell=(10,10), cells_per_block=(2,2)) for img in p_patch]
     hog_names = ['20_hog'+str(b) for b in np.arange(len(hog_feat[0]))]
     hog_df = pd.DataFrame.from_records([dict(zip(hog_names, feat)) for feat in hog_feat])
     
     # (3.2) LBP for texture
-    lbp_feat = [process_lbp(img['resc_hu']) for img in p_patch]
+    if verbose:
+        print "Extracting lbps..."
+    lbp_feat = [process_lbp(img[source_hu]) for img in p_patch]
     lbp_names = ['30_lbp'+str(b) for b in np.arange(len(lbp_feat[0]))]
     lbp_df = pd.DataFrame.from_records([dict(zip(lbp_names, lbp)) for lbp in lbp_feat])
     
@@ -430,6 +480,8 @@ def process_pipeline_patient(
     # (5) data_frame of features
     # pdb.set_trace()
     # data frame with features
+    if verbose:
+        print "Concatenating data frames..."
     df_feat = pd.concat(p_feat)
     df_feat.index = np.array(patch_nonnull).nonzero()[0]
     # concatenate all data frames (indices are a pain in the ass)
@@ -474,6 +526,9 @@ def process_pipeline_csv(
     nCores=1,
     patient_colname='patientid',
     patient_inverted=[], 
+    padding=1,
+    out_size=(25, 25), 
+    props_and_lbp='resc',
     verbose=False):
     """
     This function creates an augmented features csv file
@@ -488,6 +543,9 @@ def process_pipeline_csv(
     nCores: number of cores to use 
     patient_colname: name of the patient column
     patient_inverted: inverted patients as a list (same format as their notation in the data frame)
+    padding: padding factor for the diameter 
+    out_size: size of the resized patches (None for original size)
+    props_and_lbp: use 'resc' rescaled image, or 'img' original image
     verbose: show debug messages
     """
     # debug
@@ -535,7 +593,10 @@ def process_pipeline_csv(
         patient_path = patient_path, 
         patient_colname=patient_colname,
         patient_inverted=patient_inverted,
-        verbose=False)
+        padding=padding,
+        out_size=out_size,
+        props_and_lbp=props_and_lbp,
+        verbose=verbose)
             
         #     def f_map(pat):
         # process_pipeline_patient(
