@@ -1,30 +1,21 @@
 import os
+import sys
 import logging
 import numpy as np
+import pandas as pd
 from time import time
-# from keras.optimizers import Adam
-# from dl_networks.sample_resnet import ResnetBuilder
 from dl_model_patches import  common
-#from keras import backend as K
-
-
-# K.set_image_dim_ordering('th')
 
 # PATHS
 wp = os.environ['LUNG_PATH']
 INPUT_PATH = '/mnt/hd2/preprocessed5'  # INPUT_PATH = wp + 'data/preprocessed5_sample'
-VALIDATION_PATH = '/mnt/hd2/preprocessed5_validation_luna'
-NODULES_PATH = wp + 'data/luna/annotations.csv'
-
-# OUTPUT_MODEL = wp + 'models/jm_patches_train_v18.hdf5'
-# OUTPUT_CSV = wp + 'output/nodules_patches_dl1_v18.csv'
-
-OUTPUT_MODEL = wp + 'models/jm_patches_malign_v02.hdf5'
-OUTPUT_CSV = wp + 'output/nodules_patches_dl3_v02.csv'
+OUTPUT_MODEL = wp + 'models/jm_patches_malign_v03.hdf5'
+OUTPUT_CSV = wp + 'output/nodules_patches_dl3_v03.csv'
 
 
 ## Params and filepaths
-THICKNESS = 1
+#VALIDATION_PATH = '/mnt/hd2/preprocessed5_validation_luna'
+#NODULES_PATH = wp + 'data/luna/annotations.csv'
 file_list = [os.path.join(INPUT_PATH, fp) for fp in os.listdir(INPUT_PATH) if fp.startswith('dsb_')]
 
 
@@ -38,9 +29,6 @@ file_list = [os.path.join(INPUT_PATH, fp) for fp in os.listdir(INPUT_PATH) if fp
 
 
 ## Loading DF (if necessary)
-import pandas as pd
-
-wp = os.environ['LUNG_PATH']
 OUTPUT_DL1 = wp + 'output/nodules_patches_dl1_v11.csv'  # OUTPUT_DL1 = wp + 'personal/noduls_patches_v06.csv'
 OUTPUT_DL2 = wp + 'output/nodules_patches_hardnegative_v03.csv'  # OUTPUT_DL1 = wp + 'personal/noduls_patches_v06.csv'
 
@@ -52,18 +40,36 @@ merge_df = pd.merge(dl1_df, dl2_df, on=['patientid','nslice','x','y','diameter']
 nodules_df = merge_df[((merge_df['score_dl1'] + merge_df['score_dl2'])/2 > 0.5) & (merge_df['diameter']>7)]   # 12k candidates
 
 
+## TERMINAL ARGUMENTS ---------------------------------------------------------------------------------------------
+
+#--input_path=%s --model=%s input_csv=%s --output_file=%s
+for arg in sys.argv[1:]:
+    if arg.startswith('--input_path='):
+        INPUT_PATH = ''.join(arg.split('=')[1:])
+    elif arg.startswith('--model='):
+        OUTPUT_MODEL = ''.join(arg.split('=')[1:])
+    elif arg.startswith('--output_file='):
+        OUTPUT_CSV = ''.join(arg.split('=')[1:])
+    elif arg.startswith('--input_csv='):
+        nodules_df = ''.join(arg.split('=')[1:])
+        nodules_df = pd.read_csv(nodules_df)
+    else:
+        print('Unknown argument {}. Ignoring.'.format(arg))
+
 
 ## MULTI PARALLEL ---------------------------------------------------------------------------------------------
 import multiprocessing
-
 
 
 def worker(filename, q):
     while 1:
         if q.qsize() < 10:
             patient_data = np.load(filename)['arr_0']
-            ndf = nodules_df[nodules_df['patientid']==filename.split('/')[-1]]
-            X, y, rois, stats = common.load_patient(patient_data, ndf, discard_empty_nodules=False, output_rois=True, thickness=1)
+            if nodules_df is not None:
+                ndf = nodules_df[nodules_df['patientid']==filename.split('/')[-1]]
+                X, y, rois, stats = common.load_patient(patient_data, ndf, discard_empty_nodules=False, output_rois=True, thickness=1)
+            else:
+                X, y, rois, stats = common.load_patient(patient_data, discard_empty_nodules=False, output_rois=True, thickness=1)
             logging.info("Patient: %s, stats: %s" % (filename.split('/')[-1], stats))
             q.put((filename,X,y,rois))
             break
@@ -76,7 +82,7 @@ def listener(q):
 
     # Model loading inside the listener thread (otherwise keras complains)
     K.set_image_dim_ordering('th')
-    model = ResnetBuilder().build_resnet_34((3,40,40),1)
+    model = ResnetBuilder().build_resnet_50((3,40,40),1)
     model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['accuracy','fmeasure'])
     logging.info('Loading existing model...')
     model.load_weights(OUTPUT_MODEL)
@@ -143,6 +149,11 @@ if __name__ == "__main__":
 
 
 # NON PARALLEL ------------------------------------------------------------------------------------------------------
+
+# from keras.optimizers import Adam
+# from dl_networks.sample_resnet import ResnetBuilder
+#from keras import backend as K
+# K.set_image_dim_ordering('th')
 
 # # Load model
 # model = ResnetBuilder().build_resnet_50((3,40,40),1)
