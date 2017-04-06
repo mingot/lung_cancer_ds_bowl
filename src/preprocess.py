@@ -14,8 +14,10 @@ python 00_preprocess.py --input=/home/shared/data/stage1 --output=/mnt/hd2/prepr
 
 import os
 import sys
+import argparse
 from glob import glob
 from time import time
+import logging
 import SimpleITK as sitk
 import numpy as np
 import pandas as pd
@@ -26,62 +28,30 @@ from utils import lung_segmentation
 import matplotlib.pyplot as plt
 from utils import plotting
 
+logging.basicConfig(level=logging.INFO,
+                    format='%(asctime)s  %(levelname)-8s %(message)s',
+                    datefmt='%m-%d %H:%M:%S')
 
-# Define folder locations
-wp = os.environ.get('LUNG_PATH', '')
-INPUT_FOLDER = os.path.join(wp, 'data/luna/luna0123')
-OUTPUT_FOLDER = os.path.join(wp, 'data/stage1_proc/')
-NODULES_PATH = os.path.join(wp, 'data/luna/annotations.csv')
-PIPELINE = 'dsb'  # for filename
 
 # Define parametres
 COMMON_SPACING = [2, 0.7, 0.7]
 
-# Execution parameters
-SAVE_RESULTS = True
-
-# Overwriting parameters by console
-for arg in sys.argv[1:]:
-    if arg.startswith('--input='):
-        INPUT_FOLDER = ''.join(arg.split('=')[1:])
-    elif arg.startswith('--output='):
-        OUTPUT_FOLDER = ''.join(arg.split('=')[1:])
-    elif arg.startswith('--pipeline='):
-        PIPELINE = ''.join(arg.split('=')[1:])
-    elif arg.startswith('--nodules='):
-        NODULES_PATH = ''.join(arg.split('=')[1:])
-    else:
-        print('Unknown argument {}. Ignoring.'.format(arg))
 
 
-if PIPELINE == 'dsb':
-    patient_files = os.listdir(INPUT_FOLDER)
-elif PIPELINE == 'luna':
-    patient_files = glob(INPUT_FOLDER + '/*.mhd')  # patients from subset
-    df_nodules = pd.read_csv(NODULES_PATH)
+def process_filename(patient_file, output_folder, pipeline='dsb', df_nodules=None):
 
-## get IDS in the output folder to avoid recalculating them
-current_ids = glob(OUTPUT_FOLDER + '/*.npz')
-current_ids = [x.split('_')[-1].replace('.npz', '') for x in current_ids]
-
-
-# Main loop over the ensemble of the database
-times = []
-for patient_file in patient_files:
-    
-    tstart = time()
     nodule_mask = None
     print('Processing patient: %s' % patient_file)
     
     # Read
     try:
-        if PIPELINE == 'dsb':
-            patient = reading.load_scan(os.path.join(INPUT_FOLDER, patient_file))
+        if pipeline == 'dsb':
+            patient = reading.load_scan(patient_file)
             patient_pixels = preprocessing.get_pixels_hu(patient)  # From pixels to HU
             originalSpacing = reading.dicom_get_spacing(patient)
-            pat_id = patient_file
+            pat_id = patient_file.split('/')[-1]
 
-        elif PIPELINE == 'luna':
+        elif pipeline == 'luna':
             patient = sitk.ReadImage(patient_file) 
             patient_pixels = sitk.GetArrayFromImage(patient)  # indexes are z,y,x
             originalSpacing = [patient.GetSpacing()[2], patient.GetSpacing()[0], patient.GetSpacing()[1]]
@@ -98,11 +68,7 @@ for patient_file in patient_files:
     except Exception as e:  # Some patients have no data, ignore them
         print('There was some problem reading patient {}. Ignoring and live goes on.'.format(patient_file))
         print('Exception', e)
-        continue
-
-    # avoid computing the id if not already present
-    if pat_id in current_ids:
-        continue
+        return
 
     # SET BACKGROUND: set to air parts that fell outside
     patient_pixels[patient_pixels < -1500] = -2000
@@ -129,16 +95,57 @@ for patient_file in patient_files:
     print('Cropped image size: {}'.format(pix.shape))
 
 
-    # STACK results
+    # STACK and save results
     output = np.stack((pix, lung_mask, nodule_mask)) if nodule_mask is not None else np.stack((pix, lung_mask))
+    np.savez_compressed(os.path.join(output_folder, "%s_%s.npz") % (pipeline, pat_id), output)
 
 
-    if SAVE_RESULTS:
-        np.savez_compressed(os.path.join(OUTPUT_FOLDER, "%s_%s.npz") % (PIPELINE, pat_id), output)
+import multiprocessing
+def preprocess_files(file_list, output_folder, pipeline='dsb'):
+    pool = multiprocessing.Pool(4)  # multiprocessing.cpu_count()
+    logging.info("Creating preprocessing job for %d files..." % len(file_list))
+    tstart = time()
 
-    x = time()-tstart
-    print('Patient {}, Time: {}'.format(pat_id, x))
-    times.append(x)
+    #fire off workers
+    jobs = []
+    for filename in file_list:
+        job = pool.apply_async(process_filename, (filename, output_folder, pipeline))
+        jobs.append(job)
 
-print('Average time per image: {}'.format(np.mean(times)))
+    # collect results from the workers through the pool result queue
+    for job in jobs:
+        job.get()
 
+    pool.close()
+    pool.join()
+    logging.info("Finished preprocessing in %.3f% s" % (time()-tstart))
+
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Preprocess patient files in parallel')
+    parser.add_argument('--input_folder', help='input folder')
+    parser.add_argument('--output_folder', help='output folder')
+    parser.add_argument('--pipeline', default = 'dsb', help='pipeline to be used (dsb or luna)')
+    parser.add_argument('--nodules_csv', help='in case of luna pipeline, nodules annotations')
+    args = parser.parse_args()
+
+    # # Define folder locations
+    # wp = os.environ.get('LUNG_PATH', '')
+    # INPUT_FOLDER = os.path.join(wp, 'data/luna/luna0123')
+    # OUTPUT_FOLDER = os.path.join(wp, 'data/stage1_proc/')
+    # NODULES_PATH = os.path.join(wp, 'data/luna/annotations.csv')
+    # PIPELINE = 'dsb'  # for filename
+
+    patient_files = []
+    if args.pipeline=='dsb':
+        patient_files = [os.path.join(args.input_folder, p) for p in os.listdir(args.input_folder)]
+    elif args.pipeline=='luna':
+        patient_files = glob(args.input_folder + '/*.mhd')  # patients from subset
+        df_nodules = pd.read_csv(args.nodules_csv)
+
+
+    # ## get IDS in the output folder to avoid recalculating them
+    # current_ids = glob(OUTPUT_FOLDER + '/*.npz')
+    # current_ids = [x.split('_')[-1].replace('.npz', '') for x in current_ids]
+    preprocess_files(file_list=patient_files, output_folder=args.output_folder, pipeline=args.pipeline)
