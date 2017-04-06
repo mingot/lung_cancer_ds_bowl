@@ -59,7 +59,7 @@ generate_patient_dt <- function(path_repo,path_dsb,path_output = NULL) {
   nodules_filtered <- aggregate_filtered(nodules_filtered)
   
   
-  ## Merging al nodules variables
+  ## Merging all nodules variables
   vars_nodules <- rbind(vars_nodules,vars_nodules_patches,fill = TRUE)
   vars_nodules[,cancer := NULL]
   ## Aggregating to patient level
@@ -220,29 +220,22 @@ na_to_zeros <- function(dt,name_vars) {
 
 aggregate_filtered <- function(dt) {
   dt[,`:=`(max_score_filtered = max(score),max_nslicesSpread = max(nslicesSpread)), by = patientid]
-  dt1 <- dt[, .(
-    max_nsliceSpread = max(nslicesSpread),
-    max_score_filtered = max(score),
-    max_diameter_filtered = max(diameter),
-    n_nodules_filtered = .N),patientid]
-  dt2 <- dt[
-    max_score_filtered == score,.SD[1],patientid][,
-    .(patientid,
-      diameter_score_filtered = diameter,
-      nslice_score_filtered = nslice,
-      nsliceSpread_max = nslicesSpread,
-      x_score_filtered = x,
-      y_score_filtered = y)
-    ]
-  dt3 <- dt[
-    max_nslicesSpread == nslicesSpread,.SD[1],patientid][,
-    .(patientid,
-     max_score_spread = score,
-     diameter_slices_filtered = diameter,
-     nslice_slices_filtered = nslice,
-     x_score_spread = x,
-     y_score_spread = y
-     )]
+  dt1 <- dt[, .(max_nsliceSpread = max(nslicesSpread),
+                max_score_filtered = max(score),
+                max_diameter_filtered = max(diameter),
+                n_nodules_filtered = .N),patientid]
+  dt2 <- dt[max_score_filtered == score,.SD[1],patientid][,.(patientid,
+                                                             diameter_score_filtered = diameter,
+                                                             nslice_score_filtered = nslice,
+                                                             nsliceSpread_max = nslicesSpread,
+                                                             x_score_filtered = x,
+                                                             y_score_filtered = y)]
+  dt3 <- dt[max_nslicesSpread == nslicesSpread,.SD[1],patientid][,.(patientid,
+                                                                    max_score_spread = score,
+                                                                    diameter_slices_filtered = diameter,
+                                                                    nslice_slices_filtered = nslice,
+                                                                    x_score_spread = x,
+                                                                    y_score_spread = y)]
   dt_patient <- merge(dt1,dt2,all.x=T,by="patientid")
   dt_patient <- merge(dt_patient,dt3,all.x=T,by="patientid")
   return(dt_patient)
