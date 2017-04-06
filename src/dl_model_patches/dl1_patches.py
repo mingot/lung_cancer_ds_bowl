@@ -146,10 +146,12 @@ model.fit_generator(generator=chunks(x_train, y_train, batch_size=32, thickness=
                     #class_weight={0:1., 1:4.},
                     callbacks=[tb, model_checkpoint],
                     validation_data=chunks(x_test, y_test, batch_size=32, thickness=1, is_training=False,),
-                    nb_val_samples=32*10,
+                    nb_val_samples=32*40,
                     max_q_size=10,
-                    initial_epoch=1120,
+                    #initial_epoch=1120,
                     nb_worker=1)  # a locker is needed if increased the number of parallel workers
+
+#
 
 # ## CHECKS GENERATOR
 # for i in range(10):
