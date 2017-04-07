@@ -29,3 +29,6 @@ nohup.out
 logs/
 output/
 
+.Rhistory
+
+
