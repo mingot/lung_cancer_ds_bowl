@@ -93,7 +93,7 @@ test_datagen = ImageDataGenerator(dim_ordering="th")  # dummy for testing to hav
 def chunk_generator(X, y, thickness=0, batch_size=32, is_training=True):
     while 1:
         prct_pop = 0.3 if is_training else 1  # of all the training set, how much we keep
-        prct1 = 0.2  # % of 1's
+        prct1 = 0.2 if is_training else 0.18  # % of 1's
         idx_1 = [i for i in range(len(y)) if y[i]==1]
         idx_1 = random.sample(idx_1, int(prct_pop*len(idx_1)))
         idx_0 = [i for i in range(len(y)) if y[i]==0]
