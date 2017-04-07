@@ -58,7 +58,7 @@ def listener(q, model_path, output_csv):
     K.set_image_dim_ordering('th')
     model = ResnetBuilder().build_resnet_50((3,40,40),1)
     model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['accuracy','fmeasure'])
-    logging.info('Loading existing model...')
+    logging.info('Loading existing model %s...' % model_path)
     model.load_weights(model_path)
 
     total, errors = 0, 0
@@ -134,7 +134,7 @@ if __name__ == "__main__":
     if args.input_path: INPUT_PATH = args.input_path
     if args.model: MODEL = args.model
     if args.output_csv: OUTPUT_CSV = args.output_csv
-    if args.input_csv: nodules_df = pd.read_csv(args.input_csv)
+    nodules_df = pd.read_csv(args.input_csv) if args.input_csv else None
 
     ## Params and filepaths
     file_list = [os.path.join(INPUT_PATH, fp) for fp in os.listdir(INPUT_PATH)] # if fp.startswith('dsb_')]

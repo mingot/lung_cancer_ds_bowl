@@ -58,7 +58,7 @@ def listener(q, model_path, output_csv):
     K.set_image_dim_ordering('th')
     model = ResnetBuilder().build_resnet_50((3,40,40),1)
     model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['accuracy','fmeasure'])
-    logging.info('Loading existing model...')
+    logging.info('Loading existing model %s...' % model_path)
     model.load_weights(model_path)
 
     total, errors = 0, 0
