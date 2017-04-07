@@ -85,13 +85,15 @@ logging.basicConfig(level=logging.INFO,
 
 
 # Data augmentation generator
-train_datagen = ImageDataGenerator(dim_ordering="th", horizontal_flip=True, vertical_flip=True)
+train_datagen = ImageDataGenerator(dim_ordering="th",rotation_range=30, width_shift_range=0.1, height_shift_range=0.1,
+                                   horizontal_flip=True, vertical_flip=True)
 test_datagen = ImageDataGenerator(dim_ordering="th")  # dummy for testing to have the same structure
 
 
 def chunk_generator(X, y, thickness=0, batch_size=32, is_training=True):
     while 1:
-        prct_pop, prct1 = 0.2, 0.2  # (1) of all the training set, how much we keep (2) % of 1's
+        prct_pop = 0.3 if is_training else 1  # of all the training set, how much we keep
+        prct1 = 0.2  # % of 1's
         idx_1 = [i for i in range(len(y)) if y[i]==1]
         idx_1 = random.sample(idx_1, int(prct_pop*len(idx_1)))
         idx_0 = [i for i in range(len(y)) if y[i]==0]
@@ -99,20 +101,6 @@ def chunk_generator(X, y, thickness=0, batch_size=32, is_training=True):
         selected_samples = idx_0 + idx_1
         random.shuffle(selected_samples)
         logging.info("Final downsampled dataset stats: TP:%d, FP:%d" % (sum(y[selected_samples]), len(y[selected_samples])-sum(y[selected_samples])))
-
-
-        # logging.info("[TRAIN:%s] Loaded batch of patients with %d/%d positives" % (str(is_training), np.sum(y_orig), len(y_orig)))
-        # #idx_sel = [i for i in range(len(X_orig)) if y_orig[i]==1 or random.uniform(0,1) < 1.2*np.mean(y_orig)]
-        # idx_sel  = [i for i in range(len(y_orig)) if y_orig[i]==1 or random.randint(0,9)==0]
-        # X = [X_orig[i] for i in idx_sel]
-        # y = [y_orig[i] for i in idx_sel]
-        # logging.info("Downsampled to %d/%d positives" % (np.sum(y), len(y)))
-        #
-        # # convert to np array and add extra axis (needed for keras)
-        # X, y = np.asarray(X), np.asarray(y)
-        # y = np.expand_dims(y, axis=1)
-        # if thickness==0:
-        #     X = np.expand_dims(X, axis=1)
 
         # generator: if testing, do not augment data
         data_generator = train_datagen if is_training else test_datagen
@@ -142,23 +130,23 @@ y_test = np.expand_dims(y_test, axis=1)
 logging.info("Training set (1s/total): %d/%d" % (sum(y_train),len(y_train)))
 logging.info("Test set (1s/total): %d/%d" % (sum(y_test), len(y_test)))
 
-# Load model
-# model = ResnetBuilder().build_resnet_50((3,40,40),1)
-# model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['accuracy','fmeasure'])
-# model_checkpoint = ModelCheckpoint(OUTPUT_MODEL, monitor='loss', save_best_only=True)
-# # logging.info('Loading exiting model...')
-# # model.load_weights(OUTPUT_MODEL)
-#
-#
-# model.fit_generator(generator=chunk_generator(x_train, y_train, batch_size=32, thickness=1),
-#                     samples_per_epoch=1280,  # make it small to update TB and CHECKPOINT frequently
-#                     nb_epoch=500*4,
-#                     verbose=1,
-#                     callbacks=[tb, model_checkpoint],
-#                     validation_data=chunk_generator(x_test, y_test, batch_size=32, thickness=1, is_training=False),
-#                     nb_val_samples=len(y_test),
-#                     max_q_size=64,
-#                     nb_worker=1)  # a locker is needed if increased the number of parallel workers
+#Load model
+model = ResnetBuilder().build_resnet_50((3,40,40),1)
+model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['accuracy','fmeasure'])
+model_checkpoint = ModelCheckpoint(OUTPUT_MODEL, monitor='val_loss', save_best_only=True)
+# logging.info('Loading exiting model...')
+# model.load_weights(OUTPUT_MODEL)
+
+
+model.fit_generator(generator=chunk_generator(x_train, y_train, batch_size=32, thickness=1),
+                    samples_per_epoch=1280,  # make it small to update TB and CHECKPOINT frequently
+                    nb_epoch=1600,
+                    verbose=1,
+                    callbacks=[tb, model_checkpoint],
+                    validation_data=chunk_generator(x_test, y_test, batch_size=32, thickness=1, is_training=False),
+                    nb_val_samples=32*30,
+                    max_q_size=64,
+                    nb_worker=1)  # a locker is needed if increased the number of parallel workers
 
 # # check generator
 # for X,y in chunk_generator(filenames_train, nodules_df, batch_size=16):
