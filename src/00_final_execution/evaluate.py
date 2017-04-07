@@ -108,7 +108,7 @@ def evaluate_model(file_list, model_path, output_csv, nodules_df=None):
     for job in jobs:
         job.get()
 
-    # watcher.get()
+    watcher.get()
 
     #now we are done, kill the listener
     q.put('kill')
