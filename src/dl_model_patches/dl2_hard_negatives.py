@@ -47,7 +47,7 @@ luna_df = pd.read_csv(LUNA_ANNOTATIONS)
 annotated = list(set(['luna_%s.npz' % p.split('.')[-1] for p in luna_df['seriesuid']]))
 
 # filter TP and FP of the suggested by DL1
-SCORE_TH = 0.7
+SCORE_TH = 0.5
 nodules_df = pd.read_csv(OUTPUT_DL1)
 nodules_df = nodules_df[(nodules_df['score'] > SCORE_TH) | (nodules_df['label']==1)]
 nodules_df['nslice'] = nodules_df['nslice'].astype(int)
