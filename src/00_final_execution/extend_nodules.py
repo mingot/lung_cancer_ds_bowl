@@ -7,33 +7,18 @@ import pandas as pd
 import scipy.misc as spm
 from scipy import ndimage as ndi
 import collections
-import re #regex
-
-# pca
+import re
 import sklearn.decomposition as skd
-
-import os
-import pdb # debug
-import multiprocessing as mp #parallel
+import multiprocessing as mp
 from functools import partial
-
-from dl_utils.heatmap import extract_regions_from_heatmap
-
-# skimage
 import skimage.segmentation as sks
 import skimage.filters as skfi
-# from skimage.draw import circle_perimeter
 import skimage.morphology as skm
 import skimage.measure as skme
 from skimage.morphology import disk, square
 import skimage.feature as skf
-from skimage import measure
-from skimage.feature import hog
 
-# plots
-import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
-from utils import plotting
+
 
 ## PATHS
 
