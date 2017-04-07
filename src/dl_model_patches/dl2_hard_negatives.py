@@ -67,11 +67,11 @@ def __load_and_store(filename):
     return X, y, stats
 
 
-common.multiproc_crop_generator(filenames_train,
-                                os.path.join(PATCHES_PATH,'dl2_v04_x_train.npz'),
-                                os.path.join(PATCHES_PATH,'dl2_v04_y_train.npz'),
-                                __load_and_store,
-                                parallel=True)
+# common.multiproc_crop_generator(filenames_train,
+#                                 os.path.join(PATCHES_PATH,'dl2_v04_x_train.npz'),
+#                                 os.path.join(PATCHES_PATH,'dl2_v04_y_train.npz'),
+#                                 __load_and_store,
+#                                 parallel=True)
 
 
 common.multiproc_crop_generator(filenames_test,
