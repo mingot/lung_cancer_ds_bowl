@@ -51,8 +51,8 @@ def worker(filename, q, nodules_df=None):
 def listener(q, model_path, output_csv):
     """Reads regions from queue, predicts nodules and stores in the output file."""
     from keras import backend as K
-    from dl_networks.sample_resnet import ResnetBuilder
     from keras.optimizers import Adam
+    from utils.sample_resnet import ResnetBuilder
 
     # Model loading inside the listener thread (otherwise keras complains)
     K.set_image_dim_ordering('th')

@@ -41,11 +41,11 @@ with open(SUBMISSIONS_FILE,'w') as file:
         file.write('%s,0.5\n' % patient)
 
 
-## Preprocess data
-logging.info('Preprocessing data ...')
-from preprocess import preprocess_files
-patient_files = [os.path.join(INPUT_PATH, p) for p in os.listdir(INPUT_PATH)]
-preprocess_files(file_list=patient_files, output_folder=PREPROCESSED_PATH, pipeline='dsb')
+# ## Preprocess data
+# logging.info('Preprocessing data ...')
+# from preprocess import preprocess_files
+# patient_files = [os.path.join(INPUT_PATH, p) for p in os.listdir(INPUT_PATH)]
+# preprocess_files(file_list=patient_files, output_folder=PREPROCESSED_PATH, pipeline='dsb')
 
 
 
