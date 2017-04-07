@@ -24,8 +24,8 @@ import pandas as pd
 from utils import preprocessing, reading, lung_segmentation
 
 
-import matplotlib.pyplot as plt
-from utils import plotting
+# import matplotlib.pyplot as plt
+# from utils import plotting
 
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s  %(levelname)-8s %(message)s',
