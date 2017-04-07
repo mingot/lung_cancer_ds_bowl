@@ -127,7 +127,6 @@ if __name__ == "__main__":
     # DEFAULT VALUES
     wp = os.environ['LUNG_PATH']
     INPUT_PATH = '/mnt/hd2/preprocessed5'  # INPUT_PATH = wp + 'data/preprocessed5_sample'
-    INPUT_PATH = '/mnt/hd2/preprocessed5_validation_luna/'  #TODO: REMOVE!!
     MODEL = wp + 'models/jm_patches_train_v19.hdf5'
     OUTPUT_CSV = wp + 'output/nodules_patches_dl1_v19_luna_validation.csv'
 
