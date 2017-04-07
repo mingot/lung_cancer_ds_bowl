@@ -32,7 +32,7 @@ if not os.path.exists(LOGS_PATH):
 
 # OTHER INITIALIZATIONS: tensorboard, model checkpoint and logging
 tb = TensorBoard(log_dir=LOGS_PATH, histogram_freq=1, write_graph=False, write_images=False)  # replace keras.callbacks.TensorBoard
-model_checkpoint = ModelCheckpoint(OUTPUT_MODEL, monitor='loss', save_best_only=True)
+model_checkpoint = ModelCheckpoint(OUTPUT_MODEL, monitor='val_loss', save_best_only=True)
 K.set_image_dim_ordering('th')
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s  %(levelname)-8s %(message)s',
@@ -76,9 +76,9 @@ logging.basicConfig(level=logging.INFO,
 
 # Data augmentation generator
 train_datagen = ImageDataGenerator(
-    # rotation_range=30,  # .06,
-    # width_shift_range=0.1, #0.02,
-    # height_shift_range=0.1, #0.02,
+    rotation_range=30,  # .06,
+    width_shift_range=0.1, #0.02,
+    height_shift_range=0.1, #0.02,
     #shear_range=0.0002,
     #zoom_range=0.0002,
     dim_ordering="th",
@@ -135,8 +135,8 @@ logging.info("Test set (1s/total): %d/%d" % (sum(y_test), len(y_test)))
 # Load model
 model = ResnetBuilder().build_resnet_50((3,40,40),1)
 model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['accuracy','fmeasure'])
-# logging.info('Loading exiting model...')
-# model.load_weights(OUTPUT_MODEL)
+logging.info('Loading exiting model...')
+model.load_weights(OUTPUT_MODEL)
 
 
 model.fit_generator(generator=chunks(x_train, y_train, batch_size=32, thickness=1),
@@ -146,10 +146,12 @@ model.fit_generator(generator=chunks(x_train, y_train, batch_size=32, thickness=
                     #class_weight={0:1., 1:4.},
                     callbacks=[tb, model_checkpoint],
                     validation_data=chunks(x_test, y_test, batch_size=32, thickness=1, is_training=False,),
-                    nb_val_samples=32*10,
+                    nb_val_samples=32*40,
                     max_q_size=10,
-                    initial_epoch=1120,
+                    initial_epoch=715,
                     nb_worker=1)  # a locker is needed if increased the number of parallel workers
+
+#
 
 # ## CHECKS GENERATOR
 # for i in range(10):

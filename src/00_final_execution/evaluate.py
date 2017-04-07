@@ -5,7 +5,7 @@ import argparse
 import numpy as np
 import pandas as pd
 from time import time
-from dl_model_patches import  common
+import  common
 
 
 

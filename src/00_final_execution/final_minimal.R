@@ -11,7 +11,7 @@ MultiLogLoss = function(act, pred){
 }
 
 # global paths
-source("/Users/mingot/Projectes/kaggle/ds_bowl_lung/src/jm_final_ensemble/config.R")
+source("config.R")
 
 # # file locations
 # path_repo <<- "~/lung_cancer_ds_bowl/"
@@ -111,7 +111,7 @@ data_test = fread(SUBMISSIONS_FILE)
 setnames(data_test,'id','patientid')
 data_test[,patientid:=paste0("dsb_",patientid,".npz")]
 data_test = merge(data_test, dl12_final, by='patientid', all.x=T)
-data_test = merge(data_test, df_nodule, by='patientid', all.x=T)  
+data_test = merge(data_test, df_nodule, by='patientid', all.x=T)  # TODO: check if we are getting all the filenames
 data_test[is.na(data_test)] = 0
 
 
@@ -121,7 +121,7 @@ preds01 = predict(final_model_01, data_test[,vars_sel01,with=F], type="response"
 submission01 = data.table(id=gsub(".npz|dsb_","",data_test$patientid), cancer=preds01)
 cat("Mean cancer in submission01:", mean(submission01$cancer),"\n")
 write.csv(submission01, SUBMISSION_OUTPUT01, quote=F, row.names=F)
-  
+
 # model 02 TRAIN ----------------------------------------------------------------
 
 # # validation patients
@@ -173,7 +173,7 @@ data_test = fread(SUBMISSIONS_FILE)
 setnames(data_test,'id','patientid')
 data_test[,patientid:=paste0("dsb_",patientid,".npz")]
 data_test = merge(data_test, dl12_final, by='patientid', all.x=T)
-data_test = merge(data_test, df_nodule, by='patientid', all.x=T)
+data_test = merge(data_test, df_nodule, by='patientid', all.x=T)  # TODO: check if we are getting all the filenames
 data_test = merge(data_test, dl3_df, by='patientid', all.x=T)
 data_test[is.na(dl3_nohas), dl3_nohas:=1]
 data_test[is.na(data_test)] = 0
