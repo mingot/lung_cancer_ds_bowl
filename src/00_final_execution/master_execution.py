@@ -53,9 +53,9 @@ file_list = [os.path.join(PREPROCESSED_PATH, fp) for fp in os.listdir(PREPROCESS
 
 
 
-## Execute DL1
-logging.info('Executign DL1 ...')
-evaluate.evaluate_model(file_list=file_list, model_path=MODEL_DL1, output_csv=OUTPUT_DL1)
+# ## Execute DL1
+# logging.info('Executign DL1 ...')
+# evaluate.evaluate_model(file_list=file_list, model_path=MODEL_DL1, output_csv=OUTPUT_DL1)
 
 
 
