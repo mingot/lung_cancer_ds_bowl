@@ -3,19 +3,15 @@ import os
 import logging
 import pandas as pd
 from subprocess import check_output, CalledProcessError, STDOUT
-from dl_model_patches import evaluate
+import evaluate
 
-def execute_command(cmnd):
-    try:
-        cmnd_output = check_output(cmnd, stderr=STDOUT, shell=True, universal_newlines=True)
-    except CalledProcessError as exc:
-        logging.error(exc.output)
-        sys.exit(1)
-    else:
-        logging.info('Success! ' + cmnd_output)
 
-BD = '/Users/mingot/Projectes/kaggle/ds_bowl_lung/personal/execute_model/'
-INPUT_PATH = BD + 'input_data/'
+### PARAMETERS
+# BD = '/Users/mingot/Projectes/kaggle/ds_bowl_lung/personal/execute_model/'  # Base directory
+# INPUT_PATH = BD + 'input_data/'
+BD = '/home/shared/output/execution_test/'
+INPUT_PATH = '/home/shared/data/sample_submission/'
+
 
 # Creates folders if they do not exist
 if not os.path.exists(BD + 'preprocessed_data'): os.makedirs(BD + 'preprocessed_data')
@@ -23,9 +19,8 @@ if not os.path.exists(BD + 'output_csv'): os.makedirs(BD + 'output_csv')
 if not os.path.exists(BD + 'models'): os.makedirs(BD + 'models')
 
 
-
-# files
-PREPROCESSED_PATH = BD + 'preprocessed_path/'  # /mnt/hd2/preprocessed5/
+# TEMP files and directories
+PREPROCESSED_PATH = BD + 'preprocessed_data/'  # /mnt/hd2/preprocessed5/
 OUTPUT_DL1 = BD + 'output_csv/dl1.csv'
 MODEL_DL1 = BD + 'models/jm_patches_train_v11.hdf5'
 OUTPUT_DL2 = BD + 'output_csv/dl2.csv'
@@ -107,9 +102,15 @@ with open(SUBMISSIONS_FILE,'w') as file:
 
 
 
-# ## TODO: Execute final model 1
-cmnd = 'R CMD final_minimal.R' % (CSV_FOLDER,OUTPUT_TOTAL01)
-execute_command(cmnd)
-#
-# ## TODO: Execute final model 2 (DL3)
-# cmnd = 'R CMD --input_dl3=XX --input_total_model1=XX --output_submission=XX' % (OUTPUT_TOTAL01, OUTPUT_DL3, SUBMISSION)
+# ## Execute final R model
+cmnd = 'Rscript final_minimal.R'
+try:
+    cmnd_output = check_output(cmnd, stderr=STDOUT, shell=True, universal_newlines=True)
+except CalledProcessError as exc:
+    logging.error(exc.output)
+    sys.exit(1)
+else:
+    logging.info('Success! ' + cmnd_output)
+
+
+

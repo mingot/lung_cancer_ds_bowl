@@ -11,7 +11,7 @@ MultiLogLoss = function(act, pred){
 }
 
 # global paths
-source("/Users/mingot/Projectes/kaggle/ds_bowl_lung/src/jm_final_ensemble/config.R")
+source("config.R")
 
 # # file locations
 # path_repo <<- "~/lung_cancer_ds_bowl/"
