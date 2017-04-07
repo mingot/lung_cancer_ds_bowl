@@ -120,23 +120,23 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Evaluates a DL model over some patients')
     parser.add_argument('--input_path', help='Path of the preprocessed patient files')
     parser.add_argument('--model', help='DL model to use')
-    parser.add_argument('--ouput_csv', help='Output CSV with nodules and scores')
+    parser.add_argument('--output_csv', help='Output CSV with nodules and scores')
     parser.add_argument('--input_csv',  help='Preselected nodules to pass to the DL')
     args = parser.parse_args()
 
     # DEFAULT VALUES
     wp = os.environ['LUNG_PATH']
     INPUT_PATH = '/mnt/hd2/preprocessed5'  # INPUT_PATH = wp + 'data/preprocessed5_sample'
-    MODEL = wp + 'models/jm_patches_malign_v03.hdf5'
-    OUTPUT_CSV = wp + 'output/nodules_patches_dl3_v03.csv'
+    MODEL = wp + 'models/jm_patches_train_v19.hdf5'
+    OUTPUT_CSV = wp + 'output/nodules_patches_dl1_v19_luna.csv'
 
     if args.input_path: INPUT_PATH = args.input_path
     if args.model: MODEL = args.model
     if args.output_csv: OUTPUT_CSV = args.output_csv
-    if args.input_csv: nodules_df = pd.read_csv(args.input_csv)
+    nodules_df = pd.read_csv(args.input_csv) if args.input_csv else None
 
     ## Params and filepaths
-    file_list = [os.path.join(INPUT_PATH, fp) for fp in os.listdir(INPUT_PATH)] # if fp.startswith('dsb_')]
+    file_list = [os.path.join(INPUT_PATH, fp) for fp in os.listdir(INPUT_PATH) if fp.startswith('luna_')] # if fp.startswith('dsb_')]
 
     tstart = time()
     evaluate_model(file_list, model_path=MODEL, output_csv=OUTPUT_CSV, nodules_df=nodules_df)
