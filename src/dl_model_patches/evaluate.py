@@ -129,8 +129,8 @@ if __name__ == "__main__":
     #INPUT_PATH = '/mnt/hd2/preprocessed5'  # INPUT_PATH = wp + 'data/preprocessed5_sample'
     INPUT_PATH = '/mnt/hd2/preprocessed_stage2'
 
-    MODEL = wp + 'models/jm_patches_hardnegative_v03.hdf5'
-    OUTPUT_CSV = wp + 'output/nodules_patches_dl2_v03_stage2.csv'
+    MODEL = wp + 'models/jm_patches_train_v11.hdf5'
+    OUTPUT_CSV = wp + 'output/nodules_patches_dl1_v11_stage2.csv'
     #MODEL = wp + 'models/jm_patches_train_v19.hdf5'
     #OUTPUT_CSV = wp + 'output/nodules_patches_dl1_v19.csv'
 
