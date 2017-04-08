@@ -126,9 +126,11 @@ if __name__ == "__main__":
 
     # DEFAULT VALUES
     wp = os.environ['LUNG_PATH']
-    INPUT_PATH = '/mnt/hd2/preprocessed5'  # INPUT_PATH = wp + 'data/preprocessed5_sample'
-    MODEL = wp + 'models/jm_patches_hardnegative_v04.hdf5'
-    OUTPUT_CSV = wp + 'output/nodules_patches_dl2_v04.csv'
+    #INPUT_PATH = '/mnt/hd2/preprocessed5'  # INPUT_PATH = wp + 'data/preprocessed5_sample'
+    INPUT_PATH = '/mnt/hd2/preprocessed_stage2'
+
+    MODEL = wp + 'models/jm_patches_hardnegative_v03.hdf5'
+    OUTPUT_CSV = wp + 'output/nodules_patches_dl2_v03_stage2.csv'
     #MODEL = wp + 'models/jm_patches_train_v19.hdf5'
     #OUTPUT_CSV = wp + 'output/nodules_patches_dl1_v19.csv'
 
@@ -140,7 +142,7 @@ if __name__ == "__main__":
 
     ## Params and filepaths
     file_list = [os.path.join(INPUT_PATH, fp) for fp in os.listdir(INPUT_PATH) if fp.startswith('dsb_')] # if fp.startswith('dsb_')]
-    file_list += [os.path.join('/mnt/hd2/preprocessed_stage2', fp) for fp in os.listdir('/mnt/hd2/preprocessed_stage2')]
+    #file_list += [os.path.join('/mnt/hd2/preprocessed_stage2', fp) for fp in os.listdir('/mnt/hd2/preprocessed_stage2')]
     logging.info("Processing %d files..." % len(file_list))
 
     tstart = time()
