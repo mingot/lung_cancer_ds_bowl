@@ -133,7 +133,7 @@ def load_scan(patient_path, check_order = True):
         return []
     slices.sort(key=lambda x: int(x.InstanceNumber))
     if  slices[0][0x20, 0x32].value[2] < slices[1][0x20, 0x32].value[2] and check_order:
-        slices = reversed(slices)
+        slices = list(reversed(slices))
         
     try:
         slice_thickness = np.abs(slices[0].ImagePositionPatient[2] - slices[1].ImagePositionPatient[2])
