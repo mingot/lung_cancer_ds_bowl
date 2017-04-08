@@ -121,6 +121,7 @@ def preprocess_files(file_list, output_folder, pipeline='dsb'):
 
 
 if __name__ == '__main__':
+    # python preprocess.py --input_folder=/mnt/hd2/stage2/ --output_folder=/mnt/hd2/preprocessed_stage2 --pipeline=dsb
     parser = argparse.ArgumentParser(description='Preprocess patient files in parallel')
     parser.add_argument('--input_folder', help='input folder')
     parser.add_argument('--output_folder', help='output folder')
