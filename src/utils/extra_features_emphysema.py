@@ -73,7 +73,7 @@ def compute_emphysema_amfm(img, mask):
     return ent, slope
 
 
-def compute_emphysema_mld(img, mask):
+def __compute_mld__(img, mask):
     """Mean Lung Density Method"""
 
     img_masked = img[mask == 1]
@@ -84,7 +84,7 @@ def compute_emphysema_mld(img, mask):
     return mld
 
 
-def compute_emphysema_hist(img, mask):
+def __compute_image_fifth_percentile__(img, mask):
     """lowest fifth percentile of the density histogram method"""
     img_masked = img[mask == 1]
     min_val = np.min(img_masked)
@@ -106,43 +106,20 @@ def compute_emphysema_hist(img, mask):
     return fifth_percentile
 
 
-def compute_emphysema_crap(img, mask):
-    # Threshold that gates the main lobe of the histogram
-    threshold = -600
+def compute_emphysema_features(img, mask):
 
-    pix_1d = np.ndarray.flatten(img)
-    mask_1d = np.ndarray.flatten(mask)
-    pix_lung = pix_1d[mask_1d > 0]
-    gated_pix_lung = pix_lung[pix_lung < threshold]
+    # Detect region
 
-    if len(gated_pix_lung) == 0:
-        gated_skewness = 0
-        gated_kurtosis = 3.0
-    else:
-        gated_skewness = stats.skew(gated_pix_lung)
-        gated_kurtosis = stats.kurtosis(gated_pix_lung, fisher=False)
+    mld = __compute_mld__(img, mask)
+    fifth_percentile = __compute_image_fifth_percentile__(img, mask)
 
-    return gated_skewness, gated_kurtosis
-
-
-def compute_emphysema_probability(img, mask):
-
-    with open('emphysema_models/neural_net_model.sav', 'rb') as fid:
-        clf = pickle.load(fid)
-
-    # feat1, feat2 = compute_emphysema_crap(img, mask)
-    feat3 = compute_emphysema_mld(img, mask)
-    feat4 = compute_emphysema_hist(img, mask)
-
-    temp = np.zeros((1, 2), dtype=np.float)
-    temp[0, 0] = feat3
-    temp[0, 1] = feat4
-    probability = clf.predict_proba(temp)
+    hu_mask = img < fifth_percentile
+    new_mask = hu_mask * mask
 
     # more extra features
-    feat5, feat6 = compute_emphysema_amfm(img, mask)
+    feat5, feat6 = compute_emphysema_amfm(img, new_mask)
 
-    return probability[0, 1], feat3, feat4, feat5, feat6
+    return mld, fifth_percentile, feat5, feat6
 
 
 def process_patient_file(patient_name):
@@ -155,9 +132,12 @@ def process_patient_file(patient_name):
     loaded_stack = saved_data['arr_0']
     img = loaded_stack[0, :, :, :]
     mask = loaded_stack[1, :, :, :]
-    p, f1, f2, f3, f4 = compute_emphysema_probability(img, mask)
-    new_row = [patient_id, p, f1, f2, f3, f4]
+    f1, f2, f3, f4 = compute_emphysema_features(img, mask)
+
+    # Printing results
+    new_row = [patient_id, f1, f2, f3, f4]
     print(new_row)
+    # Saving results
     csvwriter.writerow(new_row)
 
 
