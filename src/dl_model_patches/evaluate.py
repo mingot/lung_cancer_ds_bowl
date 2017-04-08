@@ -108,15 +108,15 @@ def evaluate_model(file_list, model_path, output_csv, nodules_df=None):
     for job in jobs:
         job.get()
 
-    # watcher.get()
-
     #now we are done, kill the listener
     q.put('kill')
+    watcher.get()
     pool.close()
     pool.join()
 
 
 if __name__ == "__main__":
+    # python evaluate.py --input_path=/mnt/hd2/test_difs/ --model=~/lung_cancer_ds_bowl/models/jm_patches_train_v19.hdf5 --output_csv=~/prova_dl1_19.csv
     parser = argparse.ArgumentParser(description='Evaluates a DL model over some patients')
     parser.add_argument('--input_path', help='Path of the preprocessed patient files')
     parser.add_argument('--model', help='DL model to use')
