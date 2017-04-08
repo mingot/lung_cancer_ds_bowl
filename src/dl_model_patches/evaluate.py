@@ -140,6 +140,8 @@ if __name__ == "__main__":
 
     ## Params and filepaths
     file_list = [os.path.join(INPUT_PATH, fp) for fp in os.listdir(INPUT_PATH) if fp.startswith('dsb_')] # if fp.startswith('dsb_')]
+    file_list += [os.path.join('/mnt/hd2/preprocessed_stage2', fp) for fp in os.listdir('/mnt/hd2/preprocessed_stage2')]
+    logging.info("Processing %d files..." % len(file_list))
 
     tstart = time()
     evaluate_model(file_list, model_path=MODEL, output_csv=OUTPUT_CSV, nodules_df=nodules_df)
