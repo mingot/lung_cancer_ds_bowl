@@ -126,7 +126,7 @@ if __name__ == "__main__":
 
     # DEFAULT VALUES
     wp = os.environ['LUNG_PATH']
-    #INPUT_PATH = '/mnt/hd2/preprocessed5'  # INPUT_PATH = wp + 'data/preprocessed5_sample'
+    INPUT_PATH = '/mnt/hd2/preprocessed5'  # INPUT_PATH = wp + 'data/preprocessed5_sample'
     stage2_df = pd.read_csv(wp + 'data/stage2_sample_submission.csv')
     stage2_ids = ['dsb_%s.npz' % pid for pid in stage2_df['id']]
 
