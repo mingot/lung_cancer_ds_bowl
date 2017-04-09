@@ -234,11 +234,82 @@ arcvi_descriptivos(data_train$emph_var1, data_train$cancer, equidistributed=F)
 arcvi_descriptivos(data_train$emph_var2, data_train$cancer, equidistributed=F) 
 arcvi_descriptivos(data_train$emph_var3, data_train$cancer, equidistributed=F) 
 arcvi_descriptivos(data_train$emph_var4, data_train$cancer, equidistributed=F) 
-arcvi_descriptivos(data_train$emph_var5, data_train$cancer, equidistributed=F) 
+arcvi_descriptivos(data_train$emph_var5, data_train$cancer, equidistributed=F)
+
+arcvi_descriptivos(data_train$felix_mean, data_train$cancer, equidistributed=F)
+arcvi_descriptivos(data_train$felix_max, data_train$cancer, equidistributed=F)
 
 data_train[,feat1:=as.numeric(`06_mean_intensity`>0.75)]
 data_train[,feat2:=as.numeric(124<y_score_spread & y_score_spread<200)]
 data_train[,feat3:=as.numeric(`03_area`>314)]
 
+
+# feature selection -------------------------------------------------------
+
+mm = LiblineaR(data_train[,vars_sel,with=F], data_train$cancer, 
+               type = 0, cost = 2, epsilon = 0.01)
+mm
+
+
+library(FSelector)
+
+var_importance = function(formula,data,num.vars=10){
+  # Given data (frame/table) and a formula to get the target
+  # it prints the top variables based on different criteria
+  #
+  # Args:
+  #   formula: target ~ feature1 + feature2
+  #   data: data (frame/table) with features and the target variable
+  #
+  # Returns:
+  #   Prints the top 10 variables based on different criteria
+  
+  print('*************************************')
+  print('LINEAR CORRELATION:')
+  weights = linear.correlation(formula, data)
+  weights$var = rownames(weights)
+  print(weights[order(-weights$attr_importance)[1:num.vars],])
+  
+  print('*************************************')
+  print('RANK CORRELATION:')
+  weights = rank.correlation(formula, data)
+  weights$var = rownames(weights)
+  print(weights[order(-weights$attr_importance)[1:num.vars],])
+  
+  print('*************************************')
+  print('INFORMATION GAIN:')
+  weights = information.gain(formula, data)
+  weights$var = rownames(weights)
+  print(weights[order(-weights$attr_importance)[1:num.vars],])
+  
+  print('*************************************')
+  print('GAIN RATIO:')
+  weights = gain.ratio(formula, data)
+  weights$var = rownames(weights)
+  print(weights[order(-weights$attr_importance)[1:num.vars],])
+  #   
+  #   print('*************************************')
+  #   print('RF ACCURACY:')
+  #   weights = random.forest.importance(formula, data, importance.type=1)
+  #   weights$var = rownames(weights)
+  #   print(weights[order(-weights$attr_importance)[1:10],])
+  #   
+  #   print('*************************************')
+  #   print('RF NODE IMPURITY:')
+  #   weights = random.forest.importance(formula, data, importance.type=2)
+  #   weights$var = rownames(weights)
+  #   print(weights[order(-weights$attr_importance)[1:10],])
+  
+}
+
+var_importance(cancer~., data_train[,c("cancer",vars_sel),with=F])
+
+
+
+# TEST features -----------------------------------------------------------
+
+felix_df = fread('/home/mingot/lung_cancer_ds_bowl/src/dl_model_simplepos_patches/simplepos_patches_v04.csv')
+names(felix_df)
+setnames(felix_df,c("min","mean","max","std"),  c("felix_min","felix_mean","felix_max","felix_std"))
 
 

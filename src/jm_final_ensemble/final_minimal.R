@@ -30,6 +30,7 @@ source("/Users/mingot/Projectes/kaggle/ds_bowl_lung/src/jm_final_ensemble/config
 # SUBMISSION_OUTPUT02 = paste0(path_dsb, 'submissions/final_submission_02.csv')
 
 
+
 # FEATURES -----------------------------------------------------------------
 
 dl1 = fread(DL1_FILE)
@@ -138,47 +139,48 @@ write.csv(submission01, "/home/shared/output/submissions/final_submission_01_v02
   
 # model 02 TRAIN ----------------------------------------------------------------
 
-# # validation patients
-# validation = fread(DL3_VALIDATION_FILE)
-# 
-# # create data train df
-# data_train = fread(ANNOTATIONS_FILE)
-# setnames(data_train,'id','patientid')
-# data_train[,patientid:=paste0("dsb_",patientid,".npz")]
-# data_train = merge(data_train, dl12_final, by='patientid', all.x=T)
-# data_train = merge(data_train, df_nodule, by='patientid', all.x=T)  # TODO: check if we are getting all the filenames
-# data_train = merge(data_train, dl3_df, by='patientid', all.x=T)
-# data_train[is.na(dl3_nohas), dl3_nohas:=1]
-# data_train[is.na(data_train)] = 0  # replace NA's with 0's
-# 
-# data_train = data_train[patientid%in%validation$patientid]
-# vars_sel = c('max_diameter_patches','maxscorenod_PC1_lbp','maxscorenod_nslicespread_sd','dl3_has')
-# 
-# aucs = c(); lls = c()
-# for(i in 1:50){
-#   k = 3; data_train$id = sample(1:k, nrow(data_train), replace = TRUE); list = 1:k
-#   for (i in 1:k){
-#     trainingset = subset(data_train, id %in% list[-i])
-#     testset = subset(data_train, id %in% c(i))
-#     
-#     # train
-#     mymodel = glm(cancer ~ 1 + ., family=binomial(link='logit'), data=trainingset[,c("cancer",vars_sel),with=F])
-#     
-#     # test
-#     pred = predict(mymodel, testset[,c("cancer",vars_sel),with=F], type="response")
-#     real = testset$cancer
-#     
-#     # store results
-#     aucs = c(aucs, auc(real,pred))
-#     lls = c(lls, MultiLogLoss(real,pred))
-#   }
-# }
-# summary(mymodel); summary(aucs); summary(lls)
-# 
-# # store final model
-# final_model_02 = glm(cancer ~ 1 + ., family=binomial(link='logit'), data=data_train[,c("cancer",vars_sel),with=F])
-# summary(final_model_02)
-# save(final_model_02, file=FINAL_MODEL_02)
+# validation patients
+validation = fread(DL3_VALIDATION_FILE)
+
+# create data train df
+data_train = fread(ANNOTATIONS_FILE)
+setnames(data_train,'id','patientid')
+data_train[,patientid:=paste0("dsb_",patientid,".npz")]
+data_train = merge(data_train, dl12_final, by='patientid', all.x=T)
+data_train = merge(data_train, df_nodule, by='patientid', all.x=T)  # TODO: check if we are getting all the filenames
+data_train = merge(data_train, dl3_df, by='patientid', all.x=T)
+data_train[is.na(dl3_nohas), dl3_nohas:=1]
+data_train[is.na(data_train)] = 0  # replace NA's with 0's
+
+data_train = data_train[patientid%in%validation$patientid]
+vars_sel = c('max_diameter_patches','maxscorenod_nslicespread_sd','dl3_has','maxscorenod_PC1_lbp')  # old
+vars_sel = c('max_diameter_patches','maxscorenod_nslicespread_sd','dl3_has','maxdiamnod_40_nodeverticalposition')  # new
+
+aucs = c(); lls = c()
+for(i in 1:100){
+  k = 3; data_train$id = sample(1:k, nrow(data_train), replace = TRUE); list = 1:k
+  for (i in 1:k){
+    trainingset = subset(data_train, id %in% list[-i])
+    testset = subset(data_train, id %in% c(i))
+
+    # train
+    mymodel = glm(cancer ~ 1 + ., family=binomial(link='logit'), data=trainingset[,c("cancer",vars_sel),with=F])
+
+    # test
+    pred = predict(mymodel, testset[,c("cancer",vars_sel),with=F], type="response")
+    real = testset$cancer
+
+    # store results
+    aucs = c(aucs, auc(real,pred))
+    lls = c(lls, MultiLogLoss(real,pred))
+  }
+}
+summary(mymodel); summary(aucs); summary(lls)
+
+# store final model
+final_model_02 = glm(cancer ~ 1 + ., family=binomial(link='logit'), data=data_train[,c("cancer",vars_sel),with=F])
+summary(final_model_02)
+save(final_model_02, file=FINAL_MODEL_02)
 
 
 # model 02 EXECUTION ------------------------------------------------------
@@ -193,11 +195,13 @@ data_test[is.na(dl3_nohas), dl3_nohas:=1]
 data_test[is.na(data_test)] = 0
 
 load(FINAL_MODEL_02)
-vars_sel02 = c('max_diameter_patches','maxscorenod_PC1_lbp','maxscorenod_nslicespread_sd','dl3_has')
+vars_sel02 = c('max_diameter_patches','maxscorenod_nslicespread_sd','dl3_has','maxscorenod_PC1_lbp')  # old
+vars_sel02 = vars_sel = c('max_diameter_patches','maxscorenod_nslicespread_sd','maxdiamnod_40_nodeverticalposition','dl3_has')  # v02
 preds02 = predict(final_model_02, data_test[,vars_sel02,with=F], type="response")
 submission02 = data.table(id=gsub(".npz|dsb_","",data_test$patientid), cancer=preds02)
 cat("Mean cancer in submission02:", mean(submission02$cancer),"\n")
 # submission02[,cancer:=cancer-mean(cancer)+0.2591267]  # fix bias in the 400 patients data
-# summary(submission02$cancer)
+# summary(submission03$cancer)
 write.csv(submission02, SUBMISSION_OUTPUT02, quote=F, row.names=F)
+
 
