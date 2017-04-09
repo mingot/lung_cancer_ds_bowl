@@ -135,9 +135,9 @@ if __name__ == "__main__":
     # MODEL = wp + 'models/jm_patches_hardnegative_v04.hdf5'
     # OUTPUT_CSV = wp + 'output/nodules_patches_dl2_v04_stage2.csv'
     MODEL = wp + 'models/jm_patches_hardnegative_v03.hdf5'
-    OUTPUT_CSV = wp + 'output/nodules_patches_dl2_v03_stage2.csv'
+    OUTPUT_CSV = wp + 'output/nodules_patches_dl2_v03_stage2_total.csv'
     # MODEL = wp + 'models/jm_patches_train_v11.hdf5'
-    # OUTPUT_CSV = wp + 'output/nodules_patches_dl1_v11_stage2.csv'
+    # OUTPUT_CSV = wp + 'output/nodules_patches_dl1_v11_stage2_total.csv'
 
 
     if args.input_path: INPUT_PATH = args.input_path
@@ -146,8 +146,8 @@ if __name__ == "__main__":
     nodules_df = pd.read_csv(args.input_csv) if args.input_csv else None
 
     ## Params and filepaths
-    #file_list = [os.path.join(INPUT_PATH, fp) for fp in os.listdir(INPUT_PATH) if fp.startswith('dsb_')]
-    file_list = [os.path.join(INPUT_PATH, fp) for fp in stage2_ids]
+    file_list = [os.path.join(INPUT_PATH, fp) for fp in os.listdir(INPUT_PATH) if fp.startswith('dsb_')]
+    #file_list = [os.path.join(INPUT_PATH, fp) for fp in stage2_ids]
     logging.info("Processing %d files..." % len(file_list))
 
     tstart = time()
