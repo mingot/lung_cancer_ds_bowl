@@ -132,8 +132,12 @@ if __name__ == "__main__":
 
     #MODEL = wp + 'models/jm_patches_train_v19.hdf5'
     #OUTPUT_CSV = wp + 'output/nodules_patches_dl1_v19_stage2.csv'
-    MODEL = wp + 'models/jm_patches_hardnegative_v04.hdf5'
-    OUTPUT_CSV = wp + 'output/nodules_patches_dl2_v04_stage2.csv'
+    # MODEL = wp + 'models/jm_patches_hardnegative_v04.hdf5'
+    # OUTPUT_CSV = wp + 'output/nodules_patches_dl2_v04_stage2.csv'
+    # MODEL = wp + 'models/jm_patches_hardnegative_v03.hdf5'
+    # OUTPUT_CSV = wp + 'output/nodules_patches_dl2_v03_stage2.csv'
+    MODEL = wp + 'models/jm_patches_train_v11.hdf5'
+    OUTPUT_CSV = wp + 'output/nodules_patches_dl1_v11_stage2.csv'
 
 
     if args.input_path: INPUT_PATH = args.input_path
