@@ -66,8 +66,8 @@ logging.info("DSB selected nodules shape: %s" % str(nodules_df.shape))
 # Construction of training and testsets
 validation_df = pd.read_csv(DSB_VALIDATION)
 logging.info("DSB validation shape:%s" % str(validation_df.shape))
-filenames_train = [os.path.join(INPUT_PATH,f) for f in set(nodules_df['patientid'])]
-filenames_test = [os.path.join(INPUT_PATH,f) for f in list(validation_df['patientid'])]
+filenames_train = [os.path.join(INPUT_PATH,f) for f in set(nodules_df['patientid']) if f not in list(validation_df['patientid'])]
+filenames_test = [os.path.join(INPUT_PATH,f) for f in set(nodules_df['patientid']) if f in list(validation_df['patientid'])]
 
 logging.info("Patients train:%d, test:%d" % (len(filenames_train), len(filenames_test)))
 
@@ -82,11 +82,11 @@ def __load_and_store(filename):
     return X, y, stats
 
 
-common.multiproc_crop_generator(filenames_train,
-                                os.path.join(PATCHES_PATH,'dl3_v04_x_train.npz'),
-                                os.path.join(PATCHES_PATH,'dl3_v04_y_train.npz'),
-                                __load_and_store,
-                                parallel=True)
+# common.multiproc_crop_generator(filenames_train,
+#                                 os.path.join(PATCHES_PATH,'dl3_v04_x_train.npz'),
+#                                 os.path.join(PATCHES_PATH,'dl3_v04_y_train.npz'),
+#                                 __load_and_store,
+#                                 parallel=True)
 
 
 common.multiproc_crop_generator(filenames_test,
