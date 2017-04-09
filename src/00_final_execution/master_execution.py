@@ -78,10 +78,17 @@ INPUT_PATH = '/home/shared/data/sample_submission/'
 # logging.info('Executign DL3 ...')
 # evaluate.evaluate_model(file_list=file_list, model_path=MODEL_DL3, output_csv=OUTPUT_DL3, nodules_df=dl3_df)
 
-OUTPUT_DL1 = '/home/shared/output/resnet/stage2/nodules_patches_dl1_v11_stage2.csv'
-AGGREGATED_NODULES = '/home/shared/output/resnet/stage2/dl1_v11_aggregated.csv'
-PREPROCESSED_PATH = '/mnt/hd2/preprocessed_stage2/'
-EXTENDED_NODULES = '/home/shared/output/resnet/stage2/dl1_v11_augmented.csv'
+
+# OUTPUT_DL1 = '/home/shared/output/resnet/stage2/nodules_patches_dl1_v11_stage2.csv'
+# AGGREGATED_NODULES = '/home/shared/output/resnet/stage2/dl1_v11_aggregated.csv'
+# PREPROCESSED_PATH = '/mnt/hd2/preprocessed_stage2/'
+# EXTENDED_NODULES = '/home/shared/output/resnet/stage2/dl1_v11_augmented.csv'
+
+
+OUTPUT_DL1 = '/home/shared/output/resnet/v19/dl12.csv'
+AGGREGATED_NODULES = '/home/shared/output/resnet/v19/dl12_v19_aggregated.csv'
+PREPROCESSED_PATH = '/mnt/hd2/preprocessed5/'
+EXTENDED_NODULES = '/home/shared/output/resnet/v19/dl12_v19_augmented.csv'
 
 
 ## (Gabriel) Aggregate nodules
