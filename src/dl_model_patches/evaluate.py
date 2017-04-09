@@ -127,12 +127,13 @@ if __name__ == "__main__":
     # DEFAULT VALUES
     wp = os.environ['LUNG_PATH']
     #INPUT_PATH = '/mnt/hd2/preprocessed5'  # INPUT_PATH = wp + 'data/preprocessed5_sample'
-    INPUT_PATH = '/mnt/hd2/preprocessed_stage2'
+    stage2_df = pd.read_csv(wp + 'data/stage2_sample_submission.csv')
+    stage2_ids = ['dsb_%s.npz' % pid for pid in stage2_df['id']]
 
-    MODEL = wp + 'models/jm_patches_train_v11.hdf5'
-    OUTPUT_CSV = wp + 'output/nodules_patches_dl1_v11_stage2.csv'
-    #MODEL = wp + 'models/jm_patches_train_v19.hdf5'
-    #OUTPUT_CSV = wp + 'output/nodules_patches_dl1_v19.csv'
+    # MODEL = wp + 'models/jm_patches_train_v11.hdf5'
+    # OUTPUT_CSV = wp + 'output/nodules_patches_dl1_v11_stage2.csv'
+    MODEL = wp + 'models/jm_patches_train_v19.hdf5'
+    OUTPUT_CSV = wp + 'output/nodules_patches_dl1_v19_stage2.csv'
 
 
     if args.input_path: INPUT_PATH = args.input_path
@@ -141,63 +142,12 @@ if __name__ == "__main__":
     nodules_df = pd.read_csv(args.input_csv) if args.input_csv else None
 
     ## Params and filepaths
-    file_list = [os.path.join(INPUT_PATH, fp) for fp in os.listdir(INPUT_PATH) if fp.startswith('dsb_')] # if fp.startswith('dsb_')]
-    #file_list += [os.path.join('/mnt/hd2/preprocessed_stage2', fp) for fp in os.listdir('/mnt/hd2/preprocessed_stage2')]
+    #file_list = [os.path.join(INPUT_PATH, fp) for fp in os.listdir(INPUT_PATH) if fp.startswith('dsb_')]
+    file_list = [os.path.join(INPUT_PATH, fp) for fp in stage2_ids]
     logging.info("Processing %d files..." % len(file_list))
 
     tstart = time()
     evaluate_model(file_list, model_path=MODEL, output_csv=OUTPUT_CSV, nodules_df=nodules_df)
     print "Total time:", time() - tstart
 
-
-
-# NON PARALLEL ------------------------------------------------------------------------------------------------------
-
-# from keras.optimizers import Adam
-# from dl_networks.sample_resnet import ResnetBuilder
-#from keras import backend as K
-# K.set_image_dim_ordering('th')
-
-# # Load model
-# model = ResnetBuilder().build_resnet_50((3,40,40),1)
-# model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['accuracy','fmeasure'])
-# logging.info('Loading existing model...')
-# model.load_weights(OUTPUT_MODEL)
-
-# with open(OUTPUT_CSV, write_method) as file:
-#
-#     # write the header if the file is new
-#     if write_method=='w':
-#         file.write('patientid,nslice,x,y,diameter,score,label\n')
-#
-#     for idx, filename in enumerate(file_list):
-#         if filename in previous_filenames:
-#             continue
-#
-#         tstart = time()
-#         logging.info("Patient %s (%d/%d)" % (filename, idx, len(file_list)))
-#         try:
-#             patient_data = np.load(filename)['arr_0']
-#             X, y, rois, stats = common.load_patient(patient_data, output_rois=True, thickness=THICKNESS)
-#
-#             if len(X)==0:
-#                 continue
-#
-#             X = np.asarray(X)
-#             if THICKNESS==0:
-#                 X = np.expand_dims(X, axis=1)
-#             preds = model.predict(X, verbose=1)
-#         except:
-#             logging.info("Error in patient %s, skipping" % filename)
-#             continue
-#
-#         for i in range(len(preds)):
-#             nslice, r = rois[i]
-#             file.write('%s,%d,%d,%d,%.3f,%.5f,%d\n' % (filename.split('/')[-1], nslice, r.centroid[0], r.centroid[1], r.equivalent_diameter,preds[i],y[i]))
-#
-#             # if preds[i]>0.8:
-#             #     logging.info("++ Good candidate found with (nslice,x,y,diam,score): %d,%d,%d,%.2f,%.2f" % (nslice,r.centroid[0], r.centroid[1], r.equivalent_diameter,preds[i]))
-#
-#         logging.info("Total ROIS:%d, Good Candidates:%d, Time processnig:%.2f" % (len(preds), len([p for p in preds if p>0.5
-#         ]), time()-tstart))
 

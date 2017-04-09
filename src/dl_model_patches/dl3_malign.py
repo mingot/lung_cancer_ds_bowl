@@ -99,6 +99,9 @@ logging.basicConfig(level=logging.INFO,
 ### TRAINING -------------------------------------------------------------------------------------------------------
 
 
+1911/4913
+1150/2885
+
 # Data augmentation generator
 train_datagen = ImageDataGenerator(dim_ordering="th", horizontal_flip=True, vertical_flip=True, rotation_range=30, width_shift_range=0.1, height_shift_range=0.1)
 test_datagen = ImageDataGenerator(dim_ordering="th")  # dummy for testing to have the same structure
