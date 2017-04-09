@@ -31,7 +31,7 @@ import scipy.ndimage as ndimage
 # plotting.cube_show_slider(binary_image-binary_image_orig)
 
 
-def segment_lungs(image, fill_lung=True, method='thresholding'):
+def segment_lungs(image, fill_lung=True, method='thresholding1'):
 
     if method == 'thresholding1':
         binary_image = __segment_by_thresholding__(image, fill_lung_structures=fill_lung)
@@ -308,7 +308,7 @@ def __seperate_lungs(image):
                        [0, 1, 1, 1, 1, 1, 0],
                        [0, 0, 1, 1, 1, 0, 0]]
     blackhat_struct = ndimage.iterate_structure(blackhat_struct, 8)
-    ##Perform the Black-Hat (very time consuming!! ~7s per slice)
+    ## TODO: Perform the Black-Hat (very time consuming!! ~7s per slice)
     # tstart = time()
     # outline += ndimage.black_tophat(outline, structure=blackhat_struct)
     # print "TOP hat time", time()-tstart
@@ -325,7 +325,7 @@ def __seperate_lungs(image):
     return lungfilter
 
 
-# SEGMENTATION 3 : ---------------------------------------------------------------------------------------------------
+# Checks lung segmentation : -----------------------------------------------------------------------------------------
 
 def __bbox2_3D(img):
     """Returns the boundaries of a 3d mask."""
@@ -343,15 +343,15 @@ def __bbox2_3D(img):
 def is_lung_segmentation_correct(lung_mask, debug=False):
     out_bbox = __bbox2_3D(lung_mask)
     zmin, zmax, xmin, xmax, ymin, ymax = out_bbox
-    error = False
+    is_correct = True
     if xmin>300 or xmax<300:
         if debug: print "Error in x!"
-        error = True
+        is_correct = False
     if ymax<300 or ymin>300:
         if debug: print "Error in y!"
-        error = True
+        is_correct = False
     if zmin*100.0/lung_mask.shape[0]>30 or zmax*100.0/lung_mask.shape[0]<70:
         if debug: print "Error in z!"
-        error = True
+        is_correct = False
 
-    return error
+    return is_correct

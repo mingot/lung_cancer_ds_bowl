@@ -81,8 +81,10 @@ def process_filename(patient_file, output_folder, pipeline='dsb', df_nodules=Non
 
 
     # LUNG SEGMENTATION (if TH1 fails, choose TH2)
+    #lung_mask = lung_segmentation.segment_lungs(image=pix_resampled, fill_lung=True, method="watershed")
     lung_mask = lung_segmentation.segment_lungs(image=pix_resampled, fill_lung=True, method="thresholding1")
     if not lung_segmentation.is_lung_segmentation_correct(lung_mask):
+        logging.info("Segmentation TH1 failed for %s. Trying method 2" % patient_file)
         lung_mask = lung_segmentation.segment_lungs(image=pix_resampled, fill_lung=True, method="thresholding2")
 
 
@@ -148,3 +150,5 @@ if __name__ == '__main__':
     # current_ids = glob(OUTPUT_FOLDER + '/*.npz')
     # current_ids = [x.split('_')[-1].replace('.npz', '') for x in current_ids]
     preprocess_files(file_list=patient_files, output_folder=args.output_folder, pipeline=args.pipeline)
+
+
