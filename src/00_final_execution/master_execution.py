@@ -97,11 +97,11 @@ EXTENDED_NODULES = '/home/shared/output/resnet/TEST_dl1_v11_augmented.csv'
 
 
 
-# ## (Gabriel) Aggregate nodules
-# THRESHOLD_CUT = 0.7
-# from merge_nodules import  merge_nodules_csv
-# logging.info('Executing nodules aggregation ...')
-# merge_nodules_csv(OUTPUT_DL1, AGGREGATED_NODULES, nodule_threshold=THRESHOLD_CUT)  # TODO: te mes sentit usar ja els HN?
+## (Gabriel) Aggregate nodules
+THRESHOLD_CUT = 0.7
+from merge_nodules import  merge_nodules_csv
+logging.info('Executing nodules aggregation ...')
+merge_nodules_csv(OUTPUT_DL1, AGGREGATED_NODULES, nodule_threshold=THRESHOLD_CUT)  # TODO: te mes sentit usar ja els HN?
 
 
 ## (Sergi) Extend nodules
