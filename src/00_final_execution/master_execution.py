@@ -99,7 +99,7 @@ EXTENDED_NODULES = '/home/shared/output/resnet/stage2/dl1_v11_augmented_FIX.csv'
 
 
 ## (Sergi) Extend nodules
-import extend_nodules as naen
+from nodules_aggregator import extend_nodules as naen
 logging.info('Executing nodules feature extraction ...')
 naen.process_pipeline_csv(
     csv_in=AGGREGATED_NODULES,
