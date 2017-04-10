@@ -104,6 +104,17 @@ EXTENDED_NODULES = '/home/shared/output/resnet/v11/dl1_v11_augmented.csv'
 # merge_nodules_csv(OUTPUT_DL1, AGGREGATED_NODULES, nodule_threshold=THRESHOLD_CUT)  # TODO: te mes sentit usar ja els HN?
 
 
+##OPERACION RESTORE
+AGGREGATED_NODULES = '/home/shared/output/resnet/nodules_patches_dl1_v11_score07_noduleaggr2.csv'
+PREPROCESSED_PATH = '/mnt/hd3/preprocessed5/'
+EXTENDED_NODULES = '/home/shared/output/resnet/nodules_patches_dl1_v11_score07_noduleaggr2_augmented_backup.csv'
+
+patient_inverted = []
+with open('/home/shared/output/other/invertedOrientationNpz.txt') as f:
+    for r in f:
+        patient_inverted.append(r.strip())
+
+
 ## (Sergi) Extend nodules
 #from nodules_aggregator import extend_nodules as naen
 from nodules_aggregator import extend_nodules_old as naen
@@ -115,7 +126,7 @@ naen.process_pipeline_csv(
     patient_colname='patientid',
     dmin = 3, dmax = 100, # filtre de diametre
     compress={'hog':3, 'lbp':3, 'hu':2}, # quines features comprimir i amb quants pcs
-    patient_inverted=[], #npz invertits
+    patient_inverted=patient_inverted,#[], #npz invertits
     nCores=4)
 
 
