@@ -132,6 +132,7 @@ def close_nodules(open_nodules, closed_nodules, currentSlice, nSlicesClose = 5):
             del open_nodules[i]
         else:
             i += 1
+
 def merge_nodules(list_closed_nodules):
     """
     merges nodule to obtain a single row for each.

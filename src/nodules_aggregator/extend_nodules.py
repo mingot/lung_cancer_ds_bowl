@@ -355,7 +355,7 @@ def process_lbp(img_hu):
     """
     ans = skf.local_binary_pattern(img_hu, P=8*3, R=3, method='uniform').astype(int)
     ans_bins = np.bincount(ans.ravel())
-    ans_bins2 = ans_bins/float(sum(ans_bins))
+    ans_bins2 = ans_bins #/float(sum(ans_bins))
     
     # complete zeros that could be missing
     ans_bins2 = np.r_[ans_bins2, np.zeros(26 - len(ans_bins))]
