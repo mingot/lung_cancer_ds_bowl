@@ -85,10 +85,10 @@ INPUT_PATH = '/home/shared/data/sample_submission/'
 # EXTENDED_NODULES = '/home/shared/output/resnet/stage2/dl1_v11_augmented.csv'
 
 
-OUTPUT_DL1 = '/home/shared/output/resnet/v11/nodules_patches_dl1_v11_stage2_total.csv'
-AGGREGATED_NODULES = '/home/shared/output/resnet/v11/dl1_v11_aggregated.csv'
-PREPROCESSED_PATH = '/mnt/hd2/preprocessed5/'
-EXTENDED_NODULES = '/home/shared/output/resnet/v11/dl1_v11_augmented.csv'
+# OUTPUT_DL1 = '/home/shared/output/resnet/v11/nodules_patches_dl1_v11_stage2_total.csv'
+# AGGREGATED_NODULES = '/home/shared/output/resnet/v11/dl1_v11_aggregated.csv'
+# PREPROCESSED_PATH = '/mnt/hd2/preprocessed5/'
+# EXTENDED_NODULES = '/home/shared/output/resnet/v11/dl1_v11_augmented.csv'
 
 # OUTPUT_DL1 = '/home/shared/output/resnet/TEST_nodules_patches_dl1_v11.csv'
 # AGGREGATED_NODULES = '/home/shared/output/resnet/TEST_dl1_v11_aggregated.csv'
