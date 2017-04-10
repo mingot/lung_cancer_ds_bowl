@@ -30,10 +30,10 @@ import skimage.feature as skf
 from skimage import measure
 from skimage.feature import hog
 
-# plots
-import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
-from utils import plotting
+# # plots
+# import matplotlib.pyplot as plt
+# import matplotlib.patches as mpatches
+# from utils import plotting
 
 ## PATHS
 
