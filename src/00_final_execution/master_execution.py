@@ -85,15 +85,15 @@ INPUT_PATH = '/home/shared/data/sample_submission/'
 # EXTENDED_NODULES = '/home/shared/output/resnet/stage2/dl1_v11_augmented.csv'
 
 
-# OUTPUT_DL1 = '/home/shared/output/resnet/v11/nodules_patches_dl1_v11_stage2_total.csv'
-# AGGREGATED_NODULES = '/home/shared/output/resnet/v11/dl1_v11_aggregated.csv'
-# PREPROCESSED_PATH = '/mnt/hd2/preprocessed5/'
-# EXTENDED_NODULES = '/home/shared/output/resnet/v11/dl1_v11_augmented.csv'
-
-OUTPUT_DL1 = '/home/shared/output/resnet/TEST_nodules_patches_dl1_v11.csv'
-AGGREGATED_NODULES = '/home/shared/output/resnet/TEST_dl1_v11_aggregated.csv'
+OUTPUT_DL1 = '/home/shared/output/resnet/v11/nodules_patches_dl1_v11_stage2_total.csv'
+AGGREGATED_NODULES = '/home/shared/output/resnet/v11/dl1_v11_aggregated.csv'
 PREPROCESSED_PATH = '/mnt/hd2/preprocessed5/'
-EXTENDED_NODULES = '/home/shared/output/resnet/TEST_dl1_v11_augmented.csv'
+EXTENDED_NODULES = '/home/shared/output/resnet/v11/dl1_v11_augmented.csv'
+
+# OUTPUT_DL1 = '/home/shared/output/resnet/TEST_nodules_patches_dl1_v11.csv'
+# AGGREGATED_NODULES = '/home/shared/output/resnet/TEST_dl1_v11_aggregated.csv'
+# PREPROCESSED_PATH = '/mnt/hd2/preprocessed5/'
+# EXTENDED_NODULES = '/home/shared/output/resnet/TEST_dl1_v11_augmented.csv'
 
 
 
@@ -105,8 +105,8 @@ merge_nodules_csv(OUTPUT_DL1, AGGREGATED_NODULES, nodule_threshold=THRESHOLD_CUT
 
 
 ## (Sergi) Extend nodules
-from nodules_aggregator import extend_nodules as naen
-#from nodules_aggregator import extend_nodules_old as naen
+#from nodules_aggregator import extend_nodules as naen
+from nodules_aggregator import extend_nodules_old as naen
 logging.info('Executing nodules feature extraction ...')
 naen.process_pipeline_csv(
     csv_in=AGGREGATED_NODULES,
