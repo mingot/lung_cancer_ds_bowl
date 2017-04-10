@@ -438,7 +438,8 @@ def process_pipeline_patient(
     # (3.0) % of lung (differentiate walls from interior)
     if verbose:
         print "Extracting lungmask..."
-    lungmask_feat = [float((img['img_lung']).sum())/(img['img_lung']).size for img in p_patch]
+    #lungmask_feat = [float((img['img_lung']).sum())/(img['img_lung']).size for img in p_patch]
+    lungmask_feat = [float((img['resc_lung']).sum())/(img['resc_lung']).size for img in p_patch]
     lungmask_df = pd.DataFrame.from_records([{'10_lungmask':feat} for feat in lungmask_feat])
     
     # Extract meaningful features
