@@ -85,28 +85,24 @@ INPUT_PATH = '/home/shared/data/sample_submission/'
 # EXTENDED_NODULES = '/home/shared/output/resnet/stage2/dl1_v11_augmented.csv'
 
 
-OUTPUT_DL1 = '/home/shared/output/resnet/v11/nodules_patches_dl1_v11_stage2_total.csv'
-AGGREGATED_NODULES = '/home/shared/output/resnet/v11/dl1_v11_aggregated_final.csv'
-PREPROCESSED_PATH = '/mnt/hd2/preprocessed5/'
-EXTENDED_NODULES = '/home/shared/output/resnet/v11/dl1_v11_augmented_final.csv'
-
-# OUTPUT_DL1 = '/home/shared/output/resnet/TEST_nodules_patches_dl1_v11.csv'
-# AGGREGATED_NODULES = '/home/shared/output/resnet/TEST_dl1_v11_aggregated.csv'
+## GOOD!
+# OUTPUT_DL1 = '/home/shared/output/resnet/v11/nodules_patches_dl1_v11_stage2_total.csv'
+# AGGREGATED_NODULES = '/home/shared/output/resnet/v11/dl1_v11_aggregated.csv'
 # PREPROCESSED_PATH = '/mnt/hd2/preprocessed5/'
-# EXTENDED_NODULES = '/home/shared/output/resnet/TEST_dl1_v11_augmented.csv'
+# EXTENDED_NODULES = '/home/shared/output/resnet/v11/dl1_v11_augmented.csv'
 
-# ##OPERACION RESTORE
-# AGGREGATED_NODULES = '/home/shared/output/resnet/nodules_patches_dl1_v11_score07_noduleaggr2.csv'
-# PREPROCESSED_PATH = '/mnt/hd3/preprocessed5/'
-# EXTENDED_NODULES = '/home/shared/output/resnet/nodules_patches_dl1_v11_score07_noduleaggr2_augmented_backup.csv'
+OUTPUT_DL1 = '/home/shared/output/resnet/v11/dl12_train_dl3.csv'
+AGGREGATED_NODULES = '/home/shared/output/resnet/v11/dl12_v11_aggregated.csv'
+PREPROCESSED_PATH = '/mnt/hd2/preprocessed5/'
+EXTENDED_NODULES = '/home/shared/output/resnet/v11/dl12_v11_augmented_TH05.csv'
 
 
 ## (Gabriel) Aggregate nodules
-THRESHOLD_CUT = 0.7
+#THRESHOLD_CUT = 0.7
+THRESHOLD_CUT = 0.5
 from merge_nodules import  merge_nodules_csv
 logging.info('Executing nodules aggregation ...')
 merge_nodules_csv(OUTPUT_DL1, AGGREGATED_NODULES, nodule_threshold=THRESHOLD_CUT)  # TODO: te mes sentit usar ja els HN?
-
 
 
 ## (Sergi) Extend nodules
