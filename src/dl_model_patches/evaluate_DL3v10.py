@@ -41,13 +41,10 @@ def worker(filename, q, nodules_df=None):
     while 1:
         if q.qsize() < 10:
             patient_data = np.load(filename)['arr_0']
-            if nodules_df is not None:
-                ndf = nodules_df[nodules_df['patientid']==filename.split('/')[-1]]
-                ndf = ndf.sort_values(by='score', ascending=False)[0:3]
-                logging.info("ndf size:%s" % str(ndf.shape))
-                X, y, rois, stats = common.load_patient(patient_data, ndf, discard_empty_nodules=False, output_rois=True, thickness=1)
-            else:
-                X, y, rois, stats = common.load_patient(patient_data, discard_empty_nodules=False, output_rois=True, thickness=1)
+            ndf = nodules_df[nodules_df['patientid']==filename.split('/')[-1]]
+            ndf = ndf.sort_values(by='score', ascending=False)[0:3]
+            logging.info("ndf size:%s" % str(ndf.shape))
+            X, y, rois, stats = common.load_patient(patient_data, ndf, discard_empty_nodules=False, output_rois=True, thickness=0)
             logging.info("Patient: %s, stats: %s" % (filename.split('/')[-1], stats))
             q.put((filename,X,y,rois))
             break
