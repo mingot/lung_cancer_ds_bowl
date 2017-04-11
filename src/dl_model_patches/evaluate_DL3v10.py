@@ -80,7 +80,7 @@ def listener(q, model_path, output_csv):
             preds = []
             for p in list(itertools.permutations(range(3), 3)):  # permutations: 012, 021, 102, 120
                 newx = np.stack([x[i] for i in p])
-                newx = np.expand_dims(newx, axis=1)
+                newx = np.expand_dims(newx, axis=0)
                 preds.append(model.predict(newx, verbose=1))
 
 
