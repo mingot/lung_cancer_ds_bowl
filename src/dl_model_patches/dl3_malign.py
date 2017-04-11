@@ -90,7 +90,7 @@ def __load_and_storev2(filename):
     newX = []
     for i in range(50):
         p = random.sample(range(10), 3)
-        newX.append(np.stack(X[p]))  # todo: stats
+        newX.append(np.stack([X[i] for i in p]))  # todo: stats
 
     y = [label]*len(newX)
     stats = [stats[0]]*len(newX)
