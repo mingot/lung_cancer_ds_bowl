@@ -43,7 +43,7 @@ def worker(filename, q, nodules_df=None):
             patient_data = np.load(filename)['arr_0']
             ndf = nodules_df[nodules_df['patientid']==filename.split('/')[-1]]
             ndf = ndf.sort_values(by='score', ascending=False)[0:3]
-            logging.info("ndf: %s" % str(ndf))
+            #logging.info("ndf: %s" % str(ndf))
             X, y, rois, stats = common.load_patient(patient_data, ndf, discard_empty_nodules=False, output_rois=True, thickness=0)
             logging.info("Patient: %s, stats: %s" % (filename.split('/')[-1], stats))
             q.put((filename,X,y,rois))
@@ -137,6 +137,7 @@ if __name__ == "__main__":
     MODEL = wp + 'models/jm_patches_dl3_v10.hdf5'
     OUTPUT_CSV = wp + 'output/nodules_patches_dl3_v10.csv'
     nodules_df = pd.read_csv('/home/mingot/dl3/dl12_test_dl3_v10.csv')
+    nodules_df['nslice'] = nodules_df['nslice'].astype(int)
 
     if args.input_path: INPUT_PATH = args.input_path
     if args.model: MODEL = args.model
