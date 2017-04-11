@@ -5,6 +5,7 @@ import argparse
 import numpy as np
 import pandas as pd
 from time import time
+import random
 from dl_model_patches import  common
 
 
@@ -41,6 +42,7 @@ def worker(filename, q, nodules_df=None):
             patient_data = np.load(filename)['arr_0']
             if nodules_df is not None:
                 ndf = nodules_df[nodules_df['patientid']==filename.split('/')[-1]]
+                ndf = ndf.sort('score', ascending=False)[0:10]
                 X, y, rois, stats = common.load_patient(patient_data, ndf, discard_empty_nodules=False, output_rois=True, thickness=1)
             else:
                 X, y, rois, stats = common.load_patient(patient_data, discard_empty_nodules=False, output_rois=True, thickness=1)
@@ -65,7 +67,7 @@ def listener(q, model_path, output_csv):
     total, errors = 0, 0
 
     f = open(output_csv, 'w')
-    f.write('patientid,nslice,x,y,diameter,score,label\n')
+    f.write('patientid,mean,median,max\n')
     while 1:
         queue_element = q.get()
         if queue_element == 'kill':
@@ -76,13 +78,18 @@ def listener(q, model_path, output_csv):
             filename, x, y, rois = queue_element
             filename = filename.split('/')[-1]
 
-            preds = model.predict(np.asarray(x), verbose=1)
+            preds = []
+            for i in range(50):
+                p = random.sample(range(10), 3)
+                newx = np.stack([x[i] for i in p])
+                preds.append(model.predict(np.asarray(x), verbose=1))
+
+
             logging.info("[LISTENER] Predicted patient %d %s. Batch results: %d/%d (th=0.7)" % (total, filename, len([p for p in preds if p>0.7]),len(preds)))
-            for i in range(len(preds)):
-                nslice, r = rois[i]
-                f.write('%s,%d,%d,%d,%.3f,%.5f,%d\n' % (filename, nslice, r.centroid[0], r.centroid[1], r.equivalent_diameter,preds[i],y[i]))
+            f.write('%s,%.5f,%.5f,%.5f\n' % (filename,np.mean(preds),np.median(preds),np.max(preds)))
             total += 1
             f.flush()
+
         except Exception as e:
             logging.error("[LISTENER] Error processing result, skipping. %s" % str(e))
             errors += 1
@@ -128,17 +135,8 @@ if __name__ == "__main__":
     # DEFAULT VALUES
     wp = os.environ['LUNG_PATH']
     INPUT_PATH = '/mnt/hd2/preprocessed5'  # INPUT_PATH = wp + 'data/preprocessed5_sample'
-    stage2_df = pd.read_csv(wp + 'data/stage2_sample_submission.csv')
-    stage2_ids = ['dsb_%s.npz' % pid for pid in stage2_df['id']]
 
-    #MODEL = wp + 'models/jm_patches_train_v19.hdf5'
-    #OUTPUT_CSV = wp + 'output/nodules_patches_dl1_v19_stage2.csv'
-    # MODEL = wp + 'models/jm_patches_hardnegative_v04.hdf5'
-    # OUTPUT_CSV = wp + 'output/nodules_patches_dl2_v04_stage2.csv'
-    # MODEL = wp + 'models/jm_patches_hardnegative_v03.hdf5'
-    # OUTPUT_CSV = wp + 'output/nodules_patches_dl2_v03_stage2_total.csv'
-    # MODEL = wp + 'models/jm_patches_train_v11.hdf5'
-    # OUTPUT_CSV = wp + 'output/nodules_patches_dl1_v11_stage2_total.csv'
+
     MODEL = wp + 'models/jm_patches_dl3_v06.hdf5'
     OUTPUT_CSV = wp + 'output/nodules_patches_dl3_v06.csv'
     nodules_df = pd.read_csv('/home/mingot/dl3/dl12_test_dl3.csv')

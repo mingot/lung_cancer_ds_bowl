@@ -76,47 +76,48 @@ logging.info("Patients train:%d, test:%d" % (len(filenames_train), len(filenames
 #     return X, y, stats
 
 
-
 # V2: per patient patches
 nodules_df = nodules_df[nodules_df['diameter']>10]
 def __load_and_storev2(filename):
     patient_data = np.load(filename)['arr_0']
     patid = filename.split('/')[-1]
     ndf = nodules_df[nodules_df['patientid']==patid]
-    ndf = ndf.sort('score', ascending=False)[0:10]
-    X, y, rois, stats = common.load_patient(patient_data, ndf, output_rois=True, thickness=0,
-                                            preserve_size=True, output_size=(60,60))
+    ndf = ndf.sort('score', ascending=False)[0:3]
+    X, y, rois, stats = common.load_patient(patient_data, ndf, output_rois=True, thickness=0)#,
+                                            #preserve_size=True, output_size=(60,60))
 
     # construccio de paquets de 3x3
     label = int(label_df[label_df['id']==patid]['cancer'])
-    newX = []
-    for i in range(50):
-        p = random.sample(range(10), 3)
-        newX.append(np.stack([X[i] for i in p]))
+    newX=np.stack(X)
+    y = [label]
 
-    y = [label]*len(newX)
+    # newX = []
+    # for i in range(50):
+    #     p = random.sample(range(10), 3)
+    #     newX.append(np.stack([X[i] for i in p]))
+    #y = [label]*len(newX)
     logging.info("Patient: %s, cancer:%d, stats: %s" % (patid, label, stats))
     return newX, y, stats
 
 
-common.multiproc_crop_generator(filenames_train[0:10],
-                                os.path.join(PATCHES_PATH,'dl3_v12_x_train.npz'),
-                                os.path.join(PATCHES_PATH,'dl3_v12_y_train.npz'),
+common.multiproc_crop_generator(filenames_train,
+                                os.path.join(PATCHES_PATH,'dl3_v11_x_train.npz'),
+                                os.path.join(PATCHES_PATH,'dl3_v11_y_train.npz'),
                                 __load_and_storev2,
                                 parallel=True)
 
-xtrain = np.load('/Users/mingot/Projectes/kaggle/ds_bowl_lung/personal/dl3_v12_x_train.npz')['arr_0']
-xtrain.shape
-plotting.multiplot(xtrain[10])
-ytrain = np.load('/Users/mingot/Projectes/kaggle/ds_bowl_lung/personal/dl3_v11_y_train.npz')['arr_0']
-ytrain.shape
-ytrain
+# xtrain = np.load('/Users/mingot/Projectes/kaggle/ds_bowl_lung/personal/dl3_v12_x_train.npz')['arr_0']
+# xtrain.shape
+# plotting.multiplot(xtrain[10])
+# ytrain = np.load('/Users/mingot/Projectes/kaggle/ds_bowl_lung/personal/dl3_v11_y_train.npz')['arr_0']
+# ytrain.shape
+# ytrain
 
-# common.multiproc_crop_generator(filenames_test,
-#                                 os.path.join(PATCHES_PATH,'dl3_v10_x_test.npz'),
-#                                 os.path.join(PATCHES_PATH,'dl3_v10_y_test.npz'),
-#                                 __load_and_storev2,
-#                                 parallel=True)
+common.multiproc_crop_generator(filenames_test,
+                                os.path.join(PATCHES_PATH,'dl3_v11_x_test.npz'),
+                                os.path.join(PATCHES_PATH,'dl3_v11_y_test.npz'),
+                                __load_and_storev2,
+                                parallel=True)
 
 
 ### TRAINING -------------------------------------------------------------------------------------------------------
