@@ -27,8 +27,8 @@ DSB_LABELS = wp + 'data/stage1_labels_total.csv'
 INPUT_PATH = '/mnt/hd2/preprocessed5/' # INPUT_PATH = wp + 'data/preprocessed5_sample'
 PATCHES_PATH = '/mnt/hd2/patches'  # PATCHES_PATH = wp + 'data/preprocessed5_patches'
 
-OUTPUT_MODEL =  wp + 'models/jm_patches_dl3_v11.hdf5'  # OUTPUT_MODEL = wp + 'personal/jm_patches_train_v06_local.hdf5'
-LOGS_PATH = wp + 'logs/%s' % 'malign_v11' #str(int(time()))
+OUTPUT_MODEL =  wp + 'models/jm_patches_dl3_v07.hdf5'  # OUTPUT_MODEL = wp + 'personal/jm_patches_train_v06_local.hdf5'
+LOGS_PATH = wp + 'logs/%s' % 'malign_v07' #str(int(time()))
 if not os.path.exists(LOGS_PATH):
     os.makedirs(LOGS_PATH)
 
@@ -46,36 +46,37 @@ logging.basicConfig(level=logging.INFO,
 # Load the output of DL-I and load just the 1's (TP or FN's) and the FP's for a given score
 # to train DL-II
 
-# # labels
-# label_df = pd.read_csv(DSB_LABELS)
-# label_df['id'] = ["dsb_%s.npz" % p for p in list(label_df['id'])]
-#
-# # Join DL1 and DL2 to filter TP and FP of the suggested by DL1
-# nodules_df = pd.read_csv(OUTPUT_DL12)
-# logging.info("DSB selected nodules shape: %s" % str(nodules_df.shape))
-#
-#
-# # Construction of training and testsets
-# validation_df = pd.read_csv(DSB_VALIDATION)
-# logging.info("DSB validation shape:%s" % str(validation_df.shape))
-# filenames_train = [os.path.join(INPUT_PATH,f) for f in set(nodules_df['patientid']) if f not in list(validation_df['patientid'])]
-# filenames_test = [os.path.join(INPUT_PATH,f) for f in set(nodules_df['patientid']) if f in list(validation_df['patientid'])]
-#
-# logging.info("Patients train:%d, test:%d" % (len(filenames_train), len(filenames_test)))
-#
-# # # V1:
-# # nodules_df = nodules_df[(nodules_df['score']>0.7) & (nodules_df['diameter']>10)]
-# # def __load_and_store(filename):
-# #     patient_data = np.load(filename)['arr_0']
-# #     patid = filename.split('/')[-1]
-# #     ndf = nodules_df[nodules_df['patientid']==patid]
-# #     X, y, rois, stats = common.load_patient(patient_data, ndf, output_rois=True, thickness=1)
-# #     label = int(label_df[label_df['id']==patid]['cancer'])
-# #     y = [label]*len(X)
-# #     logging.info("Patient: %s, cancer:%d, stats: %s" % (patid, label, stats))
-# #     return X, y, stats
-#
-#
+# labels
+label_df = pd.read_csv(DSB_LABELS)
+label_df['id'] = ["dsb_%s.npz" % p for p in list(label_df['id'])]
+
+# Join DL1 and DL2 to filter TP and FP of the suggested by DL1
+nodules_df = pd.read_csv(OUTPUT_DL12)
+logging.info("DSB selected nodules shape: %s" % str(nodules_df.shape))
+
+
+# Construction of training and testsets
+validation_df = pd.read_csv(DSB_VALIDATION)
+logging.info("DSB validation shape:%s" % str(validation_df.shape))
+filenames_train = [os.path.join(INPUT_PATH,f) for f in set(nodules_df['patientid']) if f not in list(validation_df['patientid'])]
+filenames_test = [os.path.join(INPUT_PATH,f) for f in set(nodules_df['patientid']) if f in list(validation_df['patientid'])]
+
+logging.info("Patients train:%d, test:%d" % (len(filenames_train), len(filenames_test)))
+
+# V1:
+nodules_df = nodules_df[(nodules_df['score']>0.7) & (nodules_df['diameter']>10)]
+def __load_and_store(filename):
+    patient_data = np.load(filename)['arr_0']
+    patid = filename.split('/')[-1]
+    ndf = nodules_df[nodules_df['patientid']==patid]
+    X, y, rois, stats = common.load_patient(patient_data, ndf, output_rois=True, thickness=1,
+                                            preserve_size=True, output_size=(60,60))
+    label = int(label_df[label_df['id']==patid]['cancer'])
+    y = [label]*len(X)
+    logging.info("Patient: %s, cancer:%d, stats: %s" % (patid, label, stats))
+    return X, y, stats
+
+
 # # V2: per patient patches
 # nodules_df = nodules_df[nodules_df['diameter']>10]
 # def __load_and_storev2(filename):
@@ -98,26 +99,26 @@ logging.basicConfig(level=logging.INFO,
 #     #y = [label]*len(newX)
 #     logging.info("Patient: %s, cancer:%d, stats: %s" % (patid, label, stats))
 #     return newX, y, stats
-#
-#
-# common.multiproc_crop_generator(filenames_train,
-#                                 os.path.join(PATCHES_PATH,'dl3_v11_x_train.npz'),
-#                                 os.path.join(PATCHES_PATH,'dl3_v11_y_train.npz'),
-#                                 __load_and_storev2,
-#                                 parallel=True)
-#
-# # xtrain = np.load('/Users/mingot/Projectes/kaggle/ds_bowl_lung/personal/dl3_v12_x_train.npz')['arr_0']
-# # xtrain.shape
-# # plotting.multiplot(xtrain[10])
-# # ytrain = np.load('/Users/mingot/Projectes/kaggle/ds_bowl_lung/personal/dl3_v11_y_train.npz')['arr_0']
-# # ytrain.shape
-# # ytrain
-#
-# common.multiproc_crop_generator(filenames_test,
-#                                 os.path.join(PATCHES_PATH,'dl3_v11_x_test.npz'),
-#                                 os.path.join(PATCHES_PATH,'dl3_v11_y_test.npz'),
-#                                 __load_and_storev2,
-#                                 parallel=True)
+
+
+common.multiproc_crop_generator(filenames_train,
+                                os.path.join(PATCHES_PATH,'dl3_v07_x_train.npz'),
+                                os.path.join(PATCHES_PATH,'dl3_v07_y_train.npz'),
+                                __load_and_store,
+                                parallel=True)
+
+# xtrain = np.load('/Users/mingot/Projectes/kaggle/ds_bowl_lung/personal/dl3_v12_x_train.npz')['arr_0']
+# xtrain.shape
+# plotting.multiplot(xtrain[10])
+# ytrain = np.load('/Users/mingot/Projectes/kaggle/ds_bowl_lung/personal/dl3_v11_y_train.npz')['arr_0']
+# ytrain.shape
+# ytrain
+
+common.multiproc_crop_generator(filenames_test,
+                                os.path.join(PATCHES_PATH,'dl3_v07_x_test.npz'),
+                                os.path.join(PATCHES_PATH,'dl3_v07_y_test.npz'),
+                                __load_and_store,
+                                parallel=True)
 
 
 ### TRAINING -------------------------------------------------------------------------------------------------------
