@@ -85,39 +85,33 @@ INPUT_PATH = '/home/shared/data/sample_submission/'
 # EXTENDED_NODULES = '/home/shared/output/resnet/stage2/dl1_v11_augmented.csv'
 
 
-# OUTPUT_DL1 = '/home/shared/output/resnet/v11/nodules_patches_dl1_v11_stage2_total.csv'
-# AGGREGATED_NODULES = '/home/shared/output/resnet/v11/dl1_v11_aggregated.csv'
-# PREPROCESSED_PATH = '/mnt/hd2/preprocessed5/'
-# EXTENDED_NODULES = '/home/shared/output/resnet/v11/dl1_v11_augmented.csv'
+OUTPUT_DL1 = '/home/shared/output/resnet/v11/nodules_patches_dl1_v11_stage2_total.csv'
+AGGREGATED_NODULES = '/home/shared/output/resnet/v11/dl1_v11_aggregated_final.csv'
+PREPROCESSED_PATH = '/mnt/hd2/preprocessed5/'
+EXTENDED_NODULES = '/home/shared/output/resnet/v11/dl1_v11_augmented_final.csv'
 
 # OUTPUT_DL1 = '/home/shared/output/resnet/TEST_nodules_patches_dl1_v11.csv'
 # AGGREGATED_NODULES = '/home/shared/output/resnet/TEST_dl1_v11_aggregated.csv'
 # PREPROCESSED_PATH = '/mnt/hd2/preprocessed5/'
 # EXTENDED_NODULES = '/home/shared/output/resnet/TEST_dl1_v11_augmented.csv'
 
+# ##OPERACION RESTORE
+# AGGREGATED_NODULES = '/home/shared/output/resnet/nodules_patches_dl1_v11_score07_noduleaggr2.csv'
+# PREPROCESSED_PATH = '/mnt/hd3/preprocessed5/'
+# EXTENDED_NODULES = '/home/shared/output/resnet/nodules_patches_dl1_v11_score07_noduleaggr2_augmented_backup.csv'
 
 
-# ## (Gabriel) Aggregate nodules
-# THRESHOLD_CUT = 0.7
-# from merge_nodules import  merge_nodules_csv
-# logging.info('Executing nodules aggregation ...')
-# merge_nodules_csv(OUTPUT_DL1, AGGREGATED_NODULES, nodule_threshold=THRESHOLD_CUT)  # TODO: te mes sentit usar ja els HN?
+## (Gabriel) Aggregate nodules
+THRESHOLD_CUT = 0.7
+from merge_nodules import  merge_nodules_csv
+logging.info('Executing nodules aggregation ...')
+merge_nodules_csv(OUTPUT_DL1, AGGREGATED_NODULES, nodule_threshold=THRESHOLD_CUT)  # TODO: te mes sentit usar ja els HN?
 
-
-##OPERACION RESTORE
-AGGREGATED_NODULES = '/home/shared/output/resnet/nodules_patches_dl1_v11_score07_noduleaggr2.csv'
-PREPROCESSED_PATH = '/mnt/hd3/preprocessed5/'
-EXTENDED_NODULES = '/home/shared/output/resnet/nodules_patches_dl1_v11_score07_noduleaggr2_augmented_backup.csv'
-
-patient_inverted = []
-with open('/home/shared/output/other/invertedOrientationNpz.txt') as f:
-    for r in f:
-        patient_inverted.append(r.strip())
 
 
 ## (Sergi) Extend nodules
-#from nodules_aggregator import extend_nodules as naen
-from nodules_aggregator import extend_nodules_old as naen
+from nodules_aggregator import extend_nodules as naen
+#from nodules_aggregator import extend_nodules_old as naen
 logging.info('Executing nodules feature extraction ...')
 naen.process_pipeline_csv(
     csv_in=AGGREGATED_NODULES,
@@ -126,7 +120,7 @@ naen.process_pipeline_csv(
     patient_colname='patientid',
     dmin = 3, dmax = 100, # filtre de diametre
     compress={'hog':3, 'lbp':3, 'hu':2}, # quines features comprimir i amb quants pcs
-    patient_inverted=patient_inverted,#[], #npz invertits
+    patient_inverted=[],  # list of inverted patients ['dsb_*.npz',...]
     nCores=4)
 
 

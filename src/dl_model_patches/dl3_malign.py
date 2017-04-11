@@ -105,12 +105,12 @@ common.multiproc_crop_generator(filenames_train[0:10],
                                 __load_and_storev2,
                                 parallel=True)
 
-# xtrain = np.load('/Users/mingot/Projectes/kaggle/ds_bowl_lung/personal/dl3_v10_x_train.npz')['arr_0']
-# xtrain.shape
-# plotting.multiplot(xtrain[3])
-# ytrain = np.load('/Users/mingot/Projectes/kaggle/ds_bowl_lung/personal/dl3_v11_y_train.npz')['arr_0']
-# ytrain.shape
-# ytrain
+xtrain = np.load('/Users/mingot/Projectes/kaggle/ds_bowl_lung/personal/dl3_v12_x_train.npz')['arr_0']
+xtrain.shape
+plotting.multiplot(xtrain[10])
+ytrain = np.load('/Users/mingot/Projectes/kaggle/ds_bowl_lung/personal/dl3_v11_y_train.npz')['arr_0']
+ytrain.shape
+ytrain
 
 # common.multiproc_crop_generator(filenames_test,
 #                                 os.path.join(PATCHES_PATH,'dl3_v10_x_test.npz'),
