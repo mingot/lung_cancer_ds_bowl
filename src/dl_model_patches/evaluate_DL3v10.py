@@ -136,8 +136,8 @@ if __name__ == "__main__":
     INPUT_PATH = '/mnt/hd2/preprocessed5'  # INPUT_PATH = wp + 'data/preprocessed5_sample'
 
     MODEL = wp + 'models/jm_patches_dl3_v10.hdf5'
-    OUTPUT_CSV = wp + 'output/nodules_patches_dl3_v10.csv'
-    nodules_df = pd.read_csv('/home/mingot/dl3/dl12_test_dl3_v10.csv')
+    OUTPUT_CSV = wp + 'output/nodules_patches_dl3_v10_part2.csv'
+    nodules_df = pd.read_csv('/home/mingot/dl3/dl12_test_dl3_v10_part2.csv')
     nodules_df.dropna(inplace=True)
     nodules_df['nslice'] = nodules_df['nslice'].astype(int)
 
