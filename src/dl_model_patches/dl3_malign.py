@@ -18,8 +18,8 @@ from skimage import transform
 
 # PATHS
 wp = os.environ['LUNG_PATH']
-#OUTPUT_DL12 = '/home/mingot/dl3/dl3_train_v05.csv'
-OUTPUT_DL12 = '/home/aitor/dl3/dl12_train_dl3.csv'
+OUTPUT_DL12 = '/home/mingot/dl3/dl3_train_v05.csv'
+#OUTPUT_DL12 = '/home/aitor/dl3/dl12_train_dl3.csv'
 
 DSB_VALIDATION = wp + 'data/stage1_validation_total.csv'
 DSB_LABELS = wp + 'data/stage1_labels_total.csv'
