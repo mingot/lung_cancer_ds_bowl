@@ -84,7 +84,8 @@ def __load_and_storev2(filename):
     patid = filename.split('/')[-1]
     ndf = nodules_df[nodules_df['patientid']==patid]
     ndf = ndf.sort('score', ascending=False)[0:10]
-    X, y, rois, stats = common.load_patient(patient_data, ndf, output_rois=True, thickness=0, preserve_size=True)
+    X, y, rois, stats = common.load_patient(patient_data, ndf, output_rois=True, thickness=0,
+                                            preserve_size=True, output_size=(60,60))
 
     # construccio de paquets de 3x3
     label = int(label_df[label_df['id']==patid]['cancer'])
@@ -99,15 +100,15 @@ def __load_and_storev2(filename):
 
 
 common.multiproc_crop_generator(filenames_train[0:10],
-                                os.path.join(PATCHES_PATH,'dl3_v11_x_train.npz'),
-                                os.path.join(PATCHES_PATH,'dl3_v11_y_train.npz'),
+                                os.path.join(PATCHES_PATH,'dl3_v12_x_train.npz'),
+                                os.path.join(PATCHES_PATH,'dl3_v12_y_train.npz'),
                                 __load_and_storev2,
                                 parallel=True)
 
 # xtrain = np.load('/Users/mingot/Projectes/kaggle/ds_bowl_lung/personal/dl3_v10_x_train.npz')['arr_0']
 # xtrain.shape
-# plotting.multiplot(xtrain[10])
-# ytrain = np.load('/Users/mingot/Projectes/kaggle/ds_bowl_lung/personal/dl3_v10_y_train.npz')['arr_0']
+# plotting.multiplot(xtrain[3])
+# ytrain = np.load('/Users/mingot/Projectes/kaggle/ds_bowl_lung/personal/dl3_v11_y_train.npz')['arr_0']
 # ytrain.shape
 # ytrain
 
