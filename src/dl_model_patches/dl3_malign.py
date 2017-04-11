@@ -84,7 +84,6 @@ def __load_and_storev2(filename):
     ndf = nodules_df[nodules_df['patientid']==patid]
     ndf = ndf.sort('score', ascending=False)[0:10]
     X, y, rois, stats = common.load_patient(patient_data, ndf, output_rois=True, thickness=0)
-    #logging.info("Patient: %s, lenx: %d, lenstats: %d" % (patid, len(X), len(stats)))
 
     # construccio de paquets de 3x3
     label = int(label_df[label_df['id']==patid]['cancer'])
@@ -94,23 +93,28 @@ def __load_and_storev2(filename):
         newX.append(np.stack([X[i] for i in p]))  # todo: stats
 
     y = [label]*len(newX)
-    #stats = [stats[0]]*len(newX)
     logging.info("Patient: %s, cancer:%d, stats: %s" % (patid, label, stats))
     return newX, y, stats
 
 
-common.multiproc_crop_generator(filenames_train[0:10],
+common.multiproc_crop_generator(filenames_train,
                                 os.path.join(PATCHES_PATH,'dl3_v10_x_train.npz'),
                                 os.path.join(PATCHES_PATH,'dl3_v10_y_train.npz'),
                                 __load_and_storev2,
                                 parallel=True)
 
+# xtrain = np.load('/Users/mingot/Projectes/kaggle/ds_bowl_lung/personal/dl3_v10_x_train.npz')['arr_0']
+# xtrain.shape
+# plotting.multiplot(xtrain[10])
+# ytrain = np.load('/Users/mingot/Projectes/kaggle/ds_bowl_lung/personal/dl3_v10_y_train.npz')['arr_0']
+# ytrain.shape
+# ytrain
 
-# common.multiproc_crop_generator(filenames_test,
-#                                 os.path.join(PATCHES_PATH,'dl3_v05_x_test.npz'),
-#                                 os.path.join(PATCHES_PATH,'dl3_v05_y_test.npz'),
-#                                 __load_and_storev2,
-#                                 parallel=True)
+common.multiproc_crop_generator(filenames_test,
+                                os.path.join(PATCHES_PATH,'dl3_v05_x_test.npz'),
+                                os.path.join(PATCHES_PATH,'dl3_v05_y_test.npz'),
+                                __load_and_storev2,
+                                parallel=True)
 
 
 ### TRAINING -------------------------------------------------------------------------------------------------------
