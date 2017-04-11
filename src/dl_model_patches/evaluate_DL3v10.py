@@ -80,7 +80,8 @@ def listener(q, model_path, output_csv):
             preds = []
             for p in list(itertools.permutations(range(3), 3)):  # permutations: 012, 021, 102, 120
                 newx = np.stack([x[i] for i in p])
-                preds.append(model.predict(np.asarray(newx), verbose=1))
+                newx = np.expand_dims(newx, axis=1)
+                preds.append(model.predict(newx, verbose=1))
 
 
             logging.info("[LISTENER] Predicted patient %d %s. Batch results: %d/%d (th=0.7)" % (total, filename, len([p for p in preds if p>0.7]),len(preds)))
