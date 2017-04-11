@@ -362,6 +362,65 @@ def process_lbp(img_hu):
     
     return ans_bins2
     
+    
+    
+# https://github.com/scikit-image/scikit-image/issues/1730
+# https://gist.github.com/rougier/e5eafc276a4e54f516ed5559df4242c0
+
+# From https://github.com/rougier/numpy-100 (#87)
+# def boxcount(Z, k):
+# 	S = np.add.reduceat(
+# 		np.add.reduceat(Z, np.arange(0, Z.shape[0], k), axis=0),
+# 						   np.arange(0, Z.shape[1], k), axis=1)
+
+# 	# We count non-empty (0) and non-full boxes (k*k)
+# 	return len(np.where((S > 0) & (S < k*k))[0])
+
+
+# # for binary images
+# def fractal_dimension(Z):
+#     # Only for 2d image
+#     assert(len(Z.shape) == 2)
+
+#     # Transform Z into a binary array
+#     # Z = (Z < threshold)
+
+#     # Minimal dimension of image
+#     p = min(Z.shape)
+
+#     # Greatest power of 2 less than or equal to p
+#     n = 2**np.floor(np.log(p)/np.log(2))
+
+#     # Extract the exponent
+#     n = int(np.log(n)/np.log(2))
+
+#     # Build successive box sizes (from 2**n down to 2**1)
+#     sizes = 2**np.arange(n, 1, -1)
+
+#     # Actual box counting with decreasing size
+#     counts = []
+#     for size in sizes:
+#         counts.append(boxcount(Z, size))
+
+#     # Fit the successive log(sizes) with log (counts)
+#     coeffs = np.polyfit(np.log(sizes), np.log(counts), 1)
+#     return -coeffs[0]
+    
+    
+    
+def process_misc(img_hu):
+    """
+    Compute mean and variance of an image
+    
+    img_hu: image (hu values) to extract mean and variance
+    """
+    # complete zeros that could be missing
+    ans = {'60_mean': img_hu.mean(), 
+           '60_var': img_hu.var()
+    }
+    return ans
+    
+    
 
 def compress_feature(df, feature, n_components=3):
     REGEX = '[0-9]+_' + feature + '.+'
@@ -383,6 +442,12 @@ def compress_feature(df, feature, n_components=3):
     # Drop old columns
     return pd.concat([df.select(lambda x: not re.search(REGEX, x), axis=1), df_feat_pca], axis=1)
   
+    
+# from https://pypi.python.org/pypi/pyefd/1.0
+# from pyefd import elliptic_fourier_descriptors
+# def efd_feature(contour):
+#     coeffs = elliptic_fourier_descriptors(contour, order=10, normalize=True)
+#     return coeffs.flatten()[3:]
     
 # def process_pipeline_patient(**kwargs):
 def process_pipeline_patient(
@@ -463,6 +528,20 @@ def process_pipeline_patient(
     # (3.3) extract basic properties
     p_feat = [process_prop(p) for p in p_prop]
     
+    
+    if verbose:
+        print "Extracting mean/var..."
+    misc_feat = [process_misc(img[source_hu]) for img in p_patch]
+    misc_df = pd.DataFrame.from_records(misc_feat)
+    
+    # (3.4) extract fourier coefs
+    # if verbose:
+    #     print "Extracting fourier descriptors..."
+    # efd_feat = [efd_feature(p['image']) for p in p_prop]
+    # efd_names = ['50_efd'+str(b) for b in np.arange(len(efd_feat[0]))]
+    # efd_df = pd.DataFrame.from_records([dict(zip(efd_names, efd)) for efd in efd_feat])
+
+    
     # p_filtered = [x is None for x in p_feat]
     # p_all = zip(p_df, p_feat)[p_filtered]
     # df_all = pd.concat([p_df.iloc[[ind]].astype(dict).append(feat) for ind, feat in enumerate(p_feat) if feat is not None])
@@ -489,8 +568,9 @@ def process_pipeline_patient(
     df_augmented = pd.concat([
         df_feat, 
         hog_df.iloc[patch_nonnull], 
-        lbp_df.iloc[patch_nonnull], 
-        lungmask_df.iloc[patch_nonnull]], 
+        lbp_df.iloc[patch_nonnull],
+        misc_df.iloc[patch_nonnull], 
+        lungmask_df.iloc[patch_nonnull]],
         axis=1)
     # keep track of original indices
     df_augmented.index = p_df.index[patch_nonnull]
