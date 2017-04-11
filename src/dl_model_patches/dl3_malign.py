@@ -84,6 +84,7 @@ def __load_and_storev2(filename):
     ndf = nodules_df[nodules_df['patientid']==patid]
     ndf = ndf.sort('score', ascending=False)[0:10]
     X, y, rois, stats = common.load_patient(patient_data, ndf, output_rois=True, thickness=0)
+    logging.info("Patient: %s, lenx: %d, lenstats: %d" % (patid, len(X), len(stats)))
 
     # construccio de paquets de 3x3
     label = int(label_df[label_df['id']==patid]['cancer'])
