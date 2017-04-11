@@ -136,18 +136,19 @@ if __name__ == "__main__":
     # OUTPUT_CSV = wp + 'output/nodules_patches_dl2_v04_stage2.csv'
     # MODEL = wp + 'models/jm_patches_hardnegative_v03.hdf5'
     # OUTPUT_CSV = wp + 'output/nodules_patches_dl2_v03_stage2_total.csv'
-    MODEL = wp + 'models/jm_patches_train_v11.hdf5'
-    OUTPUT_CSV = wp + 'output/nodules_patches_dl1_v11_stage2_total.csv'
-
+    # MODEL = wp + 'models/jm_patches_train_v11.hdf5'
+    # OUTPUT_CSV = wp + 'output/nodules_patches_dl1_v11_stage2_total.csv'
+    MODEL = wp + 'models/jm_patches_dl3_v06.hdf5'
+    OUTPUT_CSV = wp + 'output/nodules_patches_dl3_v06.csv'
+    nodules_df = pd.read_csv('/home/mingot/dl3/dl12_test_dl3.csv')
 
     if args.input_path: INPUT_PATH = args.input_path
     if args.model: MODEL = args.model
     if args.output_csv: OUTPUT_CSV = args.output_csv
-    nodules_df = pd.read_csv(args.input_csv) if args.input_csv else None
+    #nodules_df = pd.read_csv(args.input_csv) if args.input_csv else None
 
     ## Params and filepaths
     file_list = [os.path.join(INPUT_PATH, fp) for fp in os.listdir(INPUT_PATH) if fp.startswith('dsb_')]
-    #file_list = [os.path.join(INPUT_PATH, fp) for fp in stage2_ids]
     logging.info("Processing %d files..." % len(file_list))
 
     tstart = time()
