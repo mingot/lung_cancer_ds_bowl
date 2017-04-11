@@ -30,8 +30,8 @@ INPUT_PATH = '/mnt/hd2/preprocessed5/' # INPUT_PATH = wp + 'data/preprocessed5_s
 #VALIDATION_PATH = '/mnt/hd2/preprocessed5_validation_luna/' # VALIDATION_PATH = wp + 'data/preprocessed5_sample'
 PATCHES_PATH = '/mnt/hd2/patches'  # PATCHES_PATH = wp + 'data/preprocessed5_patches'
 
-OUTPUT_MODEL =  wp + 'models/jm_patches_dl3_v05.hdf5'  # OUTPUT_MODEL = wp + 'personal/jm_patches_train_v06_local.hdf5'
-LOGS_PATH = wp + 'logs/%s' % 'malign_v05' #str(int(time()))
+OUTPUT_MODEL =  wp + 'models/jm_patches_dl3_v06.hdf5'  # OUTPUT_MODEL = wp + 'personal/jm_patches_train_v06_local.hdf5'
+LOGS_PATH = wp + 'logs/%s' % 'malign_v06' #str(int(time()))
 if not os.path.exists(LOGS_PATH):
     os.makedirs(LOGS_PATH)
 
@@ -115,15 +115,22 @@ def chunks(X, y, batch_size=32, augmentation_times=4, thickness=0, is_training=T
     while 1:
         selected_samples = random.sample(range(len(y)), 1000)
 
+        y_new = y.copy()
+        if is_training:
+            ss = random.sample(selected_samples, int(0.1*len(selected_samples)))
+            y_new[ss,0] = abs(y_new[ss,0]-1)
+
+
+
         #selected_samples  = [i for i in range(len(y_orig)) if y_orig[i]==1 or random.randint(0,9)==0]
-        logging.info("Final downsampled dataset stats: TP:%d, FP:%d" % (sum(y[selected_samples]), len(y[selected_samples])-sum(y[selected_samples])))
+        logging.info("Final downsampled dataset stats: TP:%d, FP:%d" % (sum(y_new[selected_samples]), len(y_new[selected_samples])-sum(y_new[selected_samples])))
 
         # generator: if testing, do not augment data
         data_generator = train_datagen if is_training else test_datagen
 
         i, good = 0, 0
         lenX = len(selected_samples)
-        for X_batch, y_batch in data_generator.flow(X[selected_samples], y[selected_samples], batch_size=batch_size, shuffle=is_training):
+        for X_batch, y_batch in data_generator.flow(X[selected_samples], y_new[selected_samples], batch_size=batch_size, shuffle=is_training):
             i += 1
             if good*batch_size > lenX*augmentation_times or i>100:  # stop when we have augmented enough the batch
                 break
