@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 from time import time
 import random
+import itertools
 from dl_model_patches import  common
 
 
@@ -42,7 +43,7 @@ def worker(filename, q, nodules_df=None):
             patient_data = np.load(filename)['arr_0']
             if nodules_df is not None:
                 ndf = nodules_df[nodules_df['patientid']==filename.split('/')[-1]]
-                ndf = ndf.sort('score', ascending=False)[0:10]
+                ndf = ndf.sort('score', ascending=False)[0:3]
                 X, y, rois, stats = common.load_patient(patient_data, ndf, discard_empty_nodules=False, output_rois=True, thickness=1)
             else:
                 X, y, rois, stats = common.load_patient(patient_data, discard_empty_nodules=False, output_rois=True, thickness=1)
@@ -79,10 +80,9 @@ def listener(q, model_path, output_csv):
             filename = filename.split('/')[-1]
 
             preds = []
-            for i in range(50):
-                p = random.sample(range(10), 3)
+            for p in list(itertools.permutations(range(3), 3)):  # permutations: 012, 021, 102, 120
                 newx = np.stack([x[i] for i in p])
-                preds.append(model.predict(np.asarray(x), verbose=1))
+                preds.append(model.predict(np.asarray(newx), verbose=1))
 
 
             logging.info("[LISTENER] Predicted patient %d %s. Batch results: %d/%d (th=0.7)" % (total, filename, len([p for p in preds if p>0.7]),len(preds)))
@@ -137,9 +137,9 @@ if __name__ == "__main__":
     INPUT_PATH = '/mnt/hd2/preprocessed5'  # INPUT_PATH = wp + 'data/preprocessed5_sample'
 
 
-    MODEL = wp + 'models/jm_patches_dl3_v06.hdf5'
-    OUTPUT_CSV = wp + 'output/nodules_patches_dl3_v06.csv'
-    nodules_df = pd.read_csv('/home/mingot/dl3/dl12_test_dl3.csv')
+    MODEL = wp + 'models/jm_patches_dl3_v10.hdf5'
+    OUTPUT_CSV = wp + 'output/nodules_patches_dl3_v10.csv'
+    nodules_df = pd.read_csv('/home/mingot/dl3/dl12_test_dl3_v10.csv')
 
     if args.input_path: INPUT_PATH = args.input_path
     if args.model: MODEL = args.model
