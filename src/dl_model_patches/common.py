@@ -118,12 +118,24 @@ def extract_rois_from_lung_mask(lung_image, lung_mask, margin=5):
     return regions_pred_augmented
 
 
-def extract_crops_from_regions(img, regions, output_size=(40,40)):
+def reshape_to_crop_bbox(region, output_size=(40,40)):
+    """Converts a bbox to the desired size to avoid resizing."""
+    x1,y1,x2,y2 = region.bbox
+    cx = (x1+x2)/2
+    cy = (y1+y2)/2
+    l = output_size[0]
+    return cx-l/2, cy-l/2, cx+l/2, cy+l/2
+
+
+def extract_crops_from_regions(img, regions, output_size=(40,40), preserve_size=False):
     # Crop img given a vector of regions.
     # If img have depth (1 dim of 3), generate the depth cropped image
     cropped_images = []
     for region in regions:
         x1,y1,x2,y2 = region.bbox
+        if preserve_size:
+            x1,y1,x2,y2 = reshape_to_crop_bbox(region)
+
         if len(img.shape)==2:  # a single image to be cropped
             cropped = img[x1:x2,y1:y2]
             cropped_images.append(transform.resize(cropped, output_size))
@@ -181,7 +193,8 @@ def add_stats(stat1, stat2):
 
 
 def load_patient(patient_data, patient_nodules_df=None, discard_empty_nodules=False,
-                 output_rois=False, debug=False, include_ground_truth=False, thickness=0):
+                 output_rois=False, debug=False, include_ground_truth=False,
+                 output_size=(40,40), preserve_size=False, thickness=0):
     """
     Returns images generated for each patient.
      - patient_nodules_df: pd dataframe with at least: x, y, nslice, diameter
@@ -240,7 +253,8 @@ def load_patient(patient_data, patient_nodules_df=None, discard_empty_nodules=Fa
             lung_image = patient_data[0,(nslice - thickness):(nslice + thickness + 1),:,:]
             if lung_image.shape[0] != 2*thickness + 1:  # skip the extremes
                 continue
-        cropped_images = extract_crops_from_regions(lung_image, regions_pred)
+        cropped_images = extract_crops_from_regions(lung_image, regions_pred,
+                                                    output_size=output_size, preserve_size=preserve_size)
 
 
         total_stats = add_stats(stats, total_stats)
