@@ -82,7 +82,7 @@ def __load_and_storev2(filename):
     patient_data = np.load(filename)['arr_0']
     patid = filename.split('/')[-1]
     ndf = nodules_df[nodules_df['patientid']==patid]
-    ndf = ndf.sort('score', ascending=False)[0:3]
+    ndf = ndf.sort_values(by='score', ascending=False)[0:3]
     X, y, rois, stats = common.load_patient(patient_data, ndf, output_rois=True, thickness=0)#,
                                             #preserve_size=True, output_size=(60,60))
 
