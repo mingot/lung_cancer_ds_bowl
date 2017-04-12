@@ -79,23 +79,25 @@ def process_filename(patient_file, output_folder, pipeline='dsb', df_nodules=Non
         nodule_mask, new_spacing = preprocessing.resample(nodule_mask, spacing=originalSpacing, new_spacing=COMMON_SPACING)
     logging.info('Resampled image size: {}'.format(pix_resampled.shape))
 
+    if pix_resampled.shape[1]<512:
+        print "Patient %s downsized" % pat_id
 
-    # LUNG SEGMENTATION (if TH1 fails, choose TH2)
-    lung_mask = lung_segmentation.segment_lungs(image=pix_resampled, fill_lung=True, method="thresholding1")
-    if not lung_segmentation.is_lung_segmentation_correct(lung_mask):
-        lung_mask = lung_segmentation.segment_lungs(image=pix_resampled, fill_lung=True, method="thresholding2")
+    # # LUNG SEGMENTATION (if TH1 fails, choose TH2)
+    # lung_mask = lung_segmentation.segment_lungs(image=pix_resampled, fill_lung=True, method="thresholding1")
+    # if not lung_segmentation.is_lung_segmentation_correct(lung_mask):
+    #     lung_mask = lung_segmentation.segment_lungs(image=pix_resampled, fill_lung=True, method="thresholding2")
 
 
     # CROPPING to 512x512
-    pix = preprocessing.resize_image(pix_resampled, size=512)  # if zero_centered: -0.25
-    lung_mask = preprocessing.resize_image(lung_mask, size=512)
-    if nodule_mask is not None:
-        nodule_mask = preprocessing.resize_image(nodule_mask, size=512)
-    logging.info('Cropped image size: {}'.format(pix.shape))
+    # pix = preprocessing.resize_image(pix_resampled, size=512)  # if zero_centered: -0.25
+    # lung_mask = preprocessing.resize_image(lung_mask, size=512)
+    # if nodule_mask is not None:
+    #     nodule_mask = preprocessing.resize_image(nodule_mask, size=512)
+    # logging.info('Cropped image size: {}'.format(pix.shape))
 
-    # STACK and save results
-    output = np.stack((pix, lung_mask, nodule_mask)) if nodule_mask is not None else np.stack((pix, lung_mask))
-    np.savez_compressed(os.path.join(output_folder, "%s_%s.npz") % (pipeline, pat_id), output)
+    # # STACK and save results
+    # output = np.stack((pix, lung_mask, nodule_mask)) if nodule_mask is not None else np.stack((pix, lung_mask))
+    # np.savez_compressed(os.path.join(output_folder, "%s_%s.npz") % (pipeline, pat_id), output)
 
 
 import multiprocessing
