@@ -142,6 +142,7 @@ if __name__ == "__main__":
     MODEL = wp + 'models/jm_patches_dl3_v06.hdf5'
     OUTPUT_CSV = wp + 'output/nodules_patches_dl3_v06_TH03.csv'
     nodules_df = pd.read_csv('/home/mingot/dl3/dl12_test_dl3_v06_TH03.csv')
+    
 
     if args.input_path: INPUT_PATH = args.input_path
     if args.model: MODEL = args.model
