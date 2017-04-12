@@ -46,73 +46,73 @@ logging.basicConfig(level=logging.INFO,
 # Load the output of DL-I and load just the 1's (TP or FN's) and the FP's for a given score
 # to train DL-II
 
-# labels
-label_df = pd.read_csv(DSB_LABELS)
-label_df['id'] = ["dsb_%s.npz" % p for p in list(label_df['id'])]
-
-# Join DL1 and DL2 to filter TP and FP of the suggested by DL1
-nodules_df = pd.read_csv(OUTPUT_DL12)
-logging.info("DSB selected nodules shape: %s" % str(nodules_df.shape))
-
-
-# Construction of training and testsets
-validation_df = pd.read_csv(DSB_VALIDATION)
-logging.info("DSB validation shape:%s" % str(validation_df.shape))
-filenames_train = [os.path.join(INPUT_PATH,f) for f in set(nodules_df['patientid']) if f not in list(validation_df['patientid'])]
-filenames_test = [os.path.join(INPUT_PATH,f) for f in set(nodules_df['patientid']) if f in list(validation_df['patientid'])]
-
-logging.info("Patients train:%d, test:%d" % (len(filenames_train), len(filenames_test)))
-
-# V1:
-nodules_df = nodules_df[(nodules_df['score']>0.7) & (nodules_df['diameter']>10)]
-def __load_and_store(filename):
-    patient_data = np.load(filename)['arr_0']
-    patid = filename.split('/')[-1]
-    ndf = nodules_df[nodules_df['patientid']==patid]
-    X, y, rois, stats = common.load_patient(patient_data, ndf, output_rois=True, thickness=1,
-                                            preserve_size=True, output_size=(60,60))
-    label = int(label_df[label_df['id']==patid]['cancer'])
-    y = [label]*len(X)
-    logging.info("Patient: %s, cancer:%d, stats: %s" % (patid, label, stats))
-    return X, y, stats
-
-
-# # V2: per patient patches
-# nodules_df = nodules_df[nodules_df['diameter']>10]
-# def __load_and_storev2(filename):
+# # labels
+# label_df = pd.read_csv(DSB_LABELS)
+# label_df['id'] = ["dsb_%s.npz" % p for p in list(label_df['id'])]
+#
+# # Join DL1 and DL2 to filter TP and FP of the suggested by DL1
+# nodules_df = pd.read_csv(OUTPUT_DL12)
+# logging.info("DSB selected nodules shape: %s" % str(nodules_df.shape))
+#
+#
+# # Construction of training and testsets
+# validation_df = pd.read_csv(DSB_VALIDATION)
+# logging.info("DSB validation shape:%s" % str(validation_df.shape))
+# filenames_train = [os.path.join(INPUT_PATH,f) for f in set(nodules_df['patientid']) if f not in list(validation_df['patientid'])]
+# filenames_test = [os.path.join(INPUT_PATH,f) for f in set(nodules_df['patientid']) if f in list(validation_df['patientid'])]
+#
+# logging.info("Patients train:%d, test:%d" % (len(filenames_train), len(filenames_test)))
+#
+# # V1:
+# nodules_df = nodules_df[(nodules_df['score']>0.7) & (nodules_df['diameter']>10)]
+# def __load_and_store(filename):
 #     patient_data = np.load(filename)['arr_0']
 #     patid = filename.split('/')[-1]
 #     ndf = nodules_df[nodules_df['patientid']==patid]
-#     ndf = ndf.sort_values(by='score', ascending=False)[0:3]
-#     X, y, rois, stats = common.load_patient(patient_data, ndf, output_rois=True, thickness=0)#,
-#                                             #preserve_size=True, output_size=(60,60))
-#
-#     # construccio de paquets de 3x3
+#     X, y, rois, stats = common.load_patient(patient_data, ndf, output_rois=True, thickness=1,
+#                                             preserve_size=True, output_size=(60,60))
 #     label = int(label_df[label_df['id']==patid]['cancer'])
-#     newX = [np.stack(X)]
-#     y = [label]
-#
-#     # newX = []
-#     # for i in range(50):
-#     #     p = random.sample(range(10), 3)
-#     #     newX.append(np.stack([X[i] for i in p]))
-#     #y = [label]*len(newX)
+#     y = [label]*len(X)
 #     logging.info("Patient: %s, cancer:%d, stats: %s" % (patid, label, stats))
-#     return newX, y, stats
-
-
-common.multiproc_crop_generator(filenames_train,
-                                os.path.join(PATCHES_PATH,'dl3_v08_x_train.npz'),
-                                os.path.join(PATCHES_PATH,'dl3_v08_y_train.npz'),
-                                __load_and_store,
-                                parallel=True)
-
-
-common.multiproc_crop_generator(filenames_test,
-                                os.path.join(PATCHES_PATH,'dl3_v08_x_test.npz'),
-                                os.path.join(PATCHES_PATH,'dl3_v08_y_test.npz'),
-                                __load_and_store,
-                                parallel=True)
+#     return X, y, stats
+#
+#
+# # # V2: per patient patches
+# # nodules_df = nodules_df[nodules_df['diameter']>10]
+# # def __load_and_storev2(filename):
+# #     patient_data = np.load(filename)['arr_0']
+# #     patid = filename.split('/')[-1]
+# #     ndf = nodules_df[nodules_df['patientid']==patid]
+# #     ndf = ndf.sort_values(by='score', ascending=False)[0:3]
+# #     X, y, rois, stats = common.load_patient(patient_data, ndf, output_rois=True, thickness=0)#,
+# #                                             #preserve_size=True, output_size=(60,60))
+# #
+# #     # construccio de paquets de 3x3
+# #     label = int(label_df[label_df['id']==patid]['cancer'])
+# #     newX = [np.stack(X)]
+# #     y = [label]
+# #
+# #     # newX = []
+# #     # for i in range(50):
+# #     #     p = random.sample(range(10), 3)
+# #     #     newX.append(np.stack([X[i] for i in p]))
+# #     #y = [label]*len(newX)
+# #     logging.info("Patient: %s, cancer:%d, stats: %s" % (patid, label, stats))
+# #     return newX, y, stats
+#
+#
+# common.multiproc_crop_generator(filenames_train,
+#                                 os.path.join(PATCHES_PATH,'dl3_v08_x_train.npz'),
+#                                 os.path.join(PATCHES_PATH,'dl3_v08_y_train.npz'),
+#                                 __load_and_store,
+#                                 parallel=True)
+#
+#
+# common.multiproc_crop_generator(filenames_test,
+#                                 os.path.join(PATCHES_PATH,'dl3_v08_x_test.npz'),
+#                                 os.path.join(PATCHES_PATH,'dl3_v08_y_test.npz'),
+#                                 __load_and_store,
+#                                 parallel=True)
 
 # checks
 # xtrain = np.load('/Users/mingot/Projectes/kaggle/ds_bowl_lung/personal/dl3_v12_x_train.npz')['arr_0']
@@ -126,104 +126,104 @@ common.multiproc_crop_generator(filenames_test,
 
 
 
-# # Data augmentation generator
-# train_datagen = ImageDataGenerator(dim_ordering="th", horizontal_flip=True, vertical_flip=True,
-#                                    rotation_range=30, width_shift_range=0.1, height_shift_range=0.1)
-# test_datagen = ImageDataGenerator(dim_ordering="th")  # dummy for testing to have the same structure
-#
-#
-# def chunks(X, y, batch_size=32, augmentation_times=4, thickness=0, is_training=True):
-#     """
-#     Batches generator for keras fit_generator. Returns batches of patches 40x40px
-#      - augmentation_times: number of time to return the data augmented
-#      - concurrent_patients: number of patients to load at the same time to add diversity
-#      - thickness: number of slices up and down to add as a channel to the patch
-#     """
-#     while 1:
-#         selected_samples = random.sample(range(len(y)), 1000)
-#
-#         y_new = y.copy()
-#         if is_training:
-#             # canvia alguns 1's per 0's
-#             ones = [s for s in selected_samples if y[s,0]==1]
-#             y_new[random.sample(ones, int(0.1*len(ones))), 0] = 0
-#             #ss = random.sample(selected_samples, int(0.1*len(selected_samples)))
-#             #y_new[ss,0] = abs(y_new[ss,0]-1)
-#
-#
-#         #selected_samples  = [i for i in range(len(y_orig)) if y_orig[i]==1 or random.randint(0,9)==0]
-#         logging.info("Final downsampled dataset stats: TP:%d, FP:%d" % (sum(y_new[selected_samples]), len(y_new[selected_samples])-sum(y_new[selected_samples])))
-#
-#         # generator: if testing, do not augment data
-#         data_generator = train_datagen if is_training else test_datagen
-#
-#         i, good = 0, 0
-#         lenX = len(selected_samples)
-#         for X_batch, y_batch in data_generator.flow(X[selected_samples], y_new[selected_samples], batch_size=batch_size, shuffle=is_training):
-#             i += 1
-#             if good*batch_size > lenX*augmentation_times or i>100:  # stop when we have augmented enough the batch
-#                 break
-#             if X_batch.shape[0] != batch_size:  # ensure correct batch size
-#                 continue
-#             good += 1
-#             yield X_batch, y_batch
-#
-#
-#
-# def chunksV2(X, y, batch_size=32, augmentation_times=4, thickness=0, is_training=True):
-#     """
-#     Batches generator for keras fit_generator. Returns batches of patches 40x40px
-#      - augmentation_times: number of time to return the data augmented
-#      - concurrent_patients: number of patients to load at the same time to add diversity
-#      - thickness: number of slices up and down to add as a channel to the patch
-#     """
-#     while 1:
-#         selected_samples = range(len(y)) ##random.sample(range(len(y)), 1000)
-#
-#         #selected_samples  = [i for i in range(len(y_orig)) if y_orig[i]==1 or random.randint(0,9)==0]
-#         logging.info("Final downsampled dataset stats: TP:%d, FP:%d" % (sum(y[selected_samples]), len(y[selected_samples])-sum(y[selected_samples])))
-#
-#         # generator: if testing, do not augment data
-#         data_generator = train_datagen if is_training else test_datagen
-#
-#         i, good = 0, 0
-#         lenX = len(selected_samples)
-#         for X_batch, y_batch in data_generator.flow(X[selected_samples], y[selected_samples], batch_size=batch_size, shuffle=is_training):
-#             i += 1
-#             if good*batch_size > lenX*augmentation_times or i>100:  # stop when we have augmented enough the batch
-#                 break
-#             if X_batch.shape[0] != batch_size:  # ensure correct batch size
-#                 continue
-#             good += 1
-#             yield X_batch, y_batch
-#
-#
-# # LOADING PATCHES FROM DISK
-# logging.info("Loading training and test sets")
-# x_train = np.load(os.path.join(PATCHES_PATH, 'dl3_v07_x_train.npz'))['arr_0']
-# y_train = np.load(os.path.join(PATCHES_PATH, 'dl3_v07_y_train.npz'))['arr_0']
-# y_train = np.expand_dims(y_train, axis=1)
-# x_test = np.load(os.path.join(PATCHES_PATH, 'dl3_v07_x_test.npz'))['arr_0']
-# y_test = np.load(os.path.join(PATCHES_PATH, 'dl3_v07_y_test.npz'))['arr_0']
-# y_test = np.expand_dims(y_test, axis=1)
-# logging.info("Training set (1s/total): %d/%d" % (sum(y_train),len(y_train)))
-# logging.info("Test set (1s/total): %d/%d" % (sum(y_test), len(y_test)))
-#
-# # Load model
-# model = ResnetBuilder().build_resnet_50((3,60,60),1)
-# model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['accuracy','fmeasure'])
-# model_checkpoint = ModelCheckpoint(OUTPUT_MODEL, monitor='val_loss', save_best_only=True)
-# # logging.info('Loading exiting model...')
-# # model.load_weights(OUTPUT_MODEL)
-#
-#
-# model.fit_generator(generator=chunks(x_train, y_train, batch_size=32, thickness=1),
-#                     samples_per_epoch=1280,  # make it small to update TB and CHECKPOINT frequently
-#                     nb_epoch=1600,
-#                     verbose=1,
-#                     callbacks=[tb, model_checkpoint],
-#                     validation_data=chunks(x_test, y_test, batch_size=32, thickness=1, is_training=False),
-#                     nb_val_samples=2000,
-#                     #initial_epoch=186,
-#                     max_q_size=32,
-#                     nb_worker=1)  # a locker is needed if increased the number of parallel workers
+# Data augmentation generator
+train_datagen = ImageDataGenerator(dim_ordering="th", horizontal_flip=True, vertical_flip=True,
+                                   rotation_range=30, width_shift_range=0.1, height_shift_range=0.1)
+test_datagen = ImageDataGenerator(dim_ordering="th")  # dummy for testing to have the same structure
+
+
+def chunks(X, y, batch_size=32, augmentation_times=4, thickness=0, is_training=True):
+    """
+    Batches generator for keras fit_generator. Returns batches of patches 40x40px
+     - augmentation_times: number of time to return the data augmented
+     - concurrent_patients: number of patients to load at the same time to add diversity
+     - thickness: number of slices up and down to add as a channel to the patch
+    """
+    while 1:
+        selected_samples = random.sample(range(len(y)), 1000)
+
+        y_new = y.copy()
+        if is_training:
+            # canvia alguns 1's per 0's
+            # ones = [s for s in selected_samples if y[s,0]==1]
+            # y_new[random.sample(ones, int(0.1*len(ones))), 0] = 0
+            ss = random.sample(selected_samples, int(0.1*len(selected_samples)))
+            y_new[ss,0] = abs(y_new[ss,0]-1)
+
+
+        #selected_samples  = [i for i in range(len(y_orig)) if y_orig[i]==1 or random.randint(0,9)==0]
+        logging.info("Final downsampled dataset stats: TP:%d, FP:%d" % (sum(y_new[selected_samples]), len(y_new[selected_samples])-sum(y_new[selected_samples])))
+
+        # generator: if testing, do not augment data
+        data_generator = train_datagen if is_training else test_datagen
+
+        i, good = 0, 0
+        lenX = len(selected_samples)
+        for X_batch, y_batch in data_generator.flow(X[selected_samples], y_new[selected_samples], batch_size=batch_size, shuffle=is_training):
+            i += 1
+            if good*batch_size > lenX*augmentation_times or i>100:  # stop when we have augmented enough the batch
+                break
+            if X_batch.shape[0] != batch_size:  # ensure correct batch size
+                continue
+            good += 1
+            yield X_batch, y_batch
+
+
+
+def chunksV2(X, y, batch_size=32, augmentation_times=4, thickness=0, is_training=True):
+    """
+    Batches generator for keras fit_generator. Returns batches of patches 40x40px
+     - augmentation_times: number of time to return the data augmented
+     - concurrent_patients: number of patients to load at the same time to add diversity
+     - thickness: number of slices up and down to add as a channel to the patch
+    """
+    while 1:
+        selected_samples = range(len(y)) ##random.sample(range(len(y)), 1000)
+
+        #selected_samples  = [i for i in range(len(y_orig)) if y_orig[i]==1 or random.randint(0,9)==0]
+        logging.info("Final downsampled dataset stats: TP:%d, FP:%d" % (sum(y[selected_samples]), len(y[selected_samples])-sum(y[selected_samples])))
+
+        # generator: if testing, do not augment data
+        data_generator = train_datagen if is_training else test_datagen
+
+        i, good = 0, 0
+        lenX = len(selected_samples)
+        for X_batch, y_batch in data_generator.flow(X[selected_samples], y[selected_samples], batch_size=batch_size, shuffle=is_training):
+            i += 1
+            if good*batch_size > lenX*augmentation_times or i>100:  # stop when we have augmented enough the batch
+                break
+            if X_batch.shape[0] != batch_size:  # ensure correct batch size
+                continue
+            good += 1
+            yield X_batch, y_batch
+
+
+# LOADING PATCHES FROM DISK
+logging.info("Loading training and test sets")
+x_train = np.load(os.path.join(PATCHES_PATH, 'dl3_v08_x_train.npz'))['arr_0']
+y_train = np.load(os.path.join(PATCHES_PATH, 'dl3_v08_y_train.npz'))['arr_0']
+y_train = np.expand_dims(y_train, axis=1)
+x_test = np.load(os.path.join(PATCHES_PATH, 'dl3_v08_x_test.npz'))['arr_0']
+y_test = np.load(os.path.join(PATCHES_PATH, 'dl3_v08_y_test.npz'))['arr_0']
+y_test = np.expand_dims(y_test, axis=1)
+logging.info("Training set (1s/total): %d/%d" % (sum(y_train),len(y_train)))
+logging.info("Test set (1s/total): %d/%d" % (sum(y_test), len(y_test)))
+
+# Load model
+model = ResnetBuilder().build_resnet_50((3,40,40),1)
+model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['accuracy','fmeasure'])
+model_checkpoint = ModelCheckpoint(OUTPUT_MODEL, monitor='val_loss', save_best_only=True)
+# logging.info('Loading exiting model...')
+# model.load_weights(OUTPUT_MODEL)
+
+
+model.fit_generator(generator=chunks(x_train, y_train, batch_size=32, thickness=1),
+                    samples_per_epoch=1280,  # make it small to update TB and CHECKPOINT frequently
+                    nb_epoch=1600,
+                    verbose=1,
+                    callbacks=[tb, model_checkpoint],
+                    validation_data=chunks(x_test, y_test, batch_size=32, thickness=1, is_training=False),
+                    nb_val_samples=2000,
+                    #initial_epoch=186,
+                    max_q_size=32,
+                    nb_worker=1)  # a locker is needed if increased the number of parallel workers
