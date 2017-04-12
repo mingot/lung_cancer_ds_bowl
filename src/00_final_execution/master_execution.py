@@ -91,15 +91,14 @@ INPUT_PATH = '/home/shared/data/sample_submission/'
 # PREPROCESSED_PATH = '/mnt/hd2/preprocessed5/'
 # EXTENDED_NODULES = '/home/shared/output/resnet/v11/dl1_v11_augmented.csv'
 
-OUTPUT_DL1 = '/home/shared/output/resnet/v11/dl12_train_dl3.csv'
-AGGREGATED_NODULES = '/home/shared/output/resnet/v11/dl12_v11_aggregated.csv'
+OUTPUT_DL1 = '/home/shared/output/resnet/v11/nodules_patches_dl1_v11_stage2_total.csv'
+AGGREGATED_NODULES = '/home/shared/output/resnet/v11/dl12_v11_aggregated_TEST_SERGI.csv'
 PREPROCESSED_PATH = '/mnt/hd2/preprocessed5/'
-EXTENDED_NODULES = '/home/shared/output/resnet/v11/dl12_v11_augmented_TH05.csv'
+EXTENDED_NODULES = '/home/shared/output/resnet/v11/dl12_v11_augmented_TEST_SERGI.csv'
 
 
 ## (Gabriel) Aggregate nodules
-#THRESHOLD_CUT = 0.7
-THRESHOLD_CUT = 0.5
+THRESHOLD_CUT = 0.7
 from merge_nodules import  merge_nodules_csv
 logging.info('Executing nodules aggregation ...')
 merge_nodules_csv(OUTPUT_DL1, AGGREGATED_NODULES, nodule_threshold=THRESHOLD_CUT)  # TODO: te mes sentit usar ja els HN?
@@ -107,7 +106,6 @@ merge_nodules_csv(OUTPUT_DL1, AGGREGATED_NODULES, nodule_threshold=THRESHOLD_CUT
 
 ## (Sergi) Extend nodules
 from nodules_aggregator import extend_nodules as naen
-#from nodules_aggregator import extend_nodules_old as naen
 logging.info('Executing nodules feature extraction ...')
 naen.process_pipeline_csv(
     csv_in=AGGREGATED_NODULES,
