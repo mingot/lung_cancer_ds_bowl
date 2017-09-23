@@ -1,5 +1,10 @@
 # Lung Cancer Data Science Bowl 2017
 
+## Introduction
+Repository for the Vila del Pingui team for the Data Science Bowl 2017 (Feb2017 to Apr2017). The competetition ($1M in prizes) was about predicting early stage lung cancer from CT Scan images. The training set was 1397 + 200 patients and the test 500 patients. The result is an ensemble of 3 convolutional neural networks (resnet) for feature generation and xgboost for final ensemble.  
+
+The team ended in 34th position of 2000 teams (top 2%) with the best model scoring in the 17th position.
+
 ## Index
 Access to latest results of each team and to documentation
 
